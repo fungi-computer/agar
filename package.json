@@ -1,0 +1,245 @@
+{
+  "name": "@fungi.computer/agar",
+  "version": "0.0.1",
+  "author": "Levi <levi@technomancy.dev>",
+  "description": "App contract for fungi.computer: typed backend methods, host capabilities and the App frontend connection",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "docs/api",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./channels": {
+      "types": "./dist/channels.d.ts",
+      "import": "./dist/channels.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./host": {
+      "types": "./dist/host.d.ts",
+      "import": "./dist/host.js"
+    },
+    "./files": {
+      "types": "./dist/files.d.ts",
+      "import": "./dist/files.js"
+    },
+    "./computer-contracts": {
+      "types": "./dist/computer-contracts.d.ts",
+      "import": "./dist/computer-contracts.js"
+    },
+    "./computer": {
+      "types": "./dist/computer.d.ts",
+      "import": "./dist/computer.js"
+    },
+    "./agents": {
+      "types": "./dist/agents.d.ts",
+      "import": "./dist/agents.js"
+    },
+    "./apps": {
+      "types": "./dist/apps.d.ts",
+      "import": "./dist/apps.js"
+    },
+    "./roles/files": {
+      "types": "./dist/roles/files.d.ts",
+      "import": "./dist/roles/files.js"
+    },
+    "./game-servers": {
+      "types": "./dist/game-servers.d.ts",
+      "import": "./dist/game-servers.js"
+    },
+    "./inbox": {
+      "types": "./dist/inbox.d.ts",
+      "import": "./dist/inbox.js"
+    },
+    "./gills": {
+      "types": "./dist/gills.d.ts",
+      "import": "./dist/gills.js"
+    },
+    "./inference": {
+      "types": "./dist/inference.d.ts",
+      "import": "./dist/inference.js"
+    },
+    "./media-library": {
+      "types": "./dist/media-library.d.ts",
+      "import": "./dist/media-library.js"
+    },
+    "./media": {
+      "types": "./dist/media.d.ts",
+      "import": "./dist/media.js"
+    },
+    "./marketplace": {
+      "types": "./dist/marketplace.d.ts",
+      "import": "./dist/marketplace.js"
+    },
+    "./rpc": {
+      "types": "./dist/rpc.d.ts",
+      "import": "./dist/rpc.js"
+    },
+    "./backend-definition": {
+      "types": "./dist/backend-definition.d.ts",
+      "import": "./dist/backend-definition.js"
+    },
+    "./backend": {
+      "types": "./dist/backend.d.ts",
+      "import": "./dist/backend.js"
+    },
+    "./world": {
+      "types": "./dist/world.d.ts",
+      "import": "./dist/world.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./query": {
+      "types": "./dist/query.d.ts",
+      "import": "./dist/query.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "import": "./dist/storage.js"
+    },
+    "./storage-wire": {
+      "types": "./dist/storage-wire.d.ts",
+      "import": "./dist/storage-wire.js"
+    },
+    "./backend-declaration": {
+      "types": "./dist/backend-declaration.d.ts",
+      "import": "./dist/backend-declaration.js"
+    },
+    "./git": {
+      "types": "./dist/git.d.ts",
+      "import": "./dist/git.js"
+    },
+    "./git-steps": {
+      "types": "./dist/git-steps.d.ts",
+      "import": "./dist/git-steps.js"
+    },
+    "./git-commit": {
+      "types": "./dist/git-commit.d.ts",
+      "import": "./dist/git-commit.js"
+    },
+    "./media-json": {
+      "types": "./dist/media-json.d.ts",
+      "import": "./dist/media-json.js"
+    },
+    "./media-request-id": {
+      "types": "./dist/media-request-id.d.ts",
+      "import": "./dist/media-request-id.js"
+    },
+    "./git-wire": {
+      "types": "./dist/git-wire.d.ts",
+      "import": "./dist/git-wire.js"
+    },
+    "./git-rpc": {
+      "types": "./dist/git-rpc.d.ts",
+      "import": "./dist/git-rpc.js"
+    },
+    "./read-copy": {
+      "types": "./dist/read-copy.d.ts",
+      "import": "./dist/read-copy.js"
+    },
+    "./app-build-contract": {
+      "types": "./dist/app-build-contract.d.ts",
+      "import": "./dist/app-build-contract.js"
+    },
+    "./test-kit/git": {
+      "types": "./dist/test-kit/git.d.ts",
+      "import": "./dist/test-kit/git.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src test --max-warnings=0 && ../../node_modules/.bin/oxlint --config ../../oxlint.config.ts --deny-warnings src test",
+    "format:check": "node ../../tooling/repository/scripts/format-package-check.mjs",
+    "lint:anti-slop": "node ../../tooling/repository/scripts/lint-package-anti-slop.mjs",
+    "clean": "node --input-type=module --eval \"import { rm } from 'node:fs/promises'; await rm('dist', { recursive: true, force: true });\"",
+    "docs": "tsx ../../tooling/repository/src/docs/cli.ts check --root ../..",
+    "docs:write": "tsx ../../tooling/repository/src/docs/cli.ts write --root ../..",
+    "pack": "mkdir -p ../../.botanical/agar-pack && pnpm pack --pack-destination \"$PWD/../../.botanical/agar-pack\"",
+    "smoke": "node test/stranger/runtime.mjs",
+    "stranger": "tsx ../../tooling/repository/src/artifacts/cli.ts --repo-root ../.. .",
+    "prepack": "node scripts/prepare-package.mjs"
+  },
+  "dependencies": {
+    "@fungi.computer/puffball": "workspace:*",
+    "@fungi.computer/whistle": "workspace:*",
+    "@opentui/keymap": "0.5.10",
+    "@fungi.computer/capnweb": "workspace:*",
+    "effect": "4.0.2",
+    "zod": "4.4.3",
+    "@fungi.computer/stipe": "workspace:*",
+    "eventsource": "5.1.1",
+    "isomorphic-git": "1.42.2",
+    "buffer": "6.0.3",
+    "@fungi.computer/gills": "workspace:*",
+    "@fungi.computer/cairn": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1 || ^19.2.0",
+    "react-dom": "^18.3.1 || ^19.2.0",
+    "@tanstack/react-query": "^5.102.8"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@fungi.computer/watchdog": "workspace:*",
+    "@types/node": "24.13.3",
+    "@types/react": "18.3.3",
+    "esbuild": "0.28.2",
+    "jsdom": "29.0.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11",
+    "@types/react-dom": "18.3.0",
+    "@tanstack/react-query": "5.102.8"
+  },
+  "license": "MIT",
+  "botanical": {
+    "role": "package",
+    "operations": {
+      "lint": "required",
+      "typecheck": "required",
+      "build": "required",
+      "test": "required",
+      "docs": "required",
+      "pack": "required",
+      "smoke": "required",
+      "stranger": "required"
+    }
+  },
+  "publishConfig": {
+    "directory": ".botanical/package",
+    "linkDirectory": false
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fungi-computer/agar.git"
+  }
+}

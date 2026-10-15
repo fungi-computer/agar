@@ -1,0 +1,41 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "extends": "../../tooling/docs/typedoc.base.json",
+  "name": "@fungi.computer/agar",
+  "entryPoints": [
+    "src/index.ts",
+    "src/react.ts",
+    "src/query.ts",
+    "src/errors.ts",
+    "src/rpc.ts",
+    "src/backend.ts",
+    "src/backend-definition.ts",
+    "src/backend-declaration.ts",
+    "src/files.ts",
+    "src/storage.ts",
+    "src/git.ts",
+    "src/git-commit.ts",
+    "src/git-steps.ts",
+    "src/gills.ts",
+    "src/media-json.ts",
+    "src/media-request-id.ts",
+    "src/git-wire.ts",
+    "src/git-rpc.ts",
+    "src/read-copy.ts",
+    "src/app-build-contract.ts"
+  ],
+  "tsconfig": "tsconfig.json",
+  "out": "docs/api",
+  "readme": "docs/overview.md",
+  "requiredToBeDocumented": [
+    "Enum",
+    "EnumMember",
+    "Variable",
+    "Function",
+    "Class",
+    "Interface",
+    "Method",
+    "Accessor",
+    "TypeAlias"
+  ]
+}
