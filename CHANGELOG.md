@@ -1,5 +1,20 @@
 # @fungi.computer/agar
 
+## 0.1.0
+
+### Minor Changes
+
+- Changes since 0.0.1:
+
+  - feat(trellis): rename the Workflows App to Trellis
+  - fix(oyster): clear the post-move fallow findings
+  - docs(agar): clarify storage absence preconditions
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes

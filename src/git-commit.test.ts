@@ -11,7 +11,7 @@ import {
 import { realGit } from "../test/git-http.fixture.js";
 
 const encoder = new TextEncoder();
-const author = { name: "Workflows", email: "workflows@app.local" };
+const author = { name: "Trellis", email: "trellis@app.local" };
 
 const file = (path: string, text: string) => ({
   path,

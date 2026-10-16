@@ -396,8 +396,8 @@ const appStorageWriteSchema: Struct<{
 }>;
 ```
 
-Validates a write request: the key, scope, value to store, and the revision it's
-conditioned on (`null` to write unconditionally).
+Validates a write request: the key, scope, value to store, and the expected
+revision of that layer (`null` requires the layer to be absent).
 
 ---
 
@@ -412,7 +412,7 @@ const appStorageResetSchema: Struct<{
 ```
 
 Validates a reset request: the key, scope, and the revision it's conditioned on
-(`null` to reset unconditionally).
+(`null` requires the layer to be absent).
 
 ---
 

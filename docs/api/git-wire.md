@@ -20,6 +20,9 @@ type ReceivePack =
       capabilities: readonly string[];
     }>
   | Readonly<{
+      kind: "probe";
+    }>
+  | Readonly<{
       kind: "invalid";
       reason: "unparsable" | "push-cert" | "too-many";
     }>;

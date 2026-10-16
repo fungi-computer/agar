@@ -61,7 +61,7 @@ const mutation = {
 };
 /**
  * Validates a write request: the key, scope, value to store, and the
- * revision it's conditioned on (`null` to write unconditionally).
+ * expected revision of that layer (`null` requires the layer to be absent).
  */
 export const appStorageWriteSchema = Schema.Struct({
   ...mutation,
@@ -69,7 +69,7 @@ export const appStorageWriteSchema = Schema.Struct({
 });
 /**
  * Validates a reset request: the key, scope, and the revision it's
- * conditioned on (`null` to reset unconditionally).
+ * conditioned on (`null` requires the layer to be absent).
  */
 export const appStorageResetSchema = Schema.Struct(mutation);
 /** A validated write request for one storage key. */
