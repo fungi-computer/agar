@@ -20,7 +20,11 @@ import type {
   FileNavigationInput,
   ToastInput,
 } from "../ui.js";
-import type { APP_NAVIGATION_CONTRACT_VERSION } from "../window.js";
+import type {
+  APP_NAVIGATION_CONTRACT_VERSION,
+  AppNavigationActivation,
+  AppNavigationState,
+} from "../window.js";
 import type { AppErrorData } from "./app-error.js";
 import type { RpcResult } from "./result.js";
 import type { WhistleFailure } from "@fungi.computer/whistle";
@@ -37,6 +41,10 @@ export type AppClientRpc = {
   requestClose(): Promise<RpcResult<boolean>>;
   /** Ask the App to go back one step in its own history; `true` when it did. */
   requestBack(): Promise<RpcResult<boolean>>;
+  /** The person used a crumb or header command; `true` when the App acted. */
+  activateNavigation(
+    activation: AppNavigationActivation,
+  ): Promise<RpcResult<boolean>>;
   /** The person used one of the App's status items; `true` when it acted. */
   activateStatus(action: AppStatusAction): Promise<RpcResult<boolean>>;
   updateContext(context: VersionedFact<AppContext>): Promise<RpcResult<void>>;
@@ -87,9 +95,8 @@ export type AppHostRpc = {
 /** The versioned navigation contract an App reports to its host. */
 export type NavigationStateWire = Readonly<{
   contractVersion: typeof APP_NAVIGATION_CONTRACT_VERSION;
-  canGoBack: boolean;
-  title?: string;
-}>;
+}> &
+  AppNavigationState;
 
 /** The App iframe's handshake message announcing it is ready to connect. */
 export type AppReadyMessage = {

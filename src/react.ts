@@ -12,7 +12,14 @@ import {
 } from "@fungi.computer/whistle";
 import { registerCatalog } from "./commands.js";
 import { AppError } from "./errors.js";
-import type { AppBackHandler, HostNavigation } from "./window.js";
+import type {
+  AppBackHandler,
+  AppCrumb,
+  AppHeaderCommand,
+  AppHeaderStatus,
+  AppNavigationState,
+  HostNavigation,
+} from "./window.js";
 
 import type { AppContext } from "./lifecycle.js";
 import type { AppStatusActionHandler, AppStatusItem } from "./ui.js";
@@ -123,7 +130,19 @@ export type HostNavigationOptions = Readonly<{
   canGoBack: boolean;
   /** The current page's title, shown after the App name in window chrome. */
   title?: string | undefined;
+  /** The App's path, shown in the window header in place of the title. */
+  crumbs?: readonly AppCrumb[] | undefined;
+  /** The view's main commands, as header buttons. */
+  primary?: readonly AppHeaderCommand[] | undefined;
+  /** Less common commands, behind the header's overflow menu. */
+  menu?: readonly AppHeaderCommand[] | undefined;
+  /** Facts about the view, shown as muted text with a status bead. */
+  status?: readonly AppHeaderStatus[] | undefined;
   onBack: AppBackHandler;
+  /** The person chose a crumb, or a sibling from a switcher crumb. */
+  onCrumb?: ((crumbId: string, siblingId?: string) => void) | undefined;
+  /** The person used a primary or menu command. */
+  onAction?: ((actionId: string) => void) | undefined;
 }>;
 
 /**
@@ -133,30 +152,69 @@ export type HostNavigationOptions = Readonly<{
  */
 export function useHostNavigation(
   navigation: HostNavigation | null | undefined,
-  { canGoBack, title, onBack }: HostNavigationOptions,
+  {
+    canGoBack,
+    title,
+    crumbs,
+    primary,
+    menu,
+    status,
+    onBack,
+    onCrumb,
+    onAction,
+  }: HostNavigationOptions,
 ): void {
   const latestBack = useRef(onBack);
+  const latestCrumb = useRef(onCrumb);
+  const latestAction = useRef(onAction);
   useEffect(() => {
     latestBack.current = onBack;
-  }, [onBack]);
+    latestCrumb.current = onCrumb;
+    latestAction.current = onAction;
+  }, [onBack, onCrumb, onAction]);
 
   useEffect(() => {
     if (!navigation) return undefined;
     const release = navigation.onBack(() => latestBack.current());
+    const releaseActivation = navigation.onActivate((activation) => {
+      if (activation.kind === "action") {
+        const handler = latestAction.current;
+        handler?.(activation.actionId);
+        return handler !== undefined;
+      }
+      const handler = latestCrumb.current;
+      if (activation.siblingId === undefined) handler?.(activation.crumbId);
+      else handler?.(activation.crumbId, activation.siblingId);
+      return handler !== undefined;
+    });
     return () => {
       release();
+      releaseActivation();
       report(navigation, { canGoBack: false });
     };
   }, [navigation]);
 
+  // Callers pass fresh arrays each render; the report follows their content.
+  const lists = JSON.stringify([crumbs, primary, menu, status]);
+  const latestLists = useRef({ crumbs, primary, menu, status });
+  useEffect(() => {
+    latestLists.current = { crumbs, primary, menu, status };
+  }, [crumbs, primary, menu, status]);
   // Each change replaces the last report; only unmount withdraws Back.
   useEffect(() => {
     if (!navigation) return;
-    report(
-      navigation,
-      title === undefined ? { canGoBack } : { canGoBack, title },
-    );
-  }, [navigation, canGoBack, title]);
+    let state: AppNavigationState = { canGoBack };
+    if (title !== undefined) state = { ...state, title };
+    const current = latestLists.current;
+    if (current.crumbs !== undefined)
+      state = { ...state, crumbs: current.crumbs };
+    if (current.primary !== undefined)
+      state = { ...state, primary: current.primary };
+    if (current.menu !== undefined) state = { ...state, menu: current.menu };
+    if (current.status !== undefined)
+      state = { ...state, status: current.status };
+    report(navigation, state);
+  }, [navigation, canGoBack, title, lists]);
 }
 
 function report(

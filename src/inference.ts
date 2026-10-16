@@ -4,6 +4,7 @@ import {
   rpcHandleSchema,
   rpcMethod,
 } from "./internal/rpc-contract.js";
+import * as z from "zod";
 import * as Schema from "effect/Schema";
 import type {
   CapabilityContract,
@@ -28,7 +29,7 @@ export const llmGeneration: CapabilityContract<AppInferenceHandle> =
   defineCapability(
     "llm.generation",
     1,
-    rpcHandleSchema({ open: rpcMethod(rpcFetchHandleSchema) }),
+    z.lazy(() => rpcHandleSchema({ open: rpcMethod(rpcFetchHandleSchema) })),
   );
 
 const baseURL = "https://inference.fungi.invalid/v1";

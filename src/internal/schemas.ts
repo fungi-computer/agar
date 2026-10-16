@@ -51,7 +51,17 @@ import type {
 import type { RpcResult } from "./result.js";
 import {
   APP_NAVIGATION_CONTRACT_VERSION,
+  APP_NAVIGATION_CRUMBS_MAX,
+  APP_NAVIGATION_LABEL_MAX,
+  APP_NAVIGATION_MENU_MAX,
+  APP_NAVIGATION_PRIMARY_MAX,
+  APP_NAVIGATION_SIBLINGS_MAX,
+  APP_NAVIGATION_STATUS_MAX,
   APP_NAVIGATION_TITLE_MAX,
+  type AppCrumb,
+  type AppHeaderCommand,
+  type AppHeaderStatus,
+  type AppNavigationActivation,
   type AppNavigationState,
 } from "../window.js";
 
@@ -304,15 +314,94 @@ const navigationTitleSchema = boundedText(APP_NAVIGATION_TITLE_MAX).pipe(
     }),
   ),
 );
+const navigationIdSchema = boundedText(64);
+const navigationLabelSchema = boundedText(APP_NAVIGATION_LABEL_MAX);
+/** Ids name what a person used; repeats would make an activation ambiguous. */
+const uniqueIds = (items: readonly { readonly id: string }[]): boolean =>
+  new Set(items.map((item) => item.id)).size === items.length;
+const crumbSchema = Schema.Struct({
+  id: navigationIdSchema,
+  label: navigationLabelSchema,
+  siblings: Schema.optional(
+    Schema.Array(
+      Schema.Struct({ id: navigationIdSchema, label: navigationLabelSchema }),
+    ).pipe(
+      Schema.check(Schema.isMaxLength(APP_NAVIGATION_SIBLINGS_MAX)),
+      Schema.check(
+        Schema.makeFilter(uniqueIds, {
+          message: "Expected unique crumb sibling ids",
+        }),
+      ),
+    ),
+  ),
+});
+const headerCommandSchema = Schema.Struct({
+  id: navigationIdSchema,
+  label: navigationLabelSchema,
+  variant: Schema.optional(Schema.Literals(["primary", "outline", "ghost"])),
+  tone: Schema.optional(Schema.Literal("destructive")),
+  disabled: Schema.optional(Schema.Boolean),
+});
+const commandsSchema = (maximum: number) =>
+  Schema.Array(headerCommandSchema).pipe(
+    Schema.check(Schema.isMaxLength(maximum)),
+    Schema.check(
+      Schema.makeFilter(uniqueIds, {
+        message: "Expected unique header command ids",
+      }),
+    ),
+  );
+const headerStatusSchema = Schema.Struct({
+  id: navigationIdSchema,
+  label: navigationLabelSchema,
+  tone: Schema.optional(
+    Schema.Literals(["neutral", "info", "warning", "success", "error"]),
+  ),
+});
+const navigationFields = {
+  status: Schema.optional(
+    Schema.Array(headerStatusSchema).pipe(
+      Schema.check(Schema.isMaxLength(APP_NAVIGATION_STATUS_MAX)),
+      Schema.check(
+        Schema.makeFilter(uniqueIds, {
+          message: "Expected unique header status ids",
+        }),
+      ),
+    ),
+  ),
+  crumbs: Schema.optional(
+    Schema.Array(crumbSchema).pipe(
+      Schema.check(Schema.isMaxLength(APP_NAVIGATION_CRUMBS_MAX)),
+      Schema.check(
+        Schema.makeFilter(uniqueIds, { message: "Expected unique crumb ids" }),
+      ),
+    ),
+  ),
+  primary: Schema.optional(commandsSchema(APP_NAVIGATION_PRIMARY_MAX)),
+  menu: Schema.optional(commandsSchema(APP_NAVIGATION_MENU_MAX)),
+};
 const navigationStateWireSchema = Schema.Struct({
   contractVersion: Schema.Literal(APP_NAVIGATION_CONTRACT_VERSION),
   canGoBack: Schema.Boolean,
   title: Schema.optional(navigationTitleSchema),
+  ...navigationFields,
 });
 const navigationStateInputSchema = Schema.Struct({
   canGoBack: Schema.Boolean,
   title: Schema.optional(Schema.String),
+  ...navigationFields,
 });
+const navigationActivationSchema = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("crumb"),
+    crumbId: navigationIdSchema,
+    siblingId: Schema.optional(navigationIdSchema),
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("action"),
+    actionId: navigationIdSchema,
+  }),
+]);
 const agentSessionSelectionSchema = Schema.NullOr(
   Schema.Struct({
     agentId: boundedText(256),
@@ -556,40 +645,94 @@ export const parseNavigation = decoder(
   (value): Readonly<FileNavigationInput> => frozen({ ...value }),
   "INVALID_ARGUMENT",
 );
+type DecodedCrumb = Schema.Schema.Type<typeof crumbSchema>;
+type DecodedCommand = Schema.Schema.Type<typeof headerCommandSchema>;
+type DecodedNavigation = {
+  readonly canGoBack: boolean;
+  readonly title?: string | undefined;
+  readonly crumbs?: readonly DecodedCrumb[] | undefined;
+  readonly primary?: readonly DecodedCommand[] | undefined;
+  readonly menu?: readonly DecodedCommand[] | undefined;
+  readonly status?: readonly DecodedStatus[] | undefined;
+};
+type DecodedStatus = Schema.Schema.Type<typeof headerStatusSchema>;
+function statusOf(item: DecodedStatus): AppHeaderStatus {
+  const copy: AppHeaderStatus = { id: item.id, label: item.label };
+  return frozen(item.tone === undefined ? copy : { ...copy, tone: item.tone });
+}
+function crumbOf(crumb: DecodedCrumb): AppCrumb {
+  const copy: AppCrumb = { id: crumb.id, label: crumb.label };
+  if (crumb.siblings === undefined) return frozen(copy);
+  return frozen({
+    ...copy,
+    siblings: frozen(crumb.siblings.map((item) => frozen({ ...item }))),
+  });
+}
+function commandOf(command: DecodedCommand): AppHeaderCommand {
+  let copy: AppHeaderCommand = { id: command.id, label: command.label };
+  if (command.variant !== undefined)
+    copy = { ...copy, variant: command.variant };
+  if (command.tone !== undefined) copy = { ...copy, tone: command.tone };
+  if (command.disabled !== undefined)
+    copy = { ...copy, disabled: command.disabled };
+  return frozen(copy);
+}
+/** One report's fields, each present only when the App sent it. */
+function navigationOf(value: DecodedNavigation): AppNavigationState {
+  let state: AppNavigationState = { canGoBack: value.canGoBack };
+  if (value.title !== undefined) state = { ...state, title: value.title };
+  if (value.crumbs !== undefined)
+    state = { ...state, crumbs: frozen(value.crumbs.map(crumbOf)) };
+  if (value.primary !== undefined)
+    state = { ...state, primary: frozen(value.primary.map(commandOf)) };
+  if (value.menu !== undefined)
+    state = { ...state, menu: frozen(value.menu.map(commandOf)) };
+  if (value.status !== undefined)
+    state = { ...state, status: frozen(value.status.map(statusOf)) };
+  return frozen(state);
+}
 /** Host edge: one App report, projected without its contract version. */
 export const parseNavigationState = decoder(
   navigationStateWireSchema,
-  (value): AppNavigationState =>
-    frozen(
-      value.title === undefined
-        ? { canGoBack: value.canGoBack }
-        : { canGoBack: value.canGoBack, title: value.title },
-    ),
+  navigationOf,
   "INVALID_ARGUMENT",
 );
 /** App edge: trim the title, drop an empty one, then check the wire bounds. */
 export const parseNavigationStateInput = decoder(
   navigationStateInputSchema,
   (value): NavigationStateWire => {
-    const title = value.title?.trim();
-    return parseNavigationStateWire(
-      title === undefined || title.length === 0
-        ? {
-            contractVersion: APP_NAVIGATION_CONTRACT_VERSION,
-            canGoBack: value.canGoBack,
-          }
-        : {
-            contractVersion: APP_NAVIGATION_CONTRACT_VERSION,
-            canGoBack: value.canGoBack,
-            title,
-          },
-    );
+    const trimmed = value.title?.trim();
+    return parseNavigationStateWire({
+      ...navigationOf({
+        ...value,
+        title:
+          trimmed === undefined || trimmed.length === 0 ? undefined : trimmed,
+      }),
+      contractVersion: APP_NAVIGATION_CONTRACT_VERSION,
+    });
   },
   "INVALID_ARGUMENT",
 );
 const parseNavigationStateWire = decoder(
   navigationStateWireSchema,
-  (value): NavigationStateWire => frozen({ ...value }),
+  (value): NavigationStateWire =>
+    frozen({
+      ...navigationOf(value),
+      contractVersion: APP_NAVIGATION_CONTRACT_VERSION,
+    }),
+  "INVALID_ARGUMENT",
+);
+/** Host to App: one crumb or command the person used. */
+export const parseNavigationActivation = decoder(
+  navigationActivationSchema,
+  (value): AppNavigationActivation => {
+    if (value.kind === "action") return frozen({ ...value });
+    return frozen(
+      value.siblingId === undefined
+        ? { kind: value.kind, crumbId: value.crumbId }
+        : value,
+    );
+  },
   "INVALID_ARGUMENT",
 );
 export const parseAgentSessionSelection = decoder(

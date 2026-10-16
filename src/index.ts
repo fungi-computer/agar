@@ -22,6 +22,7 @@ export type {
   CapabilityRegistry,
 } from "./capabilities.js";
 export {
+  agentAvatar,
   agentList,
   agentManage,
   agentRename,
@@ -30,6 +31,9 @@ export {
   agentToolPolicy,
   createAppAgent,
   renameAppAgent,
+  setAppAgentAvatar,
+  appAgentAvatarInputSchema,
+  appAgentAvatarSchema,
   appAgentCreateInputSchema,
   appAgentRenameInputSchema,
   appAgentSchema,
@@ -40,6 +44,8 @@ export {
 } from "./agents.js";
 export type {
   AppAgent,
+  AppAgentAvatarHandle,
+  AppAgentAvatarInput,
   AppAgentCreateHandle,
   AppAgentCreateInput,
   AppAgentDirectoryHandle,
@@ -135,13 +141,26 @@ export type {
   HostUi,
   ToastInput,
 } from "./ui.js";
+export { resultRowSchemaV1, type ResultRow } from "@fungi.computer/gills";
 export {
   APP_NAVIGATION_CONTRACT_VERSION,
+  APP_NAVIGATION_CRUMBS_MAX,
+  APP_NAVIGATION_LABEL_MAX,
+  APP_NAVIGATION_MENU_MAX,
+  APP_NAVIGATION_PRIMARY_MAX,
+  APP_NAVIGATION_SIBLINGS_MAX,
+  APP_NAVIGATION_STATUS_MAX,
   APP_NAVIGATION_TITLE_MAX,
   inertHostNavigation,
+  navigationActivationAllowed,
 } from "./window.js";
 export type {
   AppBackHandler,
+  AppCrumb,
+  AppHeaderCommand,
+  AppHeaderStatus,
+  AppNavigationActivation,
+  AppNavigationActivationHandler,
   AppNavigationState,
   AppWindow,
   BeforeAppClose,

@@ -499,22 +499,24 @@ export const mediaGeneration: CapabilityContract<MediaGenerationHandle> =
   defineCapability(
     "media.generation",
     5,
-    rpcHandleSchema({
-      describe: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => {
-            const { computerId, canGenerate, models } =
-              Schema.decodeUnknownSync(descriptionSchema, {
-                onExcessProperty: "error",
-              })(value);
-            return { computerId, canGenerate, models };
-          }),
+    z.lazy(() =>
+      rpcHandleSchema({
+        describe: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => {
+              const { computerId, canGenerate, models } =
+                Schema.decodeUnknownSync(descriptionSchema, {
+                  onExcessProperty: "error",
+                })(value);
+              return { computerId, canGenerate, models };
+            }),
+          ),
         ),
-      ),
-      createAttempt: rpcMethod(mediaAttemptHandleSchema),
-      restoreAttempt: rpcMethod(mediaAttemptHandleSchema),
-      cancelAttempt: rpcVoid,
-    }),
+        createAttempt: rpcMethod(mediaAttemptHandleSchema),
+        restoreAttempt: rpcMethod(mediaAttemptHandleSchema),
+        cancelAttempt: rpcVoid,
+      }),
+    ),
   );
 
 /** Parse a value received from the host and turn schema failures into the

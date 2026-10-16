@@ -290,25 +290,27 @@ Requested installation-scoped Git authority; a declaration is never a grant.
 ### repositoryRefSchema
 
 ```ts
-const repositoryRefSchema: ZodDiscriminatedUnion<
-  [
-    ZodObject<
-      {
-        kind: ZodLiteral<"installation">;
-        installationId: ZodString;
-        repository: ZodString;
-      },
-      $strict
-    >,
-    ZodObject<
-      {
-        kind: ZodLiteral<"team-source">;
-        repository: ZodString;
-      },
-      $strict
-    >,
-  ],
-  "kind"
+const repositoryRefSchema: ZodLazy<
+  ZodDiscriminatedUnion<
+    [
+      ZodObject<
+        {
+          kind: ZodLiteral<"installation">;
+          installationId: ZodString;
+          repository: ZodString;
+        },
+        $strict
+      >,
+      ZodObject<
+        {
+          kind: ZodLiteral<"team-source">;
+          repository: ZodString;
+        },
+        $strict
+      >,
+    ],
+    "kind"
+  >
 >;
 ```
 
@@ -375,7 +377,7 @@ Canonical Git writer decoder; identity is attested by a host, never by an App.
 ### gitPushQuestionSchema
 
 ```ts
-const gitPushQuestionSchema: ZodObject<{
+const gitPushQuestionSchema: ZodLazy<ZodObject<{
   repository: ZodString;
   writer: ZodObject<{
      kind: ZodLiteral<"actor">;
@@ -394,16 +396,7 @@ const gitPushQuestionSchema: ZodObject<{
         owner: "owner";
      }>>;
      workflow: ZodOptional<ZodObject<{
-        armedBy: ZodDiscriminatedUnion<[ZodObject<{
-           kind: ...;
-           memberId: ...;
-         }, $strict>, ZodObject<{
-           kind: ...;
-           agentId: ...;
-         }, $strict>, ZodObject<{
-           kind: ...;
-           keyId: ...;
-        }, $strict>], "kind">;
+        armedBy: ZodDiscriminatedUnion<[ZodObject<..., ...>, ZodObject<..., ...>, ZodObject<..., ...>], "kind">;
         branches: ZodArray<ZodString>;
         workflowId: ZodMiniString<string>;
         runId: ZodMiniString<string>;
@@ -415,7 +408,7 @@ const gitPushQuestionSchema: ZodObject<{
      before: ZodString;
      after: ZodString;
   }, $strict>>;
-}, $strict>;
+}, $strict>>;
 ```
 
 The App's question covers the whole push, under host-held attribution.
@@ -425,31 +418,33 @@ The App's question covers the whole push, under host-held attribution.
 ### gitPushVerdictSchema
 
 ```ts
-const gitPushVerdictSchema: ZodDiscriminatedUnion<
-  [
-    ZodObject<
-      {
-        allowed: ZodLiteral<true>;
-      },
-      $strict
-    >,
-    ZodObject<
-      {
-        allowed: ZodLiteral<false>;
-        refused: ZodArray<
-          ZodObject<
-            {
-              ref: ZodString;
-              message: ZodString;
-            },
-            $strict
-          >
-        >;
-      },
-      $strict
-    >,
-  ],
-  "allowed"
+const gitPushVerdictSchema: ZodLazy<
+  ZodDiscriminatedUnion<
+    [
+      ZodObject<
+        {
+          allowed: ZodLiteral<true>;
+        },
+        $strict
+      >,
+      ZodObject<
+        {
+          allowed: ZodLiteral<false>;
+          refused: ZodArray<
+            ZodObject<
+              {
+                ref: ZodString;
+                message: ZodString;
+              },
+              $strict
+            >
+          >;
+        },
+        $strict
+      >,
+    ],
+    "allowed"
+  >
 >;
 ```
 
@@ -460,35 +455,11 @@ A whole push verdict; refusal messages are shown by ordinary Git clients.
 ### appGitPushFactSchema
 
 ```ts
-const appGitPushFactSchema: ZodObject<{
+const appGitPushFactSchema: ZodLazy<ZodObject<{
   repository: ZodString;
   writer: ZodDiscriminatedUnion<[ZodObject<{
      kind: ZodLiteral<"actor">;
      actor: ZodDiscriminatedUnion<[ZodObject<{
-        kind: ZodMiniLiteral<...>;
-        memberId: ZodMiniString<...>;
-      }, $strict>, ZodObject<{
-        kind: ZodMiniLiteral<...>;
-        agentId: ZodMiniString<...>;
-      }, $strict>, ZodObject<{
-        kind: ZodMiniLiteral<...>;
-        keyId: ZodMiniString<...>;
-     }, $strict>], "kind">;
-     role: ZodMiniOptional<ZodMiniEnum<{
-        member: "member";
-        owner: "owner";
-     }>>;
-     workflow: ZodOptional<ZodObject<{
-        armedBy: ZodDiscriminatedUnion<[..., ..., ...], "kind">;
-        branches: ZodArray<ZodString>;
-        workflowId: ZodMiniString<string>;
-        runId: ZodMiniString<string>;
-        nodeId: ZodMiniString<string>;
-     }, $strict>>;
-   }, $strict>, ZodObject<{
-     kind: ZodLiteral<"installation">;
-     installationId: ZodString;
-     onBehalfOf: ZodNullable<ZodDiscriminatedUnion<[ZodObject<{
         kind: ...;
         memberId: ...;
       }, $strict>, ZodObject<{
@@ -497,7 +468,22 @@ const appGitPushFactSchema: ZodObject<{
       }, $strict>, ZodObject<{
         kind: ...;
         keyId: ...;
-     }, $strict>], "kind">>;
+     }, $strict>], "kind">;
+     role: ZodMiniOptional<ZodMiniEnum<{
+        member: "member";
+        owner: "owner";
+     }>>;
+     workflow: ZodOptional<ZodObject<{
+        armedBy: ZodDiscriminatedUnion<..., ...>;
+        branches: ZodArray<...>;
+        workflowId: ZodMiniString<...>;
+        runId: ZodMiniString<...>;
+        nodeId: ZodMiniString<...>;
+     }, $strict>>;
+   }, $strict>, ZodObject<{
+     kind: ZodLiteral<"installation">;
+     installationId: ZodString;
+     onBehalfOf: ZodNullable<ZodDiscriminatedUnion<[ZodObject<..., ...>, ZodObject<..., ...>, ZodObject<..., ...>], "kind">>;
   }, $strict>], "kind">;
   updates: ZodArray<ZodObject<{
      ref: ZodString;
@@ -508,8 +494,8 @@ const appGitPushFactSchema: ZodObject<{
      ref: ZodString;
      journaled: ZodNullable<ZodString>;
   }, $strict>>>;
-  eventId: ZodString;
-}, $strict>;
+  eventId: ZodLazy<ZodString>;
+}, $strict>>;
 ```
 
 One accepted push, with host attribution and no remote or credential.

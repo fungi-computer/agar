@@ -20,10 +20,13 @@ import type {
 import { statusActionAllowed } from "../status.js";
 import type {
   AppBackHandler,
+  AppNavigationActivation,
+  AppNavigationActivationHandler,
   AppNavigationState,
   AppWindow,
   BeforeAppClose,
 } from "../window.js";
+import { navigationActivationAllowed } from "../window.js";
 import type { AppErrorData } from "./app-error.js";
 
 import { AppError } from "../errors.js";
@@ -62,6 +65,8 @@ import {
   parseIdentity,
   parseLifecycle,
   parseNavigation,
+  parseNavigationActivation,
+  parseNavigationState,
   parseStatusAction,
   parseStatusItems,
   parseNavigationStateInput,
@@ -82,6 +87,9 @@ type ClientState = {
   capabilities?: CapabilityDirectoryController;
   beforeClose?: BeforeAppClose;
   back?: AppBackHandler;
+  activate?: AppNavigationActivationHandler;
+  /** The last navigation report; activations must match it. */
+  navigation: AppNavigationState;
   statusAction?: AppStatusActionHandler;
   /** What the App last declared for its status bar; actions must match it. */
   statusItems: readonly AppStatusItem[];
@@ -139,6 +147,20 @@ class AppClientTarget extends RpcTarget implements AppClientRpc {
     try {
       if (this.#disposed) throw disconnected();
       return rpcSuccess(await (this.#state.back?.() ?? false));
+    } catch (cause) {
+      return rpcFailure<boolean>(cause);
+    }
+  }
+
+  async activateNavigation(value: AppNavigationActivation) {
+    try {
+      if (this.#disposed) throw disconnected();
+      const activation = parseNavigationActivation(value);
+      // A shell's stale copy can still send a crumb or command the App has
+      // since dropped; only what it published now reaches the App.
+      if (!navigationActivationAllowed(this.#state.navigation, activation))
+        return rpcSuccess(false);
+      return rpcSuccess(await (this.#state.activate?.(activation) ?? false));
     } catch (cause) {
       return rpcFailure<boolean>(cause);
     }
@@ -335,6 +357,7 @@ function createBrokenPromise(remote: RpcStub<AppHostRpc>): Promise<never> {
 function createClientState(): ClientState {
   return {
     statusItems: [],
+    navigation: { canGoBack: false },
     bindings: createLocalBindingState(),
     chords: createReservedChordState([]),
     context: createReadonlyStore({
@@ -421,6 +444,7 @@ function createRootRuntime(
         () => {
           options.state.beforeClose = undefined;
           options.state.back = undefined;
+          options.state.activate = undefined;
           options.state.statusAction = undefined;
         },
         () => {
@@ -514,7 +538,23 @@ function createAppWindow(
       assertConnected();
       const wire = parseNavigationStateInput(input);
       state.canGoBack = wire.canGoBack;
+      state.navigation = parseNavigationState(wire);
       await callRpc(remote.reportNavigation(wire), parseVoidResult);
+    },
+    onActivate(handler: AppNavigationActivationHandler) {
+      assertConnected();
+      if (state.activate !== undefined)
+        throw new AppError("The App already owns navigation activations", {
+          code: "INVALID_ARGUMENT",
+          retryable: false,
+        });
+      state.activate = handler;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        if (state.activate === handler) state.activate = undefined;
+      };
     },
     onBack(handler: AppBackHandler) {
       assertConnected();

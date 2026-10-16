@@ -6,6 +6,7 @@ const memberCaller = {
 import type { GillResponse } from "@fungi.computer/gills";
 import type { AppMethodCallContext } from "@fungi.computer/puffball/app-method-runtime";
 import { buildAppDeclaration, buildAppApi } from "./backend-declaration.js";
+import { resultRows } from "./method-presentation.js";
 import { describe, expect, expectTypeOf, test, vi } from "vitest";
 import { AppMethodRefusal, type AppMethodReply } from "./method-refusal.js";
 import * as z from "zod";
@@ -101,6 +102,123 @@ describe("typed App backend exports", () => {
       }).api,
     ).toEqual(api);
     expect(handler).not.toHaveBeenCalled();
+  });
+  test("projects a finished call into its row through one generated hidden read method", async () => {
+    const backend = defineAppBackend({
+      methods: {
+        generate: defineAppMethod({
+          description: "Make one panel",
+          effect: "external",
+          requires: [],
+          input: z.strictObject({ model: z.string() }),
+          output: z.strictObject({ printId: z.string(), path: z.string() }),
+          present: {
+            verb: "made",
+            rows: resultRows,
+            row: ({ input, output }) => ({
+              id: output.printId,
+              title: "Prints made this panel",
+              detail: input.model,
+              media: { path: output.path, format: "fungi:image" },
+              open: { params: [{ key: "print", value: output.printId }] },
+            }),
+          },
+          handler: () => ({ printId: "p1", path: "/a.png" }),
+        }),
+        plain: defineAppMethod({
+          description: "No presentation",
+          effect: "read",
+          requires: [],
+          input: z.strictObject({}),
+          output: z.strictObject({}),
+          handler: () => ({}),
+        }),
+      },
+    });
+    const api = buildAppApi(backend);
+    expect(api.methods.generate).toHaveProperty("present", { verb: "made" });
+    expect(api.methods.plain).not.toHaveProperty("present");
+    expect(api.methods.present).toMatchObject({
+      effect: "read",
+      hidden: true,
+      requires: [],
+    });
+    await expect(
+      backend.call(
+        "present",
+        {
+          method: "generate",
+          input: { model: "Flux" },
+          output: { printId: "p1", path: "/a.png" },
+        },
+        undefined,
+        memberCaller,
+      ),
+    ).resolves.toEqual({
+      id: "p1",
+      title: "Prints made this panel",
+      detail: "Flux",
+      media: { path: "/a.png", format: "fungi:image" },
+      open: { params: [{ key: "print", value: "p1" }] },
+    });
+    await expect(
+      backend.call(
+        "present",
+        { method: "plain", input: {}, output: {} },
+        undefined,
+        memberCaller,
+      ),
+    ).rejects.toThrow("Undeclared App presentation");
+    await expect(
+      backend.call(
+        "present",
+        { method: "generate", input: {}, output: {} },
+        undefined,
+        memberCaller,
+      ),
+    ).rejects.toThrow();
+  });
+  test("regenerates the presentation method when a backend is rebuilt from another's methods", () => {
+    const first = defineAppBackend({
+      methods: {
+        a: defineAppMethod({
+          description: "Presents",
+          effect: "read",
+          requires: [],
+          input: z.strictObject({}),
+          output: z.strictObject({}),
+          present: {
+            verb: "ran",
+            rows: resultRows,
+            row: () => ({ id: "x", title: "x" }),
+          },
+          handler: () => ({}),
+        }),
+      },
+    });
+    const rebuilt = defineAppBackend({ methods: first.methods });
+    expect(Object.keys(buildAppApi(rebuilt).methods).sort()).toEqual([
+      "a",
+      "present",
+    ]);
+  });
+  test("keeps the generated presentation method name reserved", () => {
+    const method = defineAppMethod({
+      description: "Presents",
+      effect: "read",
+      requires: [],
+      input: z.strictObject({}),
+      output: z.strictObject({}),
+      present: {
+        verb: "ran",
+        rows: resultRows,
+        row: () => ({ id: "x", title: "x" }),
+      },
+      handler: () => ({}),
+    });
+    expect(() =>
+      defineAppBackend({ methods: { a: method, present: method } }),
+    ).toThrow("reserved");
   });
   test("projects hidden discovery metadata without changing direct method validation", async () => {
     const method = defineAppMethod({

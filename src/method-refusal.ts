@@ -45,21 +45,25 @@ export class AppMethodRefusal extends Error {
 }
 
 /** A refused call as it crosses the generated method boundary. */
-export const appMethodRefusedReplySchema = z.strictObject({
-  kind: z.literal("refused"),
-  code: z.enum(appMethodRefusalCodes),
-  message: z.string().min(1).max(maxAppMethodRefusalMessage),
-});
+export const appMethodRefusedReplySchema = z.lazy(() =>
+  z.strictObject({
+    kind: z.literal("refused"),
+    code: z.enum(appMethodRefusalCodes),
+    message: z.string().min(1).max(maxAppMethodRefusalMessage),
+  }),
+);
 /** A decoded {@link appMethodRefusedReplySchema} value. */
 export type AppMethodRefusedReply = z.output<
   typeof appMethodRefusedReplySchema
 >;
 
 /** Every generated App method RPC answers with exactly one of these. */
-export const appMethodReplySchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("ok"), value: z.json() }),
-  appMethodRefusedReplySchema,
-]);
+export const appMethodReplySchema = z.lazy(() =>
+  z.discriminatedUnion("kind", [
+    z.strictObject({ kind: z.literal("ok"), value: z.json() }),
+    appMethodRefusedReplySchema,
+  ]),
+);
 /** A decoded {@link appMethodReplySchema} value; the result is read-only JSON. */
 export type AppMethodReply =
   Readonly<{ kind: "ok"; value: WhistleJsonValue }> | AppMethodRefusedReply;

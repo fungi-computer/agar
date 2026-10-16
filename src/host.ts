@@ -18,7 +18,7 @@ import type {
 } from "@fungi.computer/whistle";
 import { WhistleActionError } from "@fungi.computer/whistle";
 import type { AppContext, AppIdentity, FocusState } from "./lifecycle.js";
-import type { AppNavigationState } from "./window.js";
+import type { AppNavigationActivation, AppNavigationState } from "./window.js";
 import type {
   AppBrowserAction,
   AppBrowserActionOutcome,
@@ -72,6 +72,7 @@ import {
   parseLocalHostBootstrap,
   parseHostLifecycleFact,
   parseNavigation,
+  parseNavigationActivation,
   parseNavigationState,
   parseStatusAction,
   parseStatusItems,
@@ -93,6 +94,8 @@ export type AppHost = {
   requestClose(): Promise<boolean>;
   /** Ask the App to go back one step in its own history; `true` when it did. */
   requestBack(): Promise<boolean>;
+  /** Deliver the person's use of a crumb or header command; `true` when the App acted. */
+  activateNavigation(activation: AppNavigationActivation): Promise<boolean>;
   /** Deliver the person's use of a status item; `true` when the App acted. */
   activateStatus(action: AppStatusAction): Promise<boolean>;
   updateContext(fact: AppHostFact<AppContext>): Promise<void>;
@@ -957,6 +960,15 @@ function createHost(options: {
       assertLive();
       return await callRpc(
         options.client.requestBack(),
+        parseBackDecisionResult,
+      );
+    },
+    activateNavigation: async (activation: AppNavigationActivation) => {
+      assertLive();
+      return await callRpc(
+        options.client.activateNavigation(
+          parseNavigationActivation(activation),
+        ),
         parseBackDecisionResult,
       );
     },

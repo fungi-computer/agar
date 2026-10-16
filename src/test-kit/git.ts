@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as z from "zod";
@@ -17,7 +17,20 @@ export function realGit() {
     existsSync(join(root, `${name}.git`))
       ? { name, defaultBranch: "main", lastPushAt: null, source: null }
       : null;
+  // A full object id names an immutable commit, so one read serves every
+  // later ask; refs and abbreviations move and are never cached.
+  const commits = new Map<string, GitCommit>();
+  const immutable = (hash: string) => /^[0-9a-f]{40,64}$/u.test(hash);
   const readCommit = (name: string, hash: string): GitCommit | null => {
+    // The repository's directory identity keeps a deleted-and-recreated name
+    // from serving the old repository's commits, however it was removed.
+    const dir = statSync(join(root, `${name}.git`), {
+      bigint: true,
+      throwIfNoEntry: false,
+    });
+    const key = `${name}\0${String(dir?.ino)}\0${String(dir?.birthtimeNs)}\0${hash}`;
+    const cached = immutable(hash) ? commits.get(key) : undefined;
+    if (cached !== undefined) return structuredClone(cached);
     const found = spawnSync(
       "git",
       [`--git-dir=${join(root, `${name}.git`)}`, "cat-file", "-t", hash],
@@ -57,7 +70,7 @@ export function realGit() {
           hash,
         ).split("\0"),
       );
-    return {
+    const commit: GitCommit = {
       hash: oid,
       treeHash,
       parents: parents ? parents.split(" ") : [],
@@ -67,6 +80,8 @@ export function realGit() {
       committedAt: Number(committedAt),
       message,
     };
+    if (immutable(hash)) commits.set(key, structuredClone(commit));
+    return commit;
   };
   const git: GitBinding = {
     cloneUrl: (name) => {

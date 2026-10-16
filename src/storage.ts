@@ -236,5 +236,5 @@ function client(raw: AppStorageWire): AppStorage {
 export const appStorage: CapabilityContract<AppStorage> = defineCapability(
   "app.storage",
   1,
-  rawSchema.transform(client),
+  z.lazy(() => rawSchema.transform(client)),
 );

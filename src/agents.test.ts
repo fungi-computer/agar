@@ -1,8 +1,11 @@
 import { createCapabilityRegistry } from "./capabilities.js";
 import { describe, expect, it, vi } from "vitest";
+import * as Schema from "effect/Schema";
 
 import type { CapabilityDirectory } from "./capabilities.js";
+import { seededAvatar } from "@fungi.computer/sprite/avatar";
 import {
+  agentAvatar,
   agentList,
   agentManage,
   agentRename,
@@ -15,7 +18,10 @@ import {
   openAppAgent,
   openAppInbox,
   renameAppAgent,
+  setAppAgentAvatar,
+  appAgentAvatarInputSchema,
   appAgentListResultSchema,
+  appAgentSchema,
 } from "./agents.js";
 
 it("decodes the broker Agent list projection without directory-only fields", () => {
@@ -55,6 +61,7 @@ describe("Agent App capability", () => {
       const agent = {
         agentId: "agent-created",
         name: "Helper",
+        avatar: seededAvatar("agent-created"),
         sessionOperations: [],
       };
       const create = vi.fn<AppAgentDirectoryHandle["create"]>(() =>
@@ -151,6 +158,7 @@ describe("Agent App capability", () => {
         {
           agentId: "agent_one",
           name: "Helper",
+          avatar: seededAvatar("agent_one"),
           sessionOperations: ["agent.read" as const],
         },
       ]),
@@ -164,6 +172,7 @@ describe("Agent App capability", () => {
       {
         agentId: "agent_one",
         name: "Helper",
+        avatar: seededAvatar("agent_one"),
         sessionOperations: ["agent.read"],
       },
     ]);
@@ -331,6 +340,7 @@ describe("Agent rename capability", () => {
     const agent = {
       agentId: "agent-one",
       name: "Gardener",
+      avatar: seededAvatar("agent-one"),
       sessionOperations: [],
     };
     const rename = vi.fn(() => Promise.resolve(agent));
@@ -361,6 +371,49 @@ describe("Agent rename capability", () => {
       }),
     ).rejects.toThrow();
     expect(rename).not.toHaveBeenCalled();
+  });
+});
+
+describe("Agent avatar capability", () => {
+  const cat = {
+    v: 1,
+    character: "cat",
+    appearance: { body: "#9bd47a" },
+    expression: "normal",
+    renderStyle: "plain",
+  } as const;
+
+  it("sets an Agent's avatar through the owner-only avatar capability", async () => {
+    const registry = createCapabilityRegistry();
+    const agent = {
+      agentId: "agent-one",
+      name: "Gardener",
+      avatar: cat,
+      sessionOperations: [],
+    };
+    const setAvatar = vi.fn(() => Promise.resolve(agent));
+    registry.provide(agentAvatar, { setAvatar });
+    const request = { agentId: "agent-one", avatar: cat };
+    expect(await setAppAgentAvatar(registry, request)).toEqual(agent);
+    expect(setAvatar).toHaveBeenCalledWith(request);
+  });
+
+  it("decodes only an Avatar v1 envelope, and only Agent records that carry one", () => {
+    const decodeInput = Schema.decodeUnknownSync(appAgentAvatarInputSchema);
+    expect(decodeInput({ agentId: "agent-one", avatar: cat })).toEqual({
+      agentId: "agent-one",
+      avatar: cat,
+    });
+    expect(() =>
+      decodeInput({ agentId: "agent-one", avatar: { ...cat, v: 2 } }),
+    ).toThrow();
+    expect(() =>
+      Schema.decodeUnknownSync(appAgentSchema)({
+        agentId: "agent-one",
+        name: "Gardener",
+        sessionOperations: [],
+      }),
+    ).toThrow();
   });
 });
 

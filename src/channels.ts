@@ -122,19 +122,23 @@ export const appWebsiteReplyResponseSchema = z.strictObject({
 export const channelsRead = defineCapability<AppChannelsReadHandle>(
   "channels.read",
   1,
-  rpcHandleSchema({
-    list: rpcMethod(rpcDataSchema(appWebsitePageSchema)),
-    conversations: rpcMethod(rpcDataSchema(appWebsiteConversationPageSchema)),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      list: rpcMethod(rpcDataSchema(appWebsitePageSchema)),
+      conversations: rpcMethod(rpcDataSchema(appWebsiteConversationPageSchema)),
+    }),
+  ),
 );
 /** Member-only takeover; separate consent from read-only channel access. */
 export const channelsPersonalManage = defineCapability<AppChannelsManageHandle>(
   "channels.personal.manage",
   1,
-  rpcHandleSchema({
-    hold: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
-    release: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
-    dismiss: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
-    reply: rpcMethod(rpcDataSchema(appWebsiteReplyResponseSchema)),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      hold: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
+      release: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
+      dismiss: rpcMethod(rpcDataSchema(appWebsiteConversationSchema)),
+      reply: rpcMethod(rpcDataSchema(appWebsiteReplyResponseSchema)),
+    }),
+  ),
 );

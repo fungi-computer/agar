@@ -22,6 +22,10 @@ import {
   rpcFetchHandleSchema,
 } from "./internal/rpc-contract.js";
 import * as Schema from "effect/Schema";
+import {
+  avatarEnvelopeSchema,
+  type Avatar,
+} from "@fungi.computer/sprite/avatar";
 
 import type {
   CapabilityContract,
@@ -36,13 +40,24 @@ const boundedIdentity = Schema.String.pipe(
 );
 
 /**
- * Validates the wire shape of an Agent record: its id, display name,
- * and which session operations (read, send, manage) this App may
- * perform on it.
+ * An Agent's avatar: Sprite's Avatar v1 envelope. Apps check its shape; the
+ * host owns the character-catalog refinement when it stores one.
+ */
+export const appAgentAvatarSchema = Schema.declare(
+  (value): value is Avatar => avatarEnvelopeSchema.safeParse(value).success,
+  { expected: "an Avatar v1 descriptor" },
+);
+
+/**
+ * Validates the wire shape of an Agent record: its id, display name, avatar,
+ * and which session operations (read, send, manage) this App may perform on
+ * it. Every Agent has an avatar: the one its owner chose, else Sprite's
+ * `seededAvatar(agentId)`. Conversations carry none of their own.
  */
 export const appAgentSchema = Schema.Struct({
   agentId: boundedIdentity,
   name: boundedIdentity,
+  avatar: appAgentAvatarSchema,
   sessionOperations: Schema.Array(
     Schema.Literals(["agent.read", "agent.send", "agent.manage"]),
   ),
@@ -55,22 +70,26 @@ export const appAgentSchema = Schema.Struct({
 export type AppAgent = Schema.Schema.Type<typeof appAgentSchema>;
 
 /** The admitted AGENTS.list projection, containing only ids and display names. */
-export const appAgentListResultSchema = z.strictObject({
-  agents: z.array(z.strictObject({ agentId: z.string(), name: z.string() })),
-});
+export const appAgentListResultSchema = z.lazy(() =>
+  z.strictObject({
+    agents: z.array(z.strictObject({ agentId: z.string(), name: z.string() })),
+  }),
+);
 
 /** Computer provisioning is a Team creation choice, separate from Home policy. */
 export const appAgentComputerSchema = Schema.Literals(["new", "none"]);
-/** Validates Agent creation input: a name, a caller-chosen request id and an
- * optional Computer provisioning choice. */
+/** Validates Agent creation input: a name, a caller-chosen request id, an
+ * optional Computer provisioning choice and an optional chosen avatar. */
 export const appAgentCreateInputSchema = Schema.Struct({
   name: boundedIdentity,
   requestId: boundedIdentity,
   computer: Schema.optionalKey(appAgentComputerSchema),
+  avatar: Schema.optionalKey(appAgentAvatarSchema),
 });
 /**
  * Input for creating a new Agent: its name, a caller-chosen request id
- * for idempotency, and whether to provision a new Computer for it.
+ * for idempotency, whether to provision a new Computer for it, and the
+ * avatar it wears (omitted, it wears its seeded avatar).
  */
 export type AppAgentCreateInput = Readonly<
   Schema.Schema.Type<typeof appAgentCreateInputSchema>
@@ -120,11 +139,13 @@ export const agentList: CapabilityContract<AppAgentListHandle> =
   defineCapability(
     "agent.list",
     1,
-    rpcHandleSchema({
-      list: rpcMethod(
-        rpcDataSchema(z.unknown().transform((value) => decodeAgents(value))),
-      ),
-    }),
+    z.lazy(() =>
+      rpcHandleSchema({
+        list: rpcMethod(
+          rpcDataSchema(z.unknown().transform((value) => decodeAgents(value))),
+        ),
+      }),
+    ),
   );
 /** Capability to create new Agents and open transports to them. */
 export const agentManage: CapabilityContract<
@@ -132,18 +153,20 @@ export const agentManage: CapabilityContract<
 > = defineCapability(
   "agent.manage",
   1,
-  rpcHandleSchema({
-    open: rpcMethod(rpcFetchHandleSchema),
-    create: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(appAgentSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(rpcFetchHandleSchema),
+      create: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(appAgentSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 /** Validates Agent rename input: the target Agent and its new display name. */
 export const appAgentRenameInputSchema = Schema.Struct({
@@ -167,17 +190,19 @@ export const agentRename: CapabilityContract<AppAgentRenameHandle> =
   defineCapability(
     "agent.rename",
     1,
-    rpcHandleSchema({
-      rename: rpcMethod(
-        rpcDataSchema(
-          z
-            .unknown()
-            .transform((value) =>
-              Schema.decodeUnknownSync(appAgentSchema)(value),
-            ),
+    z.lazy(() =>
+      rpcHandleSchema({
+        rename: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) =>
+                Schema.decodeUnknownSync(appAgentSchema)(value),
+              ),
+          ),
         ),
-      ),
-    }),
+      }),
+    ),
   );
 /** Rename an Agent through the host-granted owner-only capability. */
 export async function renameAppAgent(
@@ -189,20 +214,64 @@ export async function renameAppAgent(
   return Schema.decodeUnknownSync(appAgentSchema)(agent);
 }
 
+/** Validates avatar input: the target Agent and the avatar it now wears. */
+export const appAgentAvatarInputSchema = Schema.Struct({
+  agentId: boundedIdentity,
+  avatar: appAgentAvatarSchema,
+});
+/** Input for changing an existing Agent's avatar. */
+export type AppAgentAvatarInput = Readonly<
+  Schema.Schema.Type<typeof appAgentAvatarInputSchema>
+>;
+/** Capability handle for changing an Agent's avatar. */
+export type AppAgentAvatarHandle = {
+  /** Set an existing Agent's avatar and return its updated record. */
+  setAvatar(input: AppAgentAvatarInput): Promise<AppAgent>;
+};
+/** Owner-only capability to change an existing Agent's avatar; not every host grants it. */
+export const agentAvatar: CapabilityContract<AppAgentAvatarHandle> =
+  defineCapability(
+    "agent.avatar",
+    1,
+    z.lazy(() =>
+      rpcHandleSchema({
+        setAvatar: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) =>
+                Schema.decodeUnknownSync(appAgentSchema)(value),
+              ),
+          ),
+        ),
+      }),
+    ),
+  );
+/** Change an Agent's avatar through the host-granted owner-only capability. */
+export async function setAppAgentAvatar(
+  capabilities: CapabilityDirectory,
+  input: AppAgentAvatarInput,
+): Promise<AppAgent> {
+  const request = Schema.decodeUnknownSync(appAgentAvatarInputSchema)(input);
+  const agent = await capabilities.require(agentAvatar).setAvatar(request);
+  return Schema.decodeUnknownSync(appAgentSchema)(agent);
+}
+
 /** One Agent's App-tool policy, as the owner-only policy capability reports it. */
-export const appAgentToolPolicyStatusSchema = z.union([
-  z.object({ status: z.literal("pending"), revision: z.string() }),
-  z.object({ status: z.literal("approved"), revision: z.string() }),
-]);
+export const appAgentToolPolicyStatusSchema = z.lazy(() =>
+  z.union([
+    z.object({ status: z.literal("pending"), revision: z.string() }),
+    z.object({ status: z.literal("approved"), revision: z.string() }),
+  ]),
+);
 /** Whether an Agent's App tools are still pending the owner's approval. */
 export type AppAgentToolPolicyStatus = z.infer<
   typeof appAgentToolPolicyStatusSchema
 >;
 /** The outcome of an owner's direct App-tool approval. */
-export const appAgentToolPolicyResultSchema = z.union([
-  appAgentToolPolicyStatusSchema,
-  z.object({ error: z.string() }),
-]);
+export const appAgentToolPolicyResultSchema = z.lazy(() =>
+  z.union([appAgentToolPolicyStatusSchema, z.object({ error: z.string() })]),
+);
 /** The outcome of an owner's direct App-tool approval. */
 export type AppAgentToolPolicyResult = z.infer<
   typeof appAgentToolPolicyResultSchema
@@ -223,12 +292,14 @@ export const agentToolPolicy: CapabilityContract<AppAgentToolPolicyHandle> =
   defineCapability(
     "agent.toolPolicy",
     1,
-    rpcHandleSchema({
-      status: rpcMethod(
-        rpcDataSchema(z.union([appAgentToolPolicyStatusSchema, z.null()])),
-      ),
-      approve: rpcMethod(rpcDataSchema(appAgentToolPolicyResultSchema)),
-    }),
+    z.lazy(() =>
+      rpcHandleSchema({
+        status: rpcMethod(
+          rpcDataSchema(z.union([appAgentToolPolicyStatusSchema, z.null()])),
+        ),
+        approve: rpcMethod(rpcDataSchema(appAgentToolPolicyResultSchema)),
+      }),
+    ),
   );
 
 /**
@@ -240,10 +311,12 @@ export const agentSessionRead: CapabilityContract<
 > = defineCapability(
   "agent.read",
   1,
-  rpcHandleSchema({
-    open: rpcMethod(rpcFetchHandleSchema),
-    openInbox: rpcMethod(rpcFetchHandleSchema),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(rpcFetchHandleSchema),
+      openInbox: rpcMethod(rpcFetchHandleSchema),
+    }),
+  ),
 );
 /**
  * Capability for read-write Agent sessions: open a transport to an
@@ -254,10 +327,12 @@ export const agentSessionWrite: CapabilityContract<
 > = defineCapability(
   "agent.send",
   1,
-  rpcHandleSchema({
-    open: rpcMethod(rpcFetchHandleSchema),
-    openInbox: rpcMethod(rpcFetchHandleSchema),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(rpcFetchHandleSchema),
+      openInbox: rpcMethod(rpcFetchHandleSchema),
+    }),
+  ),
 );
 
 /** List the Agents in the host-granted Team or local-project scope. */

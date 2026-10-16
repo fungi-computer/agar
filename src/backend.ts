@@ -18,11 +18,13 @@ export const appBackend: CapabilityContract<{
 }> = defineCapability(
   "app.backend",
   1,
-  rpcHandleSchema({
-    request: rpcMethod(
-      rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
-    ),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      request: rpcMethod(
+        rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
+      ),
+    }),
+  ),
 );
 
 /**
@@ -37,11 +39,13 @@ export const appMethods: CapabilityContract<{
 }> = defineCapability(
   "app.methods",
   1,
-  rpcHandleSchema({
-    call: rpcMethod(
-      rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
-    ),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      call: rpcMethod(
+        rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
+      ),
+    }),
+  ),
 );
 
 /** The admitting host overwrites this header from its authenticated principal.

@@ -90,7 +90,8 @@ type AppAgentCreateInput = Readonly<
 ```
 
 Input for creating a new Agent: its name, a caller-chosen request id for
-idempotency, and whether to provision a new Computer for it.
+idempotency, whether to provision a new Computer for it, and the avatar it wears
+(omitted, it wears its seeded avatar).
 
 ---
 
@@ -188,6 +189,26 @@ Capability handle for creating a new Agent in a directory.
 create(input): Promise<{
   agentId: string;
   name: string;
+  avatar: {
+     v: z.ZodLiteral<1>;
+     character: z.ZodEnum<{
+        mushroom: "mushroom";
+        cat: "cat";
+        burger: "burger";
+     }>;
+     appearance: z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>>;
+     expression: z.ZodString;
+     renderStyle: z.ZodEnum<{
+        plain: "plain";
+        pencil: "pencil";
+        manga: "manga";
+        riso: "riso";
+        halftone: "halftone";
+        blueprint: "blueprint";
+        crt: "crt";
+        watercolor: "watercolor";
+     }>;
+  };
   sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
 }>;
 ```
@@ -202,8 +223,15 @@ Create a new Agent with the given name and request id.
 
 ###### Returns
 
-`Promise`\<\{ `agentId`: `string`; `name`: `string`; `sessionOperations`:
-readonly (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`:
+`z.ZodLiteral`\<`1`\>; `character`: `z.ZodEnum`\<\{ `mushroom`: `"mushroom"`;
+`cat`: `"cat"`; `burger`: `"burger"`; \}\>; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `z.ZodString`; `renderStyle`:
+`z.ZodEnum`\<\{ `plain`: `"plain"`; `pencil`: `"pencil"`; `manga`: `"manga"`;
+`riso`: `"riso"`; `halftone`: `"halftone"`; `blueprint`: `"blueprint"`; `crt`:
+`"crt"`; `watercolor`: `"watercolor"`; \}\>; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
 
 ---
 
@@ -256,6 +284,26 @@ Capability handle for renaming an Agent the owner already created.
 rename(input): Promise<{
   agentId: string;
   name: string;
+  avatar: {
+     v: z.ZodLiteral<1>;
+     character: z.ZodEnum<{
+        mushroom: "mushroom";
+        cat: "cat";
+        burger: "burger";
+     }>;
+     appearance: z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>>;
+     expression: z.ZodString;
+     renderStyle: z.ZodEnum<{
+        plain: "plain";
+        pencil: "pencil";
+        manga: "manga";
+        riso: "riso";
+        halftone: "halftone";
+        blueprint: "blueprint";
+        crt: "crt";
+        watercolor: "watercolor";
+     }>;
+  };
   sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
 }>;
 ```
@@ -270,8 +318,89 @@ Rename an existing Agent and return its updated record.
 
 ###### Returns
 
-`Promise`\<\{ `agentId`: `string`; `name`: `string`; `sessionOperations`:
-readonly (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`:
+`z.ZodLiteral`\<`1`\>; `character`: `z.ZodEnum`\<\{ `mushroom`: `"mushroom"`;
+`cat`: `"cat"`; `burger`: `"burger"`; \}\>; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `z.ZodString`; `renderStyle`:
+`z.ZodEnum`\<\{ `plain`: `"plain"`; `pencil`: `"pencil"`; `manga`: `"manga"`;
+`riso`: `"riso"`; `halftone`: `"halftone"`; `blueprint`: `"blueprint"`; `crt`:
+`"crt"`; `watercolor`: `"watercolor"`; \}\>; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+
+---
+
+### AppAgentAvatarInput
+
+```ts
+type AppAgentAvatarInput = Readonly<
+  Schema.Schema.Type<typeof appAgentAvatarInputSchema>
+>;
+```
+
+Input for changing an existing Agent's avatar.
+
+---
+
+### AppAgentAvatarHandle
+
+```ts
+type AppAgentAvatarHandle = object;
+```
+
+Capability handle for changing an Agent's avatar.
+
+#### Methods
+
+##### setAvatar()
+
+```ts
+setAvatar(input): Promise<{
+  agentId: string;
+  name: string;
+  avatar: {
+     v: z.ZodLiteral<1>;
+     character: z.ZodEnum<{
+        mushroom: "mushroom";
+        cat: "cat";
+        burger: "burger";
+     }>;
+     appearance: z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>>;
+     expression: z.ZodString;
+     renderStyle: z.ZodEnum<{
+        plain: "plain";
+        pencil: "pencil";
+        manga: "manga";
+        riso: "riso";
+        halftone: "halftone";
+        blueprint: "blueprint";
+        crt: "crt";
+        watercolor: "watercolor";
+     }>;
+  };
+  sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
+}>;
+```
+
+Set an existing Agent's avatar and return its updated record.
+
+###### Parameters
+
+| Parameter | Type                                          |
+| --------- | --------------------------------------------- |
+| `input`   | [`AppAgentAvatarInput`](#appagentavatarinput) |
+
+###### Returns
+
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`:
+`z.ZodLiteral`\<`1`\>; `character`: `z.ZodEnum`\<\{ `mushroom`: `"mushroom"`;
+`cat`: `"cat"`; `burger`: `"burger"`; \}\>; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `z.ZodString`; `renderStyle`:
+`z.ZodEnum`\<\{ `plain`: `"plain"`; `pencil`: `"pencil"`; `manga`: `"manga"`;
+`riso`: `"riso"`; `halftone`: `"halftone"`; `blueprint`: `"blueprint"`; `crt`:
+`"crt"`; `watercolor`: `"watercolor"`; \}\>; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
 
 ---
 
@@ -605,17 +734,17 @@ accepts it. Call the returned Disposer to unregister.
 
 ###### Parameters
 
-| Parameter               | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `command`               | \{ `id`: `z.ZodString`; `title`: `z.ZodString`; `category`: `z.ZodString`; `description?`: `z.ZodOptional`\<`z.ZodString`\>; `projections?`: `z.ZodOptional`\<`z.ZodObject`\<\{ `bindings`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; `values`: `z.ZodArray`\<`z.ZodString`\>; \}, `z.core.$strict`\>\>; `agent`: `z.ZodOptional`\<`z.ZodObject`\<\{ `keybind`: `z.ZodOptional`\<`z.ZodString`\>; `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `help`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `menu`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `palette`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `slash`: `z.ZodOptional`\<`z.ZodObject`\<\{ `aliases`: `z.ZodArray`\<`z.ZodString`\>; `order`: `z.ZodOptional`\<`z.ZodNumber`\>; `arguments`: `z.ZodOptional`\<`z.ZodObject`\<\{ `hint`: ...; `words`: ...; `text`: ...; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>; `action?`: `z.ZodOptional`\<`z.ZodObject`\<\{ `inputSchema`: `z.ZodOptional`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>; `outputSchema`: `z.ZodOptional`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>; `presentation`: `z.ZodOptional`\<`z.ZodUnion`\<readonly \[`z.ZodObject`\<\{ `type`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `data`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `options`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `submitLabel`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `message`: ...; `confirmLabel`: ...; `cancelLabel`: ...; \}, `z.core.$strict`\>\]\>\>; \}, `z.core.$strict`\>\>; `availability?`: `z.ZodOptional`\<`z.ZodDiscriminatedUnion`\<\[`z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"available"`\>; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"unavailable"`\>; `reason`: `z.ZodString`; \}, `z.core.$strict`\>\], `"status"`\>\>; \} |
-| `command.id`            | `z.ZodString`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `command.title`         | `z.ZodString`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `command.category`      | `z.ZodString`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `command.description?`  | `z.ZodOptional`\<`z.ZodString`\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `command.projections?`  | `z.ZodOptional`\<`z.ZodObject`\<\{ `bindings`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; `values`: `z.ZodArray`\<`z.ZodString`\>; \}, `z.core.$strict`\>\>; `agent`: `z.ZodOptional`\<`z.ZodObject`\<\{ `keybind`: `z.ZodOptional`\<`z.ZodString`\>; `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `help`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `menu`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `palette`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodNumber`\>; \}, `z.core.$strict`\>\>; `slash`: `z.ZodOptional`\<`z.ZodObject`\<\{ `aliases`: `z.ZodArray`\<`z.ZodString`\>; `order`: `z.ZodOptional`\<`z.ZodNumber`\>; `arguments`: `z.ZodOptional`\<`z.ZodObject`\<\{ `hint`: ...; `words`: ...; `text`: ...; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `command.action?`       | `z.ZodOptional`\<`z.ZodObject`\<\{ `inputSchema`: `z.ZodOptional`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>; `outputSchema`: `z.ZodOptional`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>; `presentation`: `z.ZodOptional`\<`z.ZodUnion`\<readonly \[`z.ZodObject`\<\{ `type`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `data`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `options`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `submitLabel`: ...; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `type`: ...; `message`: ...; `confirmLabel`: ...; `cancelLabel`: ...; \}, `z.core.$strict`\>\]\>\>; \}, `z.core.$strict`\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `command.availability?` | `z.ZodOptional`\<`z.ZodDiscriminatedUnion`\<\[`z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"available"`\>; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"unavailable"`\>; `reason`: `z.ZodString`; \}, `z.core.$strict`\>\], `"status"`\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `handler`               | [`AppCommandHandler`](#appcommandhandler)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Parameter               | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`               | \{ `id`: `z.ZodLazy`\<`z.ZodString`\>; `title`: `z.ZodLazy`\<`z.ZodString`\>; `category`: `z.ZodLazy`\<`z.ZodString`\>; `description?`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodString`\>\>; `projections?`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `bindings`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `values`: `z.ZodArray`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; `agent`: `z.ZodOptional`\<`z.ZodObject`\<\{ `keybind`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; `help`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `menu`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `palette`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `slash`: `z.ZodOptional`\<`z.ZodObject`\<\{ `aliases`: `z.ZodArray`\<`z.ZodLazy`\<...\>\>; `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `arguments`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>\>; `action?`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `inputSchema`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>\>; `outputSchema`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>\>; `presentation`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodUnion`\<readonly \[..., ..., ..., ..., ...\]\>\>\>; \}, `z.core.$strict`\>\>\>; `availability?`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodDiscriminatedUnion`\<\[`z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"available"`\>; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"unavailable"`\>; `reason`: `z.ZodString`; \}, `z.core.$strict`\>\], `"status"`\>\>\>; \} |
+| `command.id`            | `z.ZodLazy`\<`z.ZodString`\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `command.title`         | `z.ZodLazy`\<`z.ZodString`\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `command.category`      | `z.ZodLazy`\<`z.ZodString`\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `command.description?`  | `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodString`\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `command.projections?`  | `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `bindings`: `z.ZodOptional`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `values`: `z.ZodArray`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; `agent`: `z.ZodOptional`\<`z.ZodObject`\<\{ `keybind`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; `help`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `menu`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `palette`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `order`: `z.ZodOptional`\<...\>; \}, `z.core.$strict`\>\>\>; `slash`: `z.ZodOptional`\<`z.ZodObject`\<\{ `aliases`: `z.ZodArray`\<`z.ZodLazy`\<...\>\>; `order`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; `arguments`: `z.ZodOptional`\<`z.ZodLazy`\<...\>\>; \}, `z.core.$strict`\>\>; \}, `z.core.$strict`\>\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `command.action?`       | `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodObject`\<\{ `inputSchema`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>\>; `outputSchema`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodRecord`\<`z.ZodString`, `z.ZodJSONSchema`\>\>\>; `presentation`: `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodUnion`\<readonly \[..., ..., ..., ..., ...\]\>\>\>; \}, `z.core.$strict`\>\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `command.availability?` | `z.ZodOptional`\<`z.ZodLazy`\<`z.ZodDiscriminatedUnion`\<\[`z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"available"`\>; \}, `z.core.$strict`\>, `z.ZodObject`\<\{ `status`: `z.ZodLiteral`\<`"unavailable"`\>; `reason`: `z.ZodString`; \}, `z.core.$strict`\>\], `"status"`\>\>\>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `handler`               | [`AppCommandHandler`](#appcommandhandler)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ###### Returns
 
@@ -1745,12 +1874,104 @@ to allow the close.
 
 ---
 
+### AppCrumb
+
+```ts
+type AppCrumb = Readonly<{
+  id: string;
+  label: string;
+  siblings?: readonly Readonly<{
+    id: string;
+    label: string;
+  }>[];
+}>;
+```
+
+One place in the App's path; `siblings` makes it a switcher.
+
+---
+
+### AppHeaderCommand
+
+```ts
+type AppHeaderCommand = Readonly<{
+  id: string;
+  label: string;
+  variant?: "primary" | "outline" | "ghost";
+  tone?: "destructive";
+  disabled?: boolean;
+}>;
+```
+
+A command the App offers in its window header; the App owns its effect.
+
+---
+
+### AppHeaderStatus
+
+```ts
+type AppHeaderStatus = Readonly<{
+  id: string;
+  label: string;
+  tone?: "neutral" | "info" | "warning" | "success" | "error";
+}>;
+```
+
+A quiet fact about the view, shown as muted text with a status bead.
+
+---
+
+### AppNavigationActivation
+
+```ts
+type AppNavigationActivation =
+  | Readonly<{
+      kind: "crumb";
+      crumbId: string;
+      siblingId?: string;
+    }>
+  | Readonly<{
+      kind: "action";
+      actionId: string;
+    }>;
+```
+
+The person used a crumb (or a switcher's sibling) or a header command.
+
+---
+
+### AppNavigationActivationHandler
+
+```ts
+type AppNavigationActivationHandler = (
+  activation,
+) => boolean | Promise<boolean>;
+```
+
+Handles one activation; `true` when the App acted on it.
+
+#### Parameters
+
+| Parameter    | Type                                                  |
+| ------------ | ----------------------------------------------------- |
+| `activation` | [`AppNavigationActivation`](#appnavigationactivation) |
+
+#### Returns
+
+`boolean` \| `Promise`\<`boolean`\>
+
+---
+
 ### AppNavigationState
 
 ```ts
 type AppNavigationState = Readonly<{
   canGoBack: boolean;
   title?: string;
+  crumbs?: readonly AppCrumb[];
+  primary?: readonly AppHeaderCommand[];
+  menu?: readonly AppHeaderCommand[];
+  status?: readonly AppHeaderStatus[];
 }>;
 ```
 
@@ -1779,6 +2000,7 @@ Go back one step in the App's own history; `true` when it moved.
 type HostNavigation = Readonly<{
   publish: Promise<void>;
   onBack: Disposer;
+  onActivate: Disposer;
 }>;
 ```
 
@@ -1797,17 +2019,29 @@ type AppWindow = Readonly<{
 
 App-owned presentation policy consulted before a user closes its window.
 
+---
+
+### ResultRow
+
+```ts
+type ResultRow = Schema.Schema.Type<typeof resultRowSchemaV1>;
+```
+
+One shared result row; navigation and previews stay host-authorized.
+
 ## Variables
 
 ### FungiAuthorSchema
 
 ```ts
-const FungiAuthorSchema: ZodObject<
-  {
-    id: ZodString;
-    name: ZodString;
-  },
-  $strict
+const FungiAuthorSchema: ZodLazy<
+  ZodObject<
+    {
+      id: ZodString;
+      name: ZodString;
+    },
+    $strict
+  >
 >;
 ```
 
@@ -1818,21 +2052,23 @@ Who a Session line came from, as the admitting host authenticated them.
 ### FungiDelegationReplySchema
 
 ```ts
-const FungiDelegationReplySchema: ZodObject<
-  {
-    agentId: ZodString;
-    sessionId: ZodString;
-    commandId: ZodString;
-    outcome: ZodEnum<{
-      completed: "completed";
-      failed: "failed";
-      interrupted: "interrupted";
-      cancelled: "cancelled";
-      outcome_unknown: "outcome_unknown";
-    }>;
-    diagnostic: ZodOptional<ZodString>;
-  },
-  $strict
+const FungiDelegationReplySchema: ZodLazy<
+  ZodObject<
+    {
+      agentId: ZodLazy<ZodString>;
+      sessionId: ZodLazy<ZodString>;
+      commandId: ZodLazy<ZodString>;
+      outcome: ZodEnum<{
+        completed: "completed";
+        failed: "failed";
+        interrupted: "interrupted";
+        cancelled: "cancelled";
+        outcome_unknown: "outcome_unknown";
+      }>;
+      diagnostic: ZodOptional<ZodString>;
+    },
+    $strict
+  >
 >;
 ```
 
@@ -1845,51 +2081,81 @@ id as the sender's `agents.send` receipt.
 ### FungiMessageMetaSchema
 
 ```ts
-const FungiMessageMetaSchema: ZodObject<
-  {
-    author: ZodOptional<
-      ZodObject<
-        {
-          id: ZodString;
-          name: ZodString;
-        },
-        $strict
-      >
-    >;
-    delegation: ZodOptional<
-      ZodObject<
-        {
-          ancestors: ZodArray<ZodString>;
-          maxDepth: ZodNumber;
-          reply: ZodOptional<
-            ZodObject<
-              {
-                agentId: ZodString;
-                sessionId: ZodString;
-                commandId: ZodString;
-                outcome: ZodEnum<{
-                  completed: "completed";
-                  failed: "failed";
-                  interrupted: "interrupted";
-                  cancelled: "cancelled";
-                  outcome_unknown: "outcome_unknown";
-                }>;
-                diagnostic: ZodOptional<ZodString>;
-              },
-              $strict
-            >
-          >;
-        },
-        $strict
-      >
-    >;
-  },
-  $strict
->;
+const FungiMessageMetaSchema: ZodObject<{
+  author: ZodOptional<ZodLazy<ZodObject<{
+     id: ZodString;
+     name: ZodString;
+  }, $strict>>>;
+  delegation: ZodOptional<ZodObject<{
+     ancestors: ZodArray<ZodLazy<ZodString>>;
+     maxDepth: ZodNumber;
+     reply: ZodOptional<ZodLazy<ZodObject<{
+        agentId: ZodLazy<ZodString>;
+        sessionId: ZodLazy<ZodString>;
+        commandId: ZodLazy<ZodString>;
+        outcome: ZodEnum<{
+           completed: ...;
+           failed: ...;
+           interrupted: ...;
+           cancelled: ...;
+           outcome_unknown: ...;
+        }>;
+        diagnostic: ZodOptional<ZodString>;
+     }, $strict>>>;
+  }, $strict>>;
+}, $strict>;
 ```
 
 The metadata the host attaches to every prompt and operator line it admits.
 Shiitake stores it opaquely; the host writes it and Apps read it.
+
+---
+
+### appAgentAvatarSchema
+
+```ts
+const appAgentAvatarSchema: declare<
+  {
+    v: 1;
+    character: "mushroom" | "cat" | "burger";
+    appearance: z.ZodRecord<
+      z.ZodString,
+      z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+    >;
+    expression: string;
+    renderStyle:
+      | "plain"
+      | "pencil"
+      | "manga"
+      | "riso"
+      | "halftone"
+      | "blueprint"
+      | "crt"
+      | "watercolor";
+  },
+  {
+    v: 1;
+    character: "mushroom" | "cat" | "burger";
+    appearance: z.ZodRecord<
+      z.ZodString,
+      z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+    >;
+    expression: string;
+    renderStyle:
+      | "plain"
+      | "pencil"
+      | "manga"
+      | "riso"
+      | "halftone"
+      | "blueprint"
+      | "crt"
+      | "watercolor";
+  }
+>;
+```
+
+An Agent's avatar: Sprite's Avatar v1 envelope. Apps check its shape; the host
+owns the character-catalog refinement when it stores one.
 
 ---
 
@@ -1899,14 +2165,54 @@ Shiitake stores it opaquely; the host writes it and Apps read it.
 const appAgentSchema: Struct<{
   agentId: String;
   name: String;
+  avatar: declare<
+    {
+      v: 1;
+      character: "mushroom" | "cat" | "burger";
+      appearance: z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+      >;
+      expression: string;
+      renderStyle:
+        | "plain"
+        | "pencil"
+        | "manga"
+        | "riso"
+        | "halftone"
+        | "blueprint"
+        | "crt"
+        | "watercolor";
+    },
+    {
+      v: 1;
+      character: "mushroom" | "cat" | "burger";
+      appearance: z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+      >;
+      expression: string;
+      renderStyle:
+        | "plain"
+        | "pencil"
+        | "manga"
+        | "riso"
+        | "halftone"
+        | "blueprint"
+        | "crt"
+        | "watercolor";
+    }
+  >;
   sessionOperations: $Array<
     Literals<readonly ["agent.read", "agent.send", "agent.manage"]>
   >;
 }>;
 ```
 
-Validates the wire shape of an Agent record: its id, display name, and which
-session operations (read, send, manage) this App may perform on it.
+Validates the wire shape of an Agent record: its id, display name, avatar, and
+which session operations (read, send, manage) this App may perform on it. Every
+Agent has an avatar: the one its owner chose, else Sprite's
+`seededAvatar(agentId)`. Conversations carry none of their own.
 
 ---
 
@@ -1917,11 +2223,51 @@ const appAgentCreateInputSchema: Struct<{
   name: String;
   requestId: String;
   computer: optionalKey<Literals<readonly ["new", "none"]>>;
+  avatar: optionalKey<
+    declare<
+      {
+        v: 1;
+        character: "mushroom" | "cat" | "burger";
+        appearance: z.ZodRecord<
+          z.ZodString,
+          z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+        >;
+        expression: string;
+        renderStyle:
+          | "plain"
+          | "pencil"
+          | "manga"
+          | "riso"
+          | "halftone"
+          | "blueprint"
+          | "crt"
+          | "watercolor";
+      },
+      {
+        v: 1;
+        character: "mushroom" | "cat" | "burger";
+        appearance: z.ZodRecord<
+          z.ZodString,
+          z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+        >;
+        expression: string;
+        renderStyle:
+          | "plain"
+          | "pencil"
+          | "manga"
+          | "riso"
+          | "halftone"
+          | "blueprint"
+          | "crt"
+          | "watercolor";
+      }
+    >
+  >;
 }>;
 ```
 
-Validates Agent creation input: a name, a caller-chosen request id and an
-optional Computer provisioning choice.
+Validates Agent creation input: a name, a caller-chosen request id, an optional
+Computer provisioning choice and an optional chosen avatar.
 
 ---
 
@@ -1970,26 +2316,89 @@ Owner-only capability to rename an existing Agent; not every host grants it.
 
 ---
 
+### appAgentAvatarInputSchema
+
+```ts
+const appAgentAvatarInputSchema: Struct<{
+  agentId: String;
+  avatar: declare<
+    {
+      v: 1;
+      character: "mushroom" | "cat" | "burger";
+      appearance: z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+      >;
+      expression: string;
+      renderStyle:
+        | "plain"
+        | "pencil"
+        | "manga"
+        | "riso"
+        | "halftone"
+        | "blueprint"
+        | "crt"
+        | "watercolor";
+    },
+    {
+      v: 1;
+      character: "mushroom" | "cat" | "burger";
+      appearance: z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+      >;
+      expression: string;
+      renderStyle:
+        | "plain"
+        | "pencil"
+        | "manga"
+        | "riso"
+        | "halftone"
+        | "blueprint"
+        | "crt"
+        | "watercolor";
+    }
+  >;
+}>;
+```
+
+Validates avatar input: the target Agent and the avatar it now wears.
+
+---
+
+### agentAvatar
+
+```ts
+const agentAvatar: CapabilityContract<AppAgentAvatarHandle>;
+```
+
+Owner-only capability to change an existing Agent's avatar; not every host
+grants it.
+
+---
+
 ### appAgentToolPolicyStatusSchema
 
 ```ts
-const appAgentToolPolicyStatusSchema: ZodUnion<
-  readonly [
-    ZodObject<
-      {
-        status: ZodLiteral<"pending">;
-        revision: ZodString;
-      },
-      $strip
-    >,
-    ZodObject<
-      {
-        status: ZodLiteral<"approved">;
-        revision: ZodString;
-      },
-      $strip
-    >,
-  ]
+const appAgentToolPolicyStatusSchema: ZodLazy<
+  ZodUnion<
+    readonly [
+      ZodObject<
+        {
+          status: ZodLiteral<"pending">;
+          revision: ZodString;
+        },
+        $strip
+      >,
+      ZodObject<
+        {
+          status: ZodLiteral<"approved">;
+          revision: ZodString;
+        },
+        $strip
+      >,
+    ]
+  >
 >;
 ```
 
@@ -2000,33 +2409,37 @@ One Agent's App-tool policy, as the owner-only policy capability reports it.
 ### appAgentToolPolicyResultSchema
 
 ```ts
-const appAgentToolPolicyResultSchema: ZodUnion<
-  readonly [
-    ZodUnion<
-      readonly [
-        ZodObject<
-          {
-            status: ZodLiteral<"pending">;
-            revision: ZodString;
-          },
-          $strip
-        >,
-        ZodObject<
-          {
-            status: ZodLiteral<"approved">;
-            revision: ZodString;
-          },
-          $strip
-        >,
-      ]
-    >,
-    ZodObject<
-      {
-        error: ZodString;
-      },
-      $strip
-    >,
-  ]
+const appAgentToolPolicyResultSchema: ZodLazy<
+  ZodUnion<
+    readonly [
+      ZodLazy<
+        ZodUnion<
+          readonly [
+            ZodObject<
+              {
+                status: ZodLiteral<"pending">;
+                revision: ZodString;
+              },
+              $strip
+            >,
+            ZodObject<
+              {
+                status: ZodLiteral<"approved">;
+                revision: ZodString;
+              },
+              $strip
+            >,
+          ]
+        >
+      >,
+      ZodObject<
+        {
+          error: ZodString;
+        },
+        $strip
+      >,
+    ]
+  >
 >;
 ```
 
@@ -2406,6 +2819,66 @@ The longest page title a host shows beside the App's own name.
 
 ---
 
+### APP\_NAVIGATION\_CRUMBS\_MAX
+
+```ts
+const APP_NAVIGATION_CRUMBS_MAX: 8 = 8;
+```
+
+The most crumbs one navigation report may carry.
+
+---
+
+### APP\_NAVIGATION\_SIBLINGS\_MAX
+
+```ts
+const APP_NAVIGATION_SIBLINGS_MAX: 16 = 16;
+```
+
+The most siblings one switcher crumb may offer.
+
+---
+
+### APP\_NAVIGATION\_PRIMARY\_MAX
+
+```ts
+const APP_NAVIGATION_PRIMARY_MAX: 3 = 3;
+```
+
+The most primary header commands one report may carry.
+
+---
+
+### APP\_NAVIGATION\_STATUS\_MAX
+
+```ts
+const APP_NAVIGATION_STATUS_MAX: 4 = 4;
+```
+
+The most header status facts one report may carry.
+
+---
+
+### APP\_NAVIGATION\_MENU\_MAX
+
+```ts
+const APP_NAVIGATION_MENU_MAX: 12 = 12;
+```
+
+The most ⋯ menu commands one report may carry.
+
+---
+
+### APP\_NAVIGATION\_LABEL\_MAX
+
+```ts
+const APP_NAVIGATION_LABEL_MAX: 80 = 80;
+```
+
+The longest crumb or command label a host shows.
+
+---
+
 ### inertHostNavigation
 
 ```ts
@@ -2414,6 +2887,59 @@ const inertHostNavigation: HostNavigation;
 
 Navigation for a root with no host chrome, such as a workbench fixture: it
 accepts every report and never asks the App to go back.
+
+---
+
+### resultRowSchemaV1
+
+```ts
+const resultRowSchemaV1: Schema.Struct<{
+  media: Schema.optional<
+    Schema.Struct<{
+      path: Schema.String;
+      format: Schema.Literals<readonly ["fungi:image", "fungi:video"]>;
+    }>
+  >;
+  id: Schema.String;
+  title: Schema.String;
+  detail: Schema.optional<Schema.String>;
+  tone: Schema.optional<
+    Schema.Literals<
+      readonly ["attention", "running", "error", "settled", "muted"]
+    >
+  >;
+  status: Schema.optional<
+    Schema.Struct<{
+      label: Schema.String;
+      tone: Schema.Literals<
+        readonly [
+          "neutral",
+          "primary",
+          "secondary",
+          "accent",
+          "success",
+          "info",
+          "warning",
+          "error",
+        ]
+      >;
+    }>
+  >;
+  open: Schema.optional<
+    Schema.Struct<{
+      params: Schema.$Array<
+        Schema.Struct<{
+          key: Schema.String;
+          value: Schema.String;
+        }>
+      >;
+    }>
+  >;
+}>;
+```
+
+A finished App call as a person reads it: a shared row plus an optional
+thumbnail.
 
 ## Functions
 
@@ -2529,6 +3055,24 @@ function renameAppAgent(
 ): Promise<{
   agentId: string;
   name: string;
+  avatar: {
+    v: 1;
+    character: "mushroom" | "cat" | "burger";
+    appearance: z.ZodRecord<
+      z.ZodString,
+      z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+    >;
+    expression: string;
+    renderStyle:
+      | "plain"
+      | "pencil"
+      | "manga"
+      | "riso"
+      | "halftone"
+      | "blueprint"
+      | "crt"
+      | "watercolor";
+  };
   sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
 }>;
 ```
@@ -2544,8 +3088,65 @@ Rename an Agent through the host-granted owner-only capability.
 
 #### Returns
 
-`Promise`\<\{ `agentId`: `string`; `name`: `string`; `sessionOperations`:
-readonly (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`: `1`;
+`character`: `"mushroom"` \| `"cat"` \| `"burger"`; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `string`; `renderStyle`: \|
+`"plain"` \| `"pencil"` \| `"manga"` \| `"riso"` \| `"halftone"` \|
+`"blueprint"` \| `"crt"` \| `"watercolor"`; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+
+---
+
+### setAppAgentAvatar()
+
+```ts
+function setAppAgentAvatar(
+  capabilities,
+  input,
+): Promise<{
+  agentId: string;
+  name: string;
+  avatar: {
+    v: 1;
+    character: "mushroom" | "cat" | "burger";
+    appearance: z.ZodRecord<
+      z.ZodString,
+      z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+    >;
+    expression: string;
+    renderStyle:
+      | "plain"
+      | "pencil"
+      | "manga"
+      | "riso"
+      | "halftone"
+      | "blueprint"
+      | "crt"
+      | "watercolor";
+  };
+  sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
+}>;
+```
+
+Change an Agent's avatar through the host-granted owner-only capability.
+
+#### Parameters
+
+| Parameter      | Type                                          |
+| -------------- | --------------------------------------------- |
+| `capabilities` | [`CapabilityDirectory`](#capabilitydirectory) |
+| `input`        | [`AppAgentAvatarInput`](#appagentavatarinput) |
+
+#### Returns
+
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`: `1`;
+`character`: `"mushroom"` \| `"cat"` \| `"burger"`; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `string`; `renderStyle`: \|
+`"plain"` \| `"pencil"` \| `"manga"` \| `"riso"` \| `"halftone"` \|
+`"blueprint"` \| `"crt"` \| `"watercolor"`; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
 
 ---
 
@@ -2578,6 +3179,24 @@ function createAppAgent(
 ): Promise<{
   agentId: string;
   name: string;
+  avatar: {
+    v: 1;
+    character: "mushroom" | "cat" | "burger";
+    appearance: z.ZodRecord<
+      z.ZodString,
+      z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+    >;
+    expression: string;
+    renderStyle:
+      | "plain"
+      | "pencil"
+      | "manga"
+      | "riso"
+      | "halftone"
+      | "blueprint"
+      | "crt"
+      | "watercolor";
+  };
   sessionOperations: readonly ("agent.manage" | "agent.read" | "agent.send")[];
 }>;
 ```
@@ -2593,8 +3212,13 @@ Create an Agent through the Team directory selected by the host.
 
 #### Returns
 
-`Promise`\<\{ `agentId`: `string`; `name`: `string`; `sessionOperations`:
-readonly (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+`Promise`\<\{ `agentId`: `string`; `name`: `string`; `avatar`: \{ `v`: `1`;
+`character`: `"mushroom"` \| `"cat"` \| `"burger"`; `appearance`:
+`z.ZodRecord`\<`z.ZodString`, `z.ZodUnion`\<readonly \[`z.ZodString`,
+`z.ZodNumber`, `z.ZodBoolean`\]\>\>; `expression`: `string`; `renderStyle`: \|
+`"plain"` \| `"pencil"` \| `"manga"` \| `"riso"` \| `"halftone"` \|
+`"blueprint"` \| `"crt"` \| `"watercolor"`; \}; `sessionOperations`: readonly
+(`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
 
 ---
 
@@ -2814,6 +3438,29 @@ this rule against its own latest copy of the items.
 | --------- | -------------------------------------------- |
 | `items`   | readonly [`AppStatusItem`](#appstatusitem)[] |
 | `action`  | [`AppStatusAction`](#appstatusaction)        |
+
+#### Returns
+
+`boolean`
+
+---
+
+### navigationActivationAllowed()
+
+```ts
+function navigationActivationAllowed(state, activation): boolean;
+```
+
+Whether an activation names something the App published now: a crumb (and its
+sibling), or an enabled command. Every hop applies this rule against its own
+latest copy of the report, so a stale shell cannot reach the App.
+
+#### Parameters
+
+| Parameter    | Type                                                  |
+| ------------ | ----------------------------------------------------- |
+| `state`      | [`AppNavigationState`](#appnavigationstate)           |
+| `activation` | [`AppNavigationActivation`](#appnavigationactivation) |
 
 #### Returns
 

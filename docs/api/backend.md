@@ -215,19 +215,21 @@ Bound on the App-authored refusal message that reaches callers.
 ### appMethodRefusedReplySchema
 
 ```ts
-const appMethodRefusedReplySchema: ZodObject<
-  {
-    kind: ZodLiteral<"refused">;
-    code: ZodEnum<{
-      unavailable: "unavailable";
-      invalid: "invalid";
-      conflict: "conflict";
-      forbidden: "forbidden";
-      not_found: "not_found";
-    }>;
-    message: ZodString;
-  },
-  $strict
+const appMethodRefusedReplySchema: ZodLazy<
+  ZodObject<
+    {
+      kind: ZodLiteral<"refused">;
+      code: ZodEnum<{
+        unavailable: "unavailable";
+        invalid: "invalid";
+        conflict: "conflict";
+        forbidden: "forbidden";
+        not_found: "not_found";
+      }>;
+      message: ZodString;
+    },
+    $strict
+  >
 >;
 ```
 
@@ -238,31 +240,35 @@ A refused call as it crosses the generated method boundary.
 ### appMethodReplySchema
 
 ```ts
-const appMethodReplySchema: ZodDiscriminatedUnion<
-  [
-    ZodObject<
-      {
-        kind: ZodLiteral<"ok">;
-        value: ZodJSONSchema;
-      },
-      $strict
-    >,
-    ZodObject<
-      {
-        kind: ZodLiteral<"refused">;
-        code: ZodEnum<{
-          unavailable: "unavailable";
-          invalid: "invalid";
-          conflict: "conflict";
-          forbidden: "forbidden";
-          not_found: "not_found";
-        }>;
-        message: ZodString;
-      },
-      $strict
-    >,
-  ],
-  "kind"
+const appMethodReplySchema: ZodLazy<
+  ZodDiscriminatedUnion<
+    [
+      ZodObject<
+        {
+          kind: ZodLiteral<"ok">;
+          value: ZodJSONSchema;
+        },
+        $strict
+      >,
+      ZodLazy<
+        ZodObject<
+          {
+            kind: ZodLiteral<"refused">;
+            code: ZodEnum<{
+              unavailable: "unavailable";
+              invalid: "invalid";
+              conflict: "conflict";
+              forbidden: "forbidden";
+              not_found: "not_found";
+            }>;
+            message: ZodString;
+          },
+          $strict
+        >
+      >,
+    ],
+    "kind"
+  >
 >;
 ```
 

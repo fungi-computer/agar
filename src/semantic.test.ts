@@ -254,6 +254,73 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
       { canGoBack: true, title: "Leaderboard" },
       { canGoBack: false },
     ]);
+    const crumbs = [
+      { id: "app", label: "Trellis" },
+      {
+        id: "wf",
+        label: "Storyboard",
+        siblings: [{ id: "b", label: "Other" }],
+      },
+    ];
+    await root.window.navigation.publish({
+      canGoBack: false,
+      crumbs,
+      primary: [{ id: "run", label: "Run", variant: "primary" }],
+      menu: [{ id: "fork", label: "Fork", disabled: true }],
+      status: [{ id: "valid", label: "Valid", tone: "success" }],
+    });
+    expect(reports.pop()).toEqual({
+      canGoBack: false,
+      crumbs,
+      primary: [{ id: "run", label: "Run", variant: "primary" }],
+      menu: [{ id: "fork", label: "Fork", disabled: true }],
+      status: [{ id: "valid", label: "Valid", tone: "success" }],
+    });
+    const activated: unknown[] = [];
+    await expect(
+      mounted.activateNavigation({ kind: "crumb", crumbId: "app" }),
+    ).resolves.toBe(false);
+    const releaseActivation = root.window.navigation.onActivate(
+      (activation) => {
+        activated.push(activation);
+        return true;
+      },
+    );
+    expect(() => root.window.navigation.onActivate(() => false)).toThrow();
+    await expect(
+      mounted.activateNavigation({
+        kind: "crumb",
+        crumbId: "wf",
+        siblingId: "b",
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      mounted.activateNavigation({ kind: "action", actionId: "run" }),
+    ).resolves.toBe(true);
+    // Stale or disabled targets never reach the App.
+    for (const stale of [
+      { kind: "crumb", crumbId: "gone" },
+      { kind: "crumb", crumbId: "wf", siblingId: "nope" },
+      { kind: "action", actionId: "fork" },
+      { kind: "action", actionId: "gone" },
+    ] as const)
+      await expect(mounted.activateNavigation(stale)).resolves.toBe(false);
+    expect(activated).toEqual([
+      { kind: "crumb", crumbId: "wf", siblingId: "b" },
+      { kind: "action", actionId: "run" },
+    ]);
+    releaseActivation();
+    await expect(
+      root.window.navigation.publish({
+        canGoBack: false,
+        crumbs: [
+          crumbs[0] ?? { id: "x", label: "x" },
+          crumbs[0] ?? { id: "x", label: "x" },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
+    await root.window.navigation.publish({ canGoBack: false });
+    reports.pop();
     await expect(
       root.window.navigation.publish({
         canGoBack: true,

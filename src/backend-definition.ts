@@ -1,5 +1,5 @@
 import * as z from "zod";
-import type { GillCall, GillReply } from "@fungi.computer/gills";
+import type { GillCall, GillReply, ResultRow } from "@fungi.computer/gills";
 import type { AppBackendGill } from "./gills.js";
 export type { AppBackendGill } from "./gills.js";
 import {
@@ -24,10 +24,12 @@ export { pending, pendingSchema, type Pending } from "./pending.js";
 export const appEventEmitResultSchema = z.undefined();
 
 /** App-originated Session send refusal; retry advice is a duration, not a timestamp. */
-export const appSendBudgetRefusalSchema = z.strictObject({
-  error: z.literal("send_budget_exceeded"),
-  retryAfterMs: z.number().int().min(1).max(60_000),
-});
+export const appSendBudgetRefusalSchema = z.lazy(() =>
+  z.strictObject({
+    error: z.literal("send_budget_exceeded"),
+    retryAfterMs: z.number().int().min(1).max(60_000),
+  }),
+);
 /** A declined Session send, with how long to wait before retrying. */
 export type AppSendBudgetRefusal = z.output<typeof appSendBudgetRefusalSchema>;
 
@@ -42,13 +44,45 @@ export type MethodPolicy = Readonly<{
   anonymous?: true;
   /** Allow the shared Pending result while this method is still working. */
   pending?: true;
+  /** Past tense for timelines ("made", "wrote"); the row itself comes from {@link MethodPresentation}. */
+  present?: Readonly<{ verb: string }>;
 }>;
+
+/** Decodes and bounds result rows; see `resultRows` in `@fungi.computer/agar/method-presentation`. */
+export type ResultRowCodec = Readonly<{
+  /** Check one projected row against the shared row's bounds; throws when it breaks them. */
+  decode: (row: ResultRow) => ResultRow;
+  /** The row's JSON boundary, as the generated `present` method's output. */
+  schema: z.ZodType;
+}>;
+
+/**
+ * How a finished call reads to a person: a pure projection run in the App
+ * backend. `rows` is `resultRows` from
+ * `@fungi.computer/agar/method-presentation`; only a backend that presents
+ * imports it, so one without presentations carries no row decoder.
+ */
+export type MethodPresentation<I, O> = Readonly<{
+  /** Past tense for timelines: "made", "wrote", "pushed". */
+  verb: string;
+  /** Pure: one finished call to the row a person reads. */
+  row: (call: Readonly<{ input: I; output: O }>) => ResultRow;
+  /** The shared row codec, `resultRows`. */
+  rows: ResultRowCodec;
+}>;
+
+/** Name of the generated, hidden read method that projects a finished call into its row. */
+export const presentMethodName = "present";
 
 /** Prepared method export consumed by the backend and its build. */
 export type AppBackendMethod<Context = void> = Readonly<{
   policy: MethodPolicy;
   input: z.ZodType;
   output: z.ZodType;
+  /** Parse a recorded call against this method's schemas and project its row. */
+  present?: (input: WhistleJsonValue, output: WhistleJsonValue) => ResultRow;
+  /** The row's JSON boundary, present exactly when `present` is. */
+  presentRow?: z.ZodType;
   /** Parse the raw input, run the handler, and return its JSON result. */
   call: (
     input: WhistleJsonValue,
@@ -57,15 +91,21 @@ export type AppBackendMethod<Context = void> = Readonly<{
   ) => Promise<WhistleJsonValue>;
 }>;
 
+/** The prepared methods of one backend, keyed by their public names. */
+export type AppBackendMethods<Context = void> = Readonly<
+  Record<string, AppBackendMethod<Context>>
+>;
+
 /** Define a typed method once; neither discovery nor builds execute its handler. */
 export function defineAppMethod<
   I extends z.ZodType,
   O extends z.ZodType,
   Context = void,
 >(
-  method: MethodPolicy & {
+  method: Omit<MethodPolicy, "present"> & {
     input: I;
     output: O;
+    present?: MethodPresentation<z.output<I>, z.output<O>>;
   } & (
       | {
           pending: true;
@@ -97,16 +137,38 @@ export function defineAppMethod<
   if (method.pending === true) policy = { ...policy, pending: true };
   if (method.hidden === true) policy = { ...policy, hidden: true };
   if (method.anonymous === true) policy = { ...policy, anonymous: true };
+  const call: AppBackendMethod<Context>["call"] = async (
+    rawInput,
+    context,
+    rawCaller,
+  ) => {
+    const caller = parseAppMethodCallContext(rawCaller);
+    const parsed = method.input.parse(rawInput);
+    const result = await method.handler(parsed, context, caller);
+    return z.json().parse(output.parse(result));
+  };
+  const presentation = method.present;
+  if (presentation === undefined)
+    return Object.freeze({
+      policy: Object.freeze(policy),
+      input: method.input,
+      output,
+      call,
+    });
+  policy = { ...policy, present: Object.freeze({ verb: presentation.verb }) };
   return Object.freeze({
     policy: Object.freeze(policy),
     input: method.input,
     output,
-    call: async (rawInput, context, rawCaller) => {
-      const caller = parseAppMethodCallContext(rawCaller);
-      const parsed = method.input.parse(rawInput);
-      const result = await method.handler(parsed, context, caller);
-      return z.json().parse(output.parse(result));
-    },
+    present: (rawInput: WhistleJsonValue, rawOutput: WhistleJsonValue) =>
+      presentation.rows.decode(
+        presentation.row({
+          input: method.input.parse(rawInput),
+          output: method.output.parse(rawOutput),
+        }),
+      ),
+    presentRow: presentation.rows.schema,
+    call,
   });
 }
 
@@ -166,6 +228,61 @@ async function methodReply(
   }
 }
 
+const presentInput = z.strictObject({
+  method: z.string().min(1).max(80),
+  input: z.json(),
+  output: z.json(),
+});
+
+const generatedPresentMethods = new WeakSet<object>();
+
+/**
+ * Methods that declare a presentation share one generated, hidden read method
+ * that projects a recorded call into its row, so hosts reach it through the
+ * ordinary method admission instead of a second invocation path.
+ */
+function withPresentation<Context>(all: AppBackendMethods<Context>) {
+  // A backend rebuilt from another definition's methods regenerates its own.
+  const methods = Object.fromEntries(
+    Object.entries(all).filter(
+      ([name, method]) =>
+        name !== presentMethodName || !generatedPresentMethods.has(method),
+    ),
+  );
+  const presenting = new Map(
+    Object.entries(methods).filter(
+      ([, method]) => method.present !== undefined,
+    ),
+  );
+  const presentRow = [...presenting.values()][0]?.presentRow;
+  if (presentRow === undefined) return methods;
+  if (Object.hasOwn(methods, presentMethodName))
+    throw new Error(`App backend method is reserved: ${presentMethodName}`);
+  const present: AppBackendMethod<Context> = Object.freeze({
+    policy: Object.freeze({
+      description:
+        "Project one finished call of a presenting method into its result row.",
+      effect: "read" as const,
+      requires: Object.freeze([]),
+      hidden: true as const,
+    }),
+    input: presentInput,
+    output: presentRow,
+    call: (rawInput) =>
+      Promise.resolve().then(() => {
+        const request = presentInput.parse(rawInput);
+        const row = presenting
+          .get(request.method)
+          ?.present?.(request.input, request.output);
+        if (row === undefined)
+          throw new Error(`Undeclared App presentation: ${request.method}`);
+        return z.json().parse(presentRow.parse(row));
+      }),
+  });
+  generatedPresentMethods.add(present);
+  return { ...methods, [presentMethodName]: present };
+}
+
 /** Generate the API from the method exports; callers cannot supply a second catalog. */
 export function defineAppBackend<Context = void>(
   options: Readonly<{
@@ -176,7 +293,8 @@ export function defineAppBackend<Context = void>(
     toolFamily?: AppBackendDefinition<Context>["toolFamily"];
   }>,
 ): AppBackendDefinition<Context> {
-  const methods = new Map(Object.entries(options.methods));
+  const declared = withPresentation(options.methods);
+  const methods = new Map(Object.entries(declared));
   for (const name of methods.keys())
     if (!isAppApiMethodName(name))
       throw new Error(`Invalid App backend method name: ${name}`);
@@ -236,7 +354,7 @@ export function defineAppBackend<Context = void>(
     });
   };
   let definition: AppBackendDefinition<Context> = {
-    methods: Object.freeze({ ...options.methods }),
+    methods: Object.freeze({ ...declared }),
     implement: <C extends AppBackendClass>(implementation: C): C => {
       const members = new Map<string, PropertyDescriptor>();
       let prototype: object | null = implementation.prototype;

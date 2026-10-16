@@ -128,13 +128,17 @@ export const marketplaceBrowse: CapabilityContract<{
 }> = defineCapability(
   "marketplace.browse",
   1,
-  rpcHandleSchema({
-    list: rpcMethod(
-      rpcDataSchema(
-        z.unknown().transform((value) => decodeMarketplaceBrowseResult(value)),
+  z.lazy(() =>
+    rpcHandleSchema({
+      list: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) => decodeMarketplaceBrowseResult(value)),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 /**
@@ -149,17 +153,19 @@ export const marketplacePurchase: CapabilityContract<{
 }> = defineCapability(
   "marketplace.purchase",
   1,
-  rpcHandleSchema({
-    acquire: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(marketplaceAcquisitionSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      acquire: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(marketplaceAcquisitionSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 /** Anonymous discovery only; acquisition and launch still require Team admission. */

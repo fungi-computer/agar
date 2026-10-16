@@ -25,7 +25,7 @@ One canonical identity for a retryable Media operation.
 ### mediaRequestIdSchema
 
 ```ts
-const mediaRequestIdSchema: ZodString;
+const mediaRequestIdSchema: ZodLazy<ZodString>;
 ```
 
 Public wire grammar for the canonical retry identity, visible in App JSON

@@ -1,35 +1,39 @@
 import * as z from "zod";
 
 /** Who a Session line came from, as the admitting host authenticated them. */
-export const FungiAuthorSchema = z.strictObject({
-  id: z.string().min(1).max(256),
-  name: z.string().min(1).max(128),
-});
+export const FungiAuthorSchema = z.lazy(() =>
+  z.strictObject({
+    id: z.string().min(1).max(256),
+    name: z.string().min(1).max(128),
+  }),
+);
 /** Who a Session line came from, as the admitting host authenticated them. */
 export type FungiAuthor = z.infer<typeof FungiAuthorSchema>;
 
-const identifier = z.string().min(1).max(256);
+const identifier = z.lazy(() => z.string().min(1).max(256));
 
 /**
  * A delegated Agent's reply as the admitting host authenticated it against the
  * mail it sent. `commandId` is the replying Session's accepted command, the
  * same id as the sender's `agents.send` receipt.
  */
-export const FungiDelegationReplySchema = z.strictObject({
-  agentId: identifier,
-  sessionId: identifier,
-  commandId: identifier,
-  /** The exact settlement outcome; failures are never collapsed. */
-  outcome: z.enum([
-    "completed",
-    "failed",
-    "interrupted",
-    "cancelled",
-    "outcome_unknown",
-  ]),
-  /** Bounded, single-line terminal diagnostic for work that did not complete. */
-  diagnostic: z.string().min(1).max(200).optional(),
-});
+export const FungiDelegationReplySchema = z.lazy(() =>
+  z.strictObject({
+    agentId: identifier,
+    sessionId: identifier,
+    commandId: identifier,
+    /** The exact settlement outcome; failures are never collapsed. */
+    outcome: z.enum([
+      "completed",
+      "failed",
+      "interrupted",
+      "cancelled",
+      "outcome_unknown",
+    ]),
+    /** Bounded, single-line terminal diagnostic for work that did not complete. */
+    diagnostic: z.string().min(1).max(200).optional(),
+  }),
+);
 /** A delegated Agent's reply as the admitting host authenticated it. */
 export type FungiDelegationReply = z.infer<typeof FungiDelegationReplySchema>;
 

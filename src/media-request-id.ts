@@ -12,7 +12,9 @@ export const mediaRequestIds = defineIdFamily({
 });
 
 /** Public wire grammar for the canonical retry identity, visible in App JSON schemas. */
-export const mediaRequestIdSchema = z
-  .string()
-  .length(35)
-  .regex(/^media_request_[a-z0-9]{21}$/);
+export const mediaRequestIdSchema = z.lazy(() =>
+  z
+    .string()
+    .length(35)
+    .regex(/^media_request_[a-z0-9]{21}$/),
+);

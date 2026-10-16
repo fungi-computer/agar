@@ -44,17 +44,19 @@ export const computerList: CapabilityContract<{
 }> = defineCapability(
   "computer.list",
   1,
-  rpcHandleSchema({
-    list: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerListingSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      list: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerListingSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 export const computerRuntimeStateSchema = Schema.Union([
@@ -114,17 +116,19 @@ export const computerInstrumentRead: CapabilityContract<{
 }> = defineCapability(
   "computer.instrument.read",
   1,
-  rpcHandleSchema({
-    read: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerInstrumentSnapshotSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      read: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerInstrumentSnapshotSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 export const computerInstrumentControl: CapabilityContract<{
@@ -134,37 +138,39 @@ export const computerInstrumentControl: CapabilityContract<{
 }> = defineCapability(
   "computer.instrument.control",
   1,
-  rpcHandleSchema({
-    start: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerRuntimeStateSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      start: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerRuntimeStateSchema)(value),
+            ),
+        ),
       ),
-    ),
-    setInternetAccess: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerInternetAccessSchema)(value),
-          ),
+      setInternetAccess: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerInternetAccessSchema)(value),
+            ),
+        ),
       ),
-    ),
-    detachLocal: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(
-              Schema.Struct({ detached: Schema.Boolean }),
-            )(value),
-          ),
+      detachLocal: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(
+                Schema.Struct({ detached: Schema.Boolean }),
+              )(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 export async function readComputerInstrument(
@@ -266,35 +272,37 @@ export const computerPorts: CapabilityContract<{
 }> = defineCapability(
   "computer.ports",
   2,
-  rpcHandleSchema({
-    list: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerPortsResultSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      list: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerPortsResultSchema)(value),
+            ),
+        ),
       ),
-    ),
-    expose: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerPortExposureSchema)(value),
-          ),
+      expose: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerPortExposureSchema)(value),
+            ),
+        ),
       ),
-    ),
-    unexpose: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerPortRemovalSchema)(value),
-          ),
+      unexpose: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerPortRemovalSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 /** Decode exposed ports at the SDK boundary. */
@@ -410,35 +418,37 @@ export const computerProcesses: CapabilityContract<{
 }> = defineCapability(
   "computer.processes",
   1,
-  rpcHandleSchema({
-    start: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerProcessSchema)(value),
-          ),
+  z.lazy(() =>
+    rpcHandleSchema({
+      start: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerProcessSchema)(value),
+            ),
+        ),
       ),
-    ),
-    list: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerProcessesSchema)(value),
-          ),
+      list: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerProcessesSchema)(value),
+            ),
+        ),
       ),
-    ),
-    kill: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerProcessKillSchema)(value),
-          ),
+      kill: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerProcessKillSchema)(value),
+            ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 /** Decode the Computer owner's process inventory at the App boundary. */
@@ -465,14 +475,16 @@ export const computerReadFile: CapabilityContract<{
 }> = defineCapability(
   "computer.readFile",
   1,
-  rpcHandleSchema({
-    open: rpcMethod(
-      rpcHandleSchema({
-        response: rpcMethod(z.instanceof(Response)),
-        close: rpcVoid,
-      }),
-    ),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(
+        rpcHandleSchema({
+          response: rpcMethod(z.instanceof(Response)),
+          close: rpcVoid,
+        }),
+      ),
+    }),
+  ),
 );
 
 /** The caller receives native file bytes; HTTP details stay in the SDK adapter. */
@@ -506,21 +518,23 @@ export const computerWriteFile: CapabilityContract<{
 }> = defineCapability(
   "computer.writeFile",
   3,
-  rpcHandleSchema({
-    open: rpcMethod(rpcHandleSchema({ write: rpcVoid, close: rpcVoid })),
-    mkdir: rpcVoid,
-    replace: rpcMethod(
-      rpcDataSchema(
-        z
-          .unknown()
-          .transform((value) =>
-            Schema.decodeUnknownSync(computerFileReplacementOutcomeSchema)(
-              value,
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(rpcHandleSchema({ write: rpcVoid, close: rpcVoid })),
+      mkdir: rpcVoid,
+      replace: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerFileReplacementOutcomeSchema)(
+                value,
+              ),
             ),
-          ),
+        ),
       ),
-    ),
-  }),
+    }),
+  ),
 );
 
 export type ComputerFileReplacementInput = Readonly<{
@@ -600,37 +614,39 @@ export const computerTerminal: CapabilityContract<{
 }> = defineCapability(
   "computer.terminal",
   2,
-  rpcHandleSchema({
-    open: rpcMethod(
-      rpcHandleSchema({
-        information: rpcMethod(
-          rpcDataSchema(
-            z
-              .unknown()
-              .transform((value) =>
-                Schema.decodeUnknownSync(computerTerminalInformationSchema)(
-                  value,
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcMethod(
+        rpcHandleSchema({
+          information: rpcMethod(
+            rpcDataSchema(
+              z
+                .unknown()
+                .transform((value) =>
+                  Schema.decodeUnknownSync(computerTerminalInformationSchema)(
+                    value,
+                  ),
                 ),
-              ),
-          ),
-        ),
-        output: rpcMethod(
-          z.instanceof(ReadableStream).transform((stream) =>
-            stream.pipeThrough(
-              new TransformStream<unknown, Uint8Array>({
-                transform(chunk, controller) {
-                  controller.enqueue(z.instanceof(Uint8Array).parse(chunk));
-                },
-              }),
             ),
           ),
-        ),
-        input: rpcMethod(z.instanceof(WritableStream)),
-        resize: rpcVoid,
-        close: rpcVoid,
-      }),
-    ),
-  }),
+          output: rpcMethod(
+            z.instanceof(ReadableStream).transform((stream) =>
+              stream.pipeThrough(
+                new TransformStream<unknown, Uint8Array>({
+                  transform(chunk, controller) {
+                    controller.enqueue(z.instanceof(Uint8Array).parse(chunk));
+                  },
+                }),
+              ),
+            ),
+          ),
+          input: rpcMethod(z.instanceof(WritableStream)),
+          resize: rpcVoid,
+          close: rpcVoid,
+        }),
+      ),
+    }),
+  ),
 );
 
 /** Open one host-owned terminal and bind its lifetime to the mounted App. */

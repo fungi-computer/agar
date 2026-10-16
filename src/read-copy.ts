@@ -103,18 +103,19 @@ export function countingGit(
       Object.fromEntries(counts),
   };
 }
-const rowSchema = z.strictObject({
-  head: gitSha1Schema.nullable(),
-  version: z.number().int(),
-  revision: z.number().int(),
-  value: z.string().nullable(),
-});
+const rowSchema = z.lazy(() =>
+  z.strictObject({
+    head: gitSha1Schema.nullable(),
+    version: z.number().int(),
+    revision: z.number().int(),
+    value: z.string().nullable(),
+  }),
+);
 const name = z.string().min(1).max(1024);
 const zero = "0".repeat(40);
-const blobHash = z.union([
-  gitSha1Schema,
-  z.string().regex(/^sha256:[0-9a-f]{64}$/),
-]);
+const blobHash = z.lazy(() =>
+  z.union([gitSha1Schema, z.string().regex(/^sha256:[0-9a-f]{64}$/)]),
+);
 
 /** Own bounded rows and content-addressed bytes in the App facet, not a host/provider cache. */
 export function createReadCopies(sql: ReadCopySql, limits: ReadCopyLimits) {

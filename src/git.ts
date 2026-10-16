@@ -24,17 +24,19 @@ export type GitRepositoryName = z.output<typeof gitRepositoryNameSchema>;
  * Host-selected repository namespace. Team identity comes from the host;
  * decoding this reference never grants access to either namespace.
  */
-export const repositoryRefSchema = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("installation"),
-    installationId: z.string().min(1).max(256),
-    repository: gitRepositoryNameSchema,
-  }),
-  z.strictObject({
-    kind: z.literal("team-source"),
-    repository: gitRepositoryNameSchema,
-  }),
-]);
+export const repositoryRefSchema = z.lazy(() =>
+  z.discriminatedUnion("kind", [
+    z.strictObject({
+      kind: z.literal("installation"),
+      installationId: z.string().min(1).max(256),
+      repository: gitRepositoryNameSchema,
+    }),
+    z.strictObject({
+      kind: z.literal("team-source"),
+      repository: gitRepositoryNameSchema,
+    }),
+  ]),
+);
 /** Installation-local repository or registered Team source, selected by its host. */
 export type RepositoryRef = z.output<typeof repositoryRefSchema>;
 /** Stable namespace identity, serialized through the canonical repository decoder. */
@@ -90,48 +92,54 @@ export const gitWriterSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 /** The App's question covers the whole push, under host-held attribution. */
-export const gitPushQuestionSchema = z.strictObject({
-  repository: gitRepositoryNameSchema,
-  writer: gitWriterSchema.options[0],
-  updates: z.array(gitRefUpdateSchema).min(1).max(256),
-});
-/** A whole push verdict; refusal messages are shown by ordinary Git clients. */
-export const gitPushVerdictSchema = z.discriminatedUnion("allowed", [
-  z.strictObject({ allowed: z.literal(true) }),
+export const gitPushQuestionSchema = z.lazy(() =>
   z.strictObject({
-    allowed: z.literal(false),
-    refused: z
-      .array(
-        z.strictObject({
-          ref: z.string().startsWith("refs/").max(1024),
-          message: z.string().max(200),
-        }),
-      )
-      .min(1)
-      .max(256),
+    repository: gitRepositoryNameSchema,
+    writer: gitWriterSchema.options[0],
+    updates: z.array(gitRefUpdateSchema).min(1).max(256),
   }),
-]);
+);
+/** A whole push verdict; refusal messages are shown by ordinary Git clients. */
+export const gitPushVerdictSchema = z.lazy(() =>
+  z.discriminatedUnion("allowed", [
+    z.strictObject({ allowed: z.literal(true) }),
+    z.strictObject({
+      allowed: z.literal(false),
+      refused: z
+        .array(
+          z.strictObject({
+            ref: z.string().startsWith("refs/").max(1024),
+            message: z.string().max(200),
+          }),
+        )
+        .min(1)
+        .max(256),
+    }),
+  ]),
+);
 /** Ref question sent only after host grant and Workflow branch admission. */
 export type GitPushQuestion = z.output<typeof gitPushQuestionSchema>;
 /** Explicit permission or bounded per-ref refusal for the whole push. */
 export type GitPushVerdict = z.output<typeof gitPushVerdictSchema>;
 /** One accepted push, with host attribution and no remote or credential. */
-export const appGitPushFactSchema = z.strictObject({
-  repository: gitRepositoryNameSchema,
-  writer: gitWriterSchema,
-  updates: z.array(gitRefUpdateSchema).min(1).max(256),
-  unexplained: z
-    .array(
-      z.strictObject({
-        ref: z.string().startsWith("refs/").max(1024),
-        journaled: gitSha1Schema.nullable(),
-      }),
-    )
-    .max(256)
-    .optional(),
-  // Host event IDs may include a Computer ID as well as its local event ID.
-  eventId: gitPushEventIdSchema,
-});
+export const appGitPushFactSchema = z.lazy(() =>
+  z.strictObject({
+    repository: gitRepositoryNameSchema,
+    writer: gitWriterSchema,
+    updates: z.array(gitRefUpdateSchema).min(1).max(256),
+    unexplained: z
+      .array(
+        z.strictObject({
+          ref: z.string().startsWith("refs/").max(1024),
+          journaled: gitSha1Schema.nullable(),
+        }),
+      )
+      .max(256)
+      .optional(),
+    // Host event IDs may include a Computer ID as well as its local event ID.
+    eventId: gitPushEventIdSchema,
+  }),
+);
 /** One bounded ref update, shared by push questions and accepted facts. */
 export type GitRefUpdate = z.output<
   typeof appGitPushFactSchema

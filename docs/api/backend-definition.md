@@ -30,10 +30,51 @@ type MethodPolicy = Readonly<{
   hidden?: true;
   anonymous?: true;
   pending?: true;
+  present?: Readonly<{
+    verb: string;
+  }>;
 }>;
 ```
 
 A method's schemas own both its TypeScript contract and JSON boundary.
+
+---
+
+### ResultRowCodec
+
+```ts
+type ResultRowCodec = Readonly<{
+  decode: (row) => ResultRow;
+  schema: z.ZodType;
+}>;
+```
+
+Decodes and bounds result rows; see `resultRows` in
+`@fungi.computer/agar/method-presentation`.
+
+---
+
+### MethodPresentation
+
+```ts
+type MethodPresentation<I, O> = Readonly<{
+  verb: string;
+  row: (call) => ResultRow;
+  rows: ResultRowCodec;
+}>;
+```
+
+How a finished call reads to a person: a pure projection run in the App backend.
+`rows` is `resultRows` from `@fungi.computer/agar/method-presentation`; only a
+backend that presents imports it, so one without presentations carries no row
+decoder.
+
+#### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `I`            |
+| `O`            |
 
 ---
 
@@ -44,11 +85,31 @@ type AppBackendMethod<Context> = Readonly<{
   policy: MethodPolicy;
   input: z.ZodType;
   output: z.ZodType;
+  present?: (input, output) => ResultRow;
+  presentRow?: z.ZodType;
   call: (input, context, caller) => Promise<WhistleJsonValue>;
 }>;
 ```
 
 Prepared method export consumed by the backend and its build.
+
+#### Type Parameters
+
+| Type Parameter | Default type |
+| -------------- | ------------ |
+| `Context`      | `void`       |
+
+---
+
+### AppBackendMethods
+
+```ts
+type AppBackendMethods<Context> = Readonly<
+  Record<string, AppBackendMethod<Context>>
+>;
+```
+
+The prepared methods of one backend, keyed by their public names.
 
 #### Type Parameters
 
@@ -123,17 +184,30 @@ EVENTS.emit acknowledges delivery with native void, not a JSON value.
 ### appSendBudgetRefusalSchema
 
 ```ts
-const appSendBudgetRefusalSchema: ZodObject<
-  {
-    error: ZodLiteral<"send_budget_exceeded">;
-    retryAfterMs: ZodNumber;
-  },
-  $strict
+const appSendBudgetRefusalSchema: ZodLazy<
+  ZodObject<
+    {
+      error: ZodLiteral<"send_budget_exceeded">;
+      retryAfterMs: ZodNumber;
+    },
+    $strict
+  >
 >;
 ```
 
 App-originated Session send refusal; retry advice is a duration, not a
 timestamp.
+
+---
+
+### presentMethodName
+
+```ts
+const presentMethodName: "present" = "present";
+```
+
+Name of the generated, hidden read method that projects a finished call into its
+row.
 
 ## Functions
 
@@ -155,9 +229,9 @@ Define a typed method once; neither discovery nor builds execute its handler.
 
 #### Parameters
 
-| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `method`  | `Readonly`\<\{ `description`: `string`; `effect`: `"external"` \| `"read"` \| `"write"`; `requires`: readonly ( \| `"agent.list"` \| `"agent.manage"` \| `"agent.read"` \| `"agent.send"` \| `"computer.list"` \| `"computer.readFile"` \| `"computer.writeFile"` \| `"computer.execute"` \| `"agent.rename"` \| `"agent.toolPolicy"` \| `"apps.open"` \| `"apps.call"` \| `"llm.generation"` \| `"media.generation"` \| `"games:servers"` \| `"git.repository"` \| `"app.storage"` \| `"app.events.emit"` \| `"team.workbenchHost"` \| `"marketplace.browse"` \| `"marketplace.purchase"` \| `"workflow.run"` \| `"workflow.publish"` \| `"workflow.arm"` \| `"world"` \| `"channels.read"` \| `"channels.personal.manage"`)[]; `hidden?`: `true`; `anonymous?`: `true`; `pending?`: `true`; \}\> & \{ input: I; output: O; \} & (\{ pending: true; handler: (input: output\<I\>, context: Context, caller: \{ computerId: string \| null; actor: \{ kind: "member"; memberId: string; \} \| \{ ...; \} \| \{ ...; \}; ... 5 more ...; idempotencyKey?: string \| undefined; \}) =\> Readonly\<...\> \| ... 1 more ... \| Promise\<...\>; \} \| \{ ...; \}) |
+| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `method`  | `Omit`\<`Readonly`\<\{ `description`: `string`; `effect`: `"external"` \| `"read"` \| `"write"`; `requires`: readonly ( \| `"agent.list"` \| `"agent.manage"` \| `"agent.read"` \| `"agent.send"` \| `"computer.list"` \| `"computer.readFile"` \| `"computer.writeFile"` \| `"computer.execute"` \| `"agent.rename"` \| `"agent.toolPolicy"` \| `"apps.open"` \| `"apps.call"` \| `"llm.generation"` \| `"media.generation"` \| `"games:servers"` \| `"git.repository"` \| `"app.storage"` \| `"app.events.emit"` \| `"team.workbenchHost"` \| `"marketplace.browse"` \| `"marketplace.purchase"` \| `"workflow.run"` \| `"workflow.publish"` \| `"workflow.arm"` \| `"world"` \| `"channels.read"` \| `"channels.personal.manage"`)[]; `hidden?`: `true`; `anonymous?`: `true`; `pending?`: `true`; `present?`: `Readonly`\<\{ `verb`: `string`; \}\>; \}\>, `"present"`\> & \{ input: I; output: O; present?: Readonly\<\{ verb: string; row: (call: Readonly\<\{ input: output\<I\>; output: output\<O\>; \}\>) =\> \{ readonly id: string; readonly title: string; ... 4 more ...; readonly media?: \{ ...; \} \| undefined; \}; rows: Readonly\<...\>; \}\> \| undefined; \} & (\{ ...; \} \| \{ ...; \}) |
 
 #### Returns
 

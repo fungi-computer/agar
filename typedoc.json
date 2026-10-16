@@ -10,6 +10,7 @@
     "src/rpc.ts",
     "src/backend.ts",
     "src/backend-definition.ts",
+    "src/method-presentation.ts",
     "src/backend-declaration.ts",
     "src/files.ts",
     "src/storage.ts",

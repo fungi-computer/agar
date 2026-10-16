@@ -304,54 +304,58 @@ export const gamesServers: CapabilityContract<GameServersHandle> =
   defineCapability(
     "games:servers",
     1,
-    rpcHandleSchema({
-      list: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerPageSchema.parse(value)),
+    z.lazy(() =>
+      rpcHandleSchema({
+        list: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerPageSchema.parse(value)),
+          ),
         ),
-      ),
-      catalog: rpcMethod(
-        rpcDataSchema(
-          z
-            .unknown()
-            .transform((value) => gameServerCatalogSchema.parse(value)),
+        catalog: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) => gameServerCatalogSchema.parse(value)),
+          ),
         ),
-      ),
-      create: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerSchema.parse(value)),
+        create: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerSchema.parse(value)),
+          ),
         ),
-      ),
-      status: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerSchema.parse(value)),
+        status: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerSchema.parse(value)),
+          ),
         ),
-      ),
-      start: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerSchema.parse(value)),
+        start: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerSchema.parse(value)),
+          ),
         ),
-      ),
-      stop: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerSchema.parse(value)),
+        stop: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerSchema.parse(value)),
+          ),
         ),
-      ),
-      restore: rpcMethod(
-        rpcDataSchema(
-          z.unknown().transform((value) => gameServerSchema.parse(value)),
+        restore: rpcMethod(
+          rpcDataSchema(
+            z.unknown().transform((value) => gameServerSchema.parse(value)),
+          ),
         ),
-      ),
-      backups: rpcMethod(
-        rpcDataSchema(
-          z
-            .unknown()
-            .transform((value) => z.array(gameServerBackupSchema).parse(value)),
+        backups: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) =>
+                z.array(gameServerBackupSchema).parse(value),
+              ),
+          ),
         ),
-      ),
-      delete: rpcVoid,
-      backupNow: rpcVoid,
-    }),
+        delete: rpcVoid,
+        backupNow: rpcVoid,
+      }),
+    ),
   );
 
 /** Decode the host's listing at the App boundary. */

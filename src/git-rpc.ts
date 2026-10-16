@@ -5,33 +5,43 @@ import {
   gitSha1Schema,
 } from "@fungi.computer/puffball/git-representation";
 
-const bytes = z
-  .instanceof(Uint8Array)
-  .refine((value) => value.byteLength <= 32 * 1024 * 1024);
-const headers = z.record(z.string().max(256), z.string().max(8192));
+const bytes = z.lazy(() =>
+  z
+    .instanceof(Uint8Array)
+    .refine((value) => value.byteLength <= 32 * 1024 * 1024),
+);
+const headers = z.lazy(() =>
+  z.record(z.string().max(256), z.string().max(8192)),
+);
 const identity = z.strictObject({ name: z.string(), email: z.string() });
-const info = z.strictObject({
-  name: gitRepositoryNameSchema,
-  defaultBranch: z.string(),
-  lastPushAt: z.string().nullable(),
-  source: gitRepositoryNameSchema.nullable(),
-});
-const commit = z.strictObject({
-  hash: gitSha1Schema,
-  treeHash: gitSha1Schema,
-  message: z.string(),
-  author: identity,
-  committer: identity,
-  parents: z.array(gitSha1Schema),
-  authoredAt: z.number().int(),
-  committedAt: z.number().int(),
-});
-const tree = z.strictObject({
-  name: z.string(),
-  mode: z.string(),
-  hash: gitSha1Schema,
-  type: z.enum(["blob", "tree", "commit"]),
-});
+const info = z.lazy(() =>
+  z.strictObject({
+    name: gitRepositoryNameSchema,
+    defaultBranch: z.string(),
+    lastPushAt: z.string().nullable(),
+    source: gitRepositoryNameSchema.nullable(),
+  }),
+);
+const commit = z.lazy(() =>
+  z.strictObject({
+    hash: gitSha1Schema,
+    treeHash: gitSha1Schema,
+    message: z.string(),
+    author: identity,
+    committer: identity,
+    parents: z.array(gitSha1Schema),
+    authoredAt: z.number().int(),
+    committedAt: z.number().int(),
+  }),
+);
+const tree = z.lazy(() =>
+  z.strictObject({
+    name: z.string(),
+    mode: z.string(),
+    hash: gitSha1Schema,
+    type: z.enum(["blob", "tree", "commit"]),
+  }),
+);
 const request = z.strictObject({
   service: z.enum(["upload-pack", "receive-pack"]),
   phase: z.enum(["advertise", "exchange"]),
@@ -43,20 +53,24 @@ const response = z.strictObject({
   headers,
   body: bytes,
 });
-const createOptions = z
-  .strictObject({
-    description: z.string().max(8192).optional(),
-    defaultBranch: z.string().min(1).max(1024).optional(),
-  })
-  .optional();
-const forkOptions = z
-  .strictObject({ description: z.string().max(8192).optional() })
-  .optional();
-const logOptions = z.strictObject({
-  ref: z.string().min(1).max(1024),
-  limit: z.number().int().min(1).max(1000).optional(),
-  offset: z.number().int().nonnegative().optional(),
-});
+const createOptions = z.lazy(() =>
+  z
+    .strictObject({
+      description: z.string().max(8192).optional(),
+      defaultBranch: z.string().min(1).max(1024).optional(),
+    })
+    .optional(),
+);
+const forkOptions = z.lazy(() =>
+  z.strictObject({ description: z.string().max(8192).optional() }).optional(),
+);
+const logOptions = z.lazy(() =>
+  z.strictObject({
+    ref: z.string().min(1).max(1024),
+    limit: z.number().int().min(1).max(1000).optional(),
+    offset: z.number().int().nonnegative().optional(),
+  }),
+);
 
 /** The native tuple and result grammar shared by the handle and frame entrypoint. */
 export const nativeGitCodecs = {

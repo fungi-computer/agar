@@ -78,10 +78,12 @@ export const appsOpen: CapabilityContract<{
 }> = defineCapability(
   "apps.open",
   1,
-  rpcHandleSchema({
-    open: rpcVoid,
-    role: rpcMethod(rpcDataSchema(appRoleChoiceSchema)),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      open: rpcVoid,
+      role: rpcMethod(rpcDataSchema(appRoleChoiceSchema)),
+    }),
+  ),
 );
 
 export const openApp = (directory: CapabilityDirectory, input: AppOpenInput) =>
@@ -94,9 +96,11 @@ export const appsCall: CapabilityContract<{
 }> = defineCapability(
   "apps.call",
   1,
-  rpcHandleSchema({
-    call: rpcMethod(
-      rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
-    ),
-  }),
+  z.lazy(() =>
+    rpcHandleSchema({
+      call: rpcMethod(
+        rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
+      ),
+    }),
+  ),
 );
