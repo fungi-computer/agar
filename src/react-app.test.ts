@@ -9,10 +9,12 @@ import type {
   AppReadyMessage,
   AppConnectMessage,
 } from "./internal/protocol.js";
+import { APP_CONNECT_TYPE, APP_PROTOCOL_VERSION } from "./internal/protocol.js";
 import { createReadonlyStore } from "./internal/store.js";
 import type { AppContext, AppLifecycle } from "./lifecycle.js";
 import {
   mountApp,
+  type AppMountState,
   useAppCommandCatalog,
   useAppContext,
   useComputerId,
@@ -33,6 +35,7 @@ afterEach(() => {
     for (const release of releases.splice(0).reverse()) release();
   });
   vi.restoreAllMocks();
+  vi.useRealTimers();
   document.documentElement.removeAttribute("data-theme");
 });
 
@@ -152,18 +155,20 @@ function embedded(referrer = "https://host.example/team") {
       return connection;
     });
   };
-  return { host, toHost };
+  return { host, toHost, parent };
 }
 function mount(options: Parameters<typeof mountApp>[1] = { name: "Test" }) {
   const element = document.createElement("div");
+  const states: AppMountState[] = [];
   let dispose: Disposer = unused;
   act(() => {
-    dispose = mountApp(element, options, ({ status }) =>
-      createElement("span", null, status),
-    );
+    dispose = mountApp(element, options, (state) => {
+      states.push(state);
+      return createElement("span", null, state.status);
+    });
   });
   releases.push(dispose);
-  return { element, dispose };
+  return { element, dispose, states };
 }
 async function settle() {
   await act(() => Promise.resolve());
@@ -192,11 +197,91 @@ it("mounts standalone without a host and disposes idempotently", () => {
   });
   expect(page.element.textContent).toBe("");
 });
-it("does not treat an invalid referrer as host authority", () => {
-  const bridge = embedded("not a URL");
-  expect(mount().element.textContent).toBe("standalone");
+it.each(["", "not a URL", "https://unrelated.example/"])(
+  "connects to its actual parent regardless of referrer %s",
+  async (referrer) => {
+    const bridge = embedded(referrer);
+    const page = mount();
+    expect(page.element.textContent).toBe("connecting");
+    const pending = bridge.host();
+    await connected(pending, page.element);
+    expect(bridge.toHost.mock.calls[0]?.[1]).toBe("*");
+  },
+);
+it("does not use another Window to connect a document with no view", () => {
+  const bridge = embedded("");
+  const owner = document.implementation.createHTMLDocument();
+  const element = owner.createElement("div");
+  let dispose: () => void = () => undefined;
+  act(() => {
+    dispose = mountApp(element, { name: "Detached" }, (state) =>
+      createElement("span", null, state.status),
+    );
+  });
+  releases.push(dispose);
+  expect(element.textContent).toContain("not-hosted");
+  expect(element.querySelector('[role="alert"]')).not.toBeNull();
   expect(bridge.toHost).not.toHaveBeenCalled();
 });
+it("shows a typed not-hosted failure when an embedded parent never answers", async () => {
+  vi.useFakeTimers();
+  embedded("");
+  const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const page = mount();
+  expect(page.element.textContent).toBe("connecting");
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10_000);
+  });
+  expect(page.states.at(-1)).toMatchObject({
+    app: null,
+    status: "not-hosted",
+    error: { code: "DISCONNECTED", retryable: true },
+  });
+  expect(page.element.querySelector('[role="alert"]')?.textContent).toBe(
+    "App host connection unavailable. Open this App through its host to try again.",
+  );
+  expect(page.states.some((state) => state.status === "standalone")).toBe(
+    false,
+  );
+  expect(report).toHaveBeenCalledWith(
+    "Test host connection failed",
+    expect.objectContaining({ code: "DISCONNECTED" }),
+  );
+});
+it.each(["other-window", "opaque-parent"])(
+  "refuses %s instead of accepting it as the discovered host",
+  async (sender) => {
+    const bridge = embedded("");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const page = mount();
+    const channel = new MessageChannel();
+    releases.push(() => {
+      channel.port1.close();
+      channel.port2.close();
+    });
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: {
+            type: APP_CONNECT_TYPE,
+            protocolVersion: APP_PROTOCOL_VERSION,
+            epoch: "test-epoch",
+          },
+          source: sender === "other-window" ? window : bridge.parent,
+          origin: sender === "opaque-parent" ? "null" : "https://host.example",
+          ports: [channel.port1],
+        }),
+      );
+    });
+    await settle();
+    expect(page.states.at(-1)).toMatchObject({
+      app: null,
+      status: "not-hosted",
+      error: { code: "IDENTITY" },
+    });
+    expect(page.element.querySelector('[role="alert"]')).not.toBeNull();
+  },
+);
 it.each([null, "light"])(
   "restores the original theme %s and ends on real host disconnect",
   async (previous) => {
@@ -206,7 +291,7 @@ it.each([null, "light"])(
     const page = mount();
     expect(page.element.textContent).toBe("connecting");
     const host = await connected(pending, page.element);
-    expect(bridge.toHost.mock.calls[0]?.[1]).toBe("https://host.example");
+    expect(bridge.toHost.mock.calls[0]?.[1]).toBe("*");
     await act(async () => {
       await host.updateTheme({ value: "forest", version: 1 });
     });
@@ -253,7 +338,7 @@ it("reports a platform handshake failure with its cause and App name", async () 
   const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
   const page = mount({ name: "Bazaar" });
   await settle();
-  expect(page.element.textContent).toBe("ended");
+  expect(page.states.at(-1)?.status).toBe("not-hosted");
   expect(report.mock.calls.at(-1)?.[0]).toBe("Bazaar host connection failed");
   expect(report.mock.calls.at(-1)?.[1]).toMatchObject({
     code: "DISCONNECTED",

@@ -7,6 +7,8 @@ import {
   rpcVoid,
 } from "./internal/rpc-contract.js";
 import * as Schema from "effect/Schema";
+import { mediaProviderDiagnosticSchema } from "./internal/media-diagnostic.js";
+import type { MediaProviderDiagnostic } from "./errors.js";
 
 export {
   mediaLibraryRequestSchema,
@@ -60,6 +62,8 @@ export type MediaGenerationFailure = Schema.Schema.Type<
 /** A decoded Media failure; null stage means the host could not identify it. */
 export class MediaGenerationError extends AppError {
   readonly stage: NonNullable<MediaGenerationFailure["stage"]> | null;
+  /** Bounded provider facts only; never the original provider cause. */
+  readonly provider: MediaProviderDiagnostic | undefined;
 
   constructor(failure: MediaGenerationFailure) {
     super(failure.message, {
@@ -67,6 +71,7 @@ export class MediaGenerationError extends AppError {
       retryable: failure.retryable,
     });
     this.stage = failure.stage ?? null;
+    this.provider = failure.provider;
   }
 }
 
@@ -429,6 +434,8 @@ export type MediaVideoResult = Schema.Schema.Type<
 export const mediaGenerationFailureSchema = Schema.Struct({
   message: text(512),
   stage: Schema.optional(Schema.Literals(mediaFailureStages)),
+  /** Safe provider facts decoded by the one canonical Media grammar. */
+  provider: Schema.optional(mediaProviderDiagnosticSchema),
   code: Schema.Literals([
     "CANCELLED",
     "CAPABILITY_DENIED",

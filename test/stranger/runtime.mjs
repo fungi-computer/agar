@@ -93,11 +93,9 @@ const neutral = await build({
     contents: `
       import * as z from "zod";
       import { defineAppMethod, pending, pendingSchema } from "@fungi.computer/agar/backend-definition";
-      import { workflowGitPassResultSchema } from "@fungi.computer/agar/computer-contracts";
-      export const workflowPass = workflowGitPassResultSchema.parse({
-        passId: "pass_stranger",
-        remote: "https://git.team.internal/workflow/pass_stranger/app_source.git",
-        expiresAt: 62000
+      import { appComputerAdmissionRefusalSchema } from "@fungi.computer/agar/computer-contracts";
+      export const computerRefusal = appComputerAdmissionRefusalSchema.parse({
+        error: "not_granted"
       });
       export const reply = pendingSchema.parse(pending(5000));
       export const method = defineAppMethod({
@@ -123,11 +121,7 @@ const evaluated = await import(
   `data:text/javascript;base64,${Buffer.from(compiled.text).toString("base64")}`
 );
 assert.deepEqual(evaluated.reply, { kind: "pending", retryAfterMs: 5000 });
-assert.deepEqual(evaluated.workflowPass, {
-  passId: "pass_stranger",
-  remote: "https://git.team.internal/workflow/pass_stranger/app_source.git",
-  expiresAt: 62000,
-});
+assert.deepEqual(evaluated.computerRefusal, { error: "not_granted" });
 assert.deepEqual(await evaluated.method.call(null, undefined, caller), {
   kind: "pending",
   retryAfterMs: 5000,

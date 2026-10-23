@@ -208,16 +208,10 @@ export const nativeRequiredOperations: readonly string[] =
   nativeGitFrameMethods.exchange.requiredOperations(nativeExchange);
 export const nativeMethod = nativeGitMethodNameSchema.parse("exchange");
 
-import {
-  workflowGitPassResultSchema,
-  type WorkflowGitPassResult,
-} from "@fungi.computer/agar/computer-contracts";
-export const workflowGitPass: WorkflowGitPassResult =
-  workflowGitPassResultSchema.parse({
-    passId: "pass_stranger",
-    remote: "https://git.team.internal/workflow/pass_stranger/app_source.git",
-    expiresAt: 62000,
-  });
+import { appComputerAdmissionRefusalSchema } from "@fungi.computer/agar/computer-contracts";
+export const computerAdmissionRefusal: z.output<
+  typeof appComputerAdmissionRefusalSchema
+> = appComputerAdmissionRefusalSchema.parse({ error: "not_granted" });
 export function invokeExchange(
   git: import("@fungi.computer/agar/git").GitBinding,
 ) {

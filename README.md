@@ -1,9 +1,8 @@
 # Agar (`@fungi.computer/agar`)
 
 Agar defines typed App backends and host capabilities. Most people want
-[Oyster](https://docs.fungi.computer/reference/packages/#oyster) to run Apps or
-[Shiitake](https://docs.fungi.computer/reference/packages/#shiitake) to run
-Agents.
+[Oyster](https://docs.fungi.computer/oyster/) to run Apps or
+[Shiitake](https://docs.fungi.computer/shiitake/) to run Agents.
 
 Agar is the App contract for fungi.computer. It defines an App's typed backend
 methods, connects its frontend to a host through typed capabilities, and gives
@@ -336,10 +335,15 @@ the declared methods separately.
 
 ## Connect and release
 
-connectApp takes an exact `expectedHostOrigin` and optional abort signal. It
-checks the parent window, origin, protocol and transferred port before returning
-an AppRoot. It permits one live connection per frontend page. Do not use a
-wildcard origin or a stranger-controlled query parameter as the expected host.
+`connectApp({ host: "parent", signal })` discovers the host through the existing
+parent handshake, without reading a referrer or accepting an origin parameter.
+Serve the App document with CSP `frame-ancestors` pinned to its allowed host.
+The browser checks the entire ancestor chain; without that policy an unrelated
+site embedding the App could become its host. Hub and Oyster supply this policy
+on their App document routes. Only the public, secret-free ready announcement
+uses `"*"`; connection acceptance checks the actual parent Window, its
+non-opaque origin, protocol and single transferred port before returning an
+AppRoot. It permits one live connection per frontend page.
 
 The root supplies:
 
@@ -557,14 +561,18 @@ const dispose = mountApp(root, { name: "Bazaar" }, ({ app }) => (
 import.meta.hot?.dispose(dispose);
 ```
 
-`mountApp` authenticates the iframe host using the parsed referrer origin,
-applies and subscribes to its theme, and restores the original theme on
+`mountApp` discovers its actual parent through Agar's existing handshake,
+independently of referrer policy. The parent must have a non-opaque origin and
+transfer exactly one port for the validated epoch. Top-level launches remain
+standalone; embedded pages without a valid handshake report `not-hosted` with an
+`AppError` and a visible alert rather than silently becoming standalone. It
+applies and subscribes to the host's theme, and restores the original theme on
 disconnect or unmount. Its render callback receives `connecting`, `live`,
-`standalone` (no host or usable referrer), or `ended` (failed/closed
-connection). Only `live` carries an AppRoot. The returned disposer aborts a
-pending handshake, releases subscriptions, disposes the connection and unmounts
-React. A late connection is disposed too. Existing App-open React performance
-marks are emitted at root render and commits.
+`standalone` (a top-level launch), `not-hosted` (an initial connection failure),
+or `ended` (a closed live connection). Only `live` carries an AppRoot. The
+returned disposer aborts a pending handshake, releases subscriptions, disposes
+the connection and unmounts React. A late connection is disposed too. Existing
+App-open React performance marks are emitted at root render and commits.
 
 Supply `queryClient` to wrap the App in `QueryClientProvider`. The caller owns
 that client, its cache policy and grant invalidation; mounting does not clear
@@ -751,6 +759,13 @@ The exported `mediaGenerationDescriptionSchema`,
 `mediaGenerationJsonReplySchema` and `mediaGenerationReferenceSchema` decode
 these boundaries with the existing Agar Media grammar.
 
+Failures may include safe `provider` facts: an allowlisted category and bounded
+code, or `result_download` and an HTTP status. JSON, RPC and
+`MediaGenerationError.provider` preserve the same facts and retry truth.
+`./errors` exposes declaration-safe diagnostic types and decoder helpers; one
+internal Effect schema owns validation. Private provider messages, bodies, URLs
+and causes are not diagnostic fields and are rejected at this boundary.
+
 Attempts retain their canonical request ID when restored or when polling
 Pending. The shared Agar Pending validator requires an integer `retryAfterMs`
 from 1000 to 60000. Cancellation aborts the attempt's active local requests;
@@ -761,7 +776,8 @@ the platform DOM types and `ESNext.Disposable`.
 See the [generated API](docs/api/README.md) for signatures and host ports.
 
 `@fungi.computer/agar/computer-contracts` is the runtime-neutral public home for
-`workflowGitPassResultSchema` and `WorkflowGitPassResult`. App backend
-definitions can validate host-issued Workflow pass metadata without importing
-the Computer RPC client. The parser preserves the complete credential-free HTTPS
-remote; admission, expiry and revocation remain host authority.
+Computer admission, input, dispatch, timeout and attachment-budget outcomes. App
+backend definitions can validate these outcomes without importing the Computer
+RPC client. Apps request ordinary Computer execution; Workflow Git credential
+issuance, carriage, renewal and revocation stay inside the trusted host and
+native execution boundary, not the App contract.

@@ -1,6 +1,11 @@
 import { applyTheme, getTheme } from "@fungi.computer/stipe/theme";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { createElement, useLayoutEffect, type ReactNode } from "react";
+import {
+  createElement,
+  Fragment,
+  useLayoutEffect,
+  type ReactNode,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { connectApp } from "./connect.js";
 import { AppError } from "./errors.js";
@@ -9,10 +14,12 @@ import type { Disposer } from "./store.js";
 
 /** The App connection state passed to `mountApp`'s `render` callback:
  * `live` once connected, or `connecting`/`standalone`/`ended` while there
- * is no usable App. */
+ * is no usable App. An embedded page whose handshake fails is `not-hosted`,
+ * never standalone; Agar also renders that failure visibly. */
 export type AppMountState = Readonly<
   | { app: AppRoot; status: "live" }
   | { app: null; status: "connecting" | "standalone" | "ended" }
+  | { app: null; status: "not-hosted"; error: AppError }
 >;
 
 /** Options passed to `mountApp`. */
@@ -64,18 +71,23 @@ export function mountApp(
       themed = false;
     }
   };
-  const { referrer, defaultView } = element.ownerDocument;
+  const { defaultView } = element.ownerDocument;
   performance.mark("fungi.app-open.react-root-render-start");
-  if (
-    !defaultView ||
-    defaultView.parent === defaultView ||
-    !URL.canParse(referrer)
-  ) {
+  if (!defaultView) {
+    publish({
+      app: null,
+      status: "not-hosted",
+      error: new AppError("The App document has no window", {
+        code: "DISCONNECTED",
+        retryable: false,
+      }),
+    });
+  } else if (defaultView.parent === defaultView) {
     publish({ app: null, status: "standalone" });
   } else {
     publish({ app: null, status: "connecting" });
     void connectApp({
-      expectedHostOrigin: new URL(referrer).origin,
+      host: "parent",
       signal: controller.signal,
     })
       .then((app) => {
@@ -115,7 +127,19 @@ export function mountApp(
           return;
         console.error(`${options.name} host connection failed`, cause);
         releaseConnection();
-        if (!controller.signal.aborted) publish({ app: null, status: "ended" });
+        if (!controller.signal.aborted)
+          publish({
+            app: null,
+            status: "not-hosted",
+            error:
+              cause instanceof AppError
+                ? cause
+                : new AppError("The App host is unavailable", {
+                    cause,
+                    code: "HOST_FAILURE",
+                    retryable: true,
+                  }),
+          });
       });
   }
   return () => {
@@ -139,5 +163,16 @@ function AppView({
   useLayoutEffect(() => {
     if (state.app) performance.mark("fungi.app-open.react-connected-commit");
   }, [state.app]);
-  return render(state);
+  return createElement(
+    Fragment,
+    null,
+    state.status === "not-hosted"
+      ? createElement(
+          "p",
+          { role: "alert" },
+          "App host connection unavailable. Open this App through its host to try again.",
+        )
+      : null,
+    render(state),
+  );
 }

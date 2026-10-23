@@ -7,5 +7,6 @@ export const appBackendRefusalSchema = z.strictObject({
     "exec_isolation_required",
     "execution_not_admitted",
     "artifact_unavailable",
+    "disabled",
   ]),
 });

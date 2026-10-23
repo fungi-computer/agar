@@ -145,13 +145,13 @@ it.each(["https://app.example", "null"])(
           theme: { value: "dark", version: 0 },
         },
       });
-      const root = await connectApp({ expectedHostOrigin: host.origin });
+      const root = await connectApp({ host: "parent" });
       const mounted = await hostPromise;
       expect(root.identity.appId).toBe("app");
       expect(messageTargets.get(app)).toEqual([
         origin === "null" ? "*" : origin,
       ]);
-      expect(messageTargets.get(host)).toEqual([host.origin]);
+      expect(messageTargets.get(host)).toEqual(["*"]);
       await expectDuplicateMountRejected(app, host);
       disposePair(root, mounted);
     } finally {
@@ -168,8 +168,8 @@ it("LAW: a page retries its handshake when the replacement host starts listening
   host.peer = app;
   const originalWindow = replaceWindow(app);
   try {
-    const appPromise = connectApp({ expectedHostOrigin: host.origin });
-    expect(messageTargets.get(host)).toEqual([host.origin]);
+    const appPromise = connectApp({ host: "parent" });
+    expect(messageTargets.get(host)).toEqual(["*"]);
     const hostPromise = connectAppHost({
       appWindow: asBrowserWindow(app),
       hostWindow: asBrowserWindow(host),
@@ -202,7 +202,7 @@ it("LAW: the App owns one close consultation and release restores host close", a
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     expect(await mounted.requestClose()).toBe(true);
     const release = root.window.onBeforeClose(() => false);
@@ -241,7 +241,7 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     expect(await mounted.requestBack()).toBe(false);
 
@@ -437,7 +437,7 @@ it("LAW: real host fact publication is newer-only and updates retained stores be
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const seen: string[] = [];
     root.context.subscribe((value) =>
@@ -498,7 +498,7 @@ it("LAW: real command registration is acknowledged, invoked, unregistered, and d
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const calls: string[] = [];
     const unregister = await root.commands.register(
@@ -557,7 +557,7 @@ it("carries Whistle metadata and JSON results while hiding host correlation IDs"
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     await root.commands.register(
       {
@@ -632,7 +632,7 @@ it("carries portable Whistle action failures through the command envelope", asyn
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     await root.commands.register(
       { category: "test", id: "fail", title: "Fail" },
@@ -695,7 +695,7 @@ it("rolls back a rejected aggregate update and leaves the lease authoritative", 
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const first = root.commands.register(
       { category: "test", id: "save", title: "Save" },
@@ -765,7 +765,7 @@ it("drops an acknowledged callback when a mutating unregister update fails", asy
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const unregister = await root.commands.register(
       { category: "test", id: "save", title: "Save" },
@@ -821,7 +821,7 @@ it("does not promote a pending command after reentrant mount disposal", async ()
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     mounted = await hostPromise;
     await root.commands.register(
       { category: "test", id: "save", title: "Save" },
@@ -876,7 +876,7 @@ it("terminalizes the mount when a failed update cannot recover its generation", 
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     await root.commands.register(
       { category: "test", id: "save", title: "Save" },
@@ -940,7 +940,7 @@ it("LAW: concurrent same-ID registration reserves one host slot and one owner", 
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     cleanup = () => {
       disposePair(root, mounted);
@@ -1065,7 +1065,7 @@ it("LAW: mounted command namespace enforces cap, duplicates, cancellation, and r
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const unregister: (() => void)[] = [];
     for (let index = 0; index < 128; index++) {
@@ -1135,7 +1135,7 @@ it("LAW: an aborted mounted command sends the exact request cancellation and rel
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     await root.commands.register(
       { category: "test", id: "cancel", title: "Cancel" },
@@ -1202,7 +1202,7 @@ it("LAW: graceful remote teardown publishes the terminal history and permits a l
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const history: string[] = [];
     root.lifecycle.subscribe((value) => history.push(value));
@@ -1217,7 +1217,7 @@ it("LAW: graceful remote teardown publishes the terminal history and permits a l
       hostWindow: asBrowserWindow(host),
       launch: mountedLaunch(),
     });
-    const nextRoot = await connectApp({ expectedHostOrigin: host.origin });
+    const nextRoot = await connectApp({ host: "parent" });
     const nextHost = await nextHostPromise;
     expect(nextRoot.lifecycle.get()).toBe("connected");
     nextRoot.dispose();
@@ -1389,9 +1389,9 @@ async function expectDuplicateMountRejected(
   app: IframeWindow,
   host: IframeWindow,
 ): Promise<void> {
-  await expect(
-    connectApp({ expectedHostOrigin: host.origin }),
-  ).rejects.toMatchObject({ code: "IDENTITY" });
+  await expect(connectApp({ host: "parent" })).rejects.toMatchObject({
+    code: "IDENTITY",
+  });
   await expect(
     connectAppHost({
       appWindow: asBrowserWindow(app),
@@ -1542,7 +1542,7 @@ it("LAW: permission requests cross the host boundary decoded and bounded", async
         theme: { value: "dark", version: 0 },
       },
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     await expect(
       root.ui.requestAppPermissions({
@@ -1619,7 +1619,7 @@ it("LAW: an App's status items reach its window decoded and bounded, and actions
         theme: { value: "dark", version: 0 },
       },
     });
-    const root = await connectApp({ expectedHostOrigin: host.origin });
+    const root = await connectApp({ host: "parent" });
     const mounted = await hostPromise;
     const items = [
       { kind: "text", id: "state", text: "open", tone: "success" },

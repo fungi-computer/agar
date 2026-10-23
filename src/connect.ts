@@ -18,9 +18,9 @@ import { parseConnect } from "./internal/schemas.js";
 
 /** Options for connecting this iframe page to its authenticated host. */
 export type ConnectAppOptions = {
-  /** The origin the host handshake message must come from; the connection
-   * is refused when it comes from anywhere else. */
-  readonly expectedHostOrigin: string;
+  /** The parent is the host. Serve the App with CSP `frame-ancestors` pinned
+   * to its allowed host so an unrelated site cannot become its parent. */
+  readonly host: "parent";
   /** Cancels a pending connection attempt. */
   readonly signal?: AbortSignal;
 };
@@ -30,28 +30,24 @@ let liveConnection = false;
 /** Owns the pending handshake and its one-way transition into a live epoch. */
 class PendingAppConnection {
   readonly #appWindow: typeof globalThis & Window;
-  readonly #origin: string | undefined;
   #port: MessagePort | undefined;
   #settled = false;
   #readyRetry: ReturnType<typeof setInterval> | undefined;
   #deadline: ReturnType<typeof setTimeout> | undefined;
 
   constructor(readonly options: ConnectAppOptions) {
-    this.#origin = expectedOrigin(options.expectedHostOrigin);
     this.#appWindow = globalThis.window;
   }
 
   start(): Promise<AppRoot> {
     performance.mark("fungi.app-open.agar-connect-start");
-    const origin = this.#origin;
-    if (!origin) return Promise.reject(invalidOrigin());
     const error = this.#startError();
     if (error) return Promise.reject(error);
     liveConnection = true;
-    return this.#awaitConnection(origin);
+    return this.#awaitConnection();
   }
 
-  #awaitConnection(origin: string): Promise<AppRoot> {
+  #awaitConnection(): Promise<AppRoot> {
     return new Promise<AppRoot>((resolve, reject) => {
       const finish = (error?: AppError, root?: AppRoot): void => {
         this.#finish(error, root, onMessage, onAbort, resolve, reject);
@@ -60,7 +56,7 @@ class PendingAppConnection {
         finish(cancelled());
       };
       const onMessage = (event: MessageEvent<unknown>): void => {
-        this.#onMessage(event, origin, finish, onMessage);
+        this.#onMessage(event, finish, onMessage);
       };
       this.#appWindow.addEventListener("message", onMessage);
       this.options.signal?.addEventListener("abort", onAbort, { once: true });
@@ -69,7 +65,7 @@ class PendingAppConnection {
           performance.mark("fungi.app-open.agar-ready-sent");
           this.#appWindow.parent.postMessage(
             { protocolVersion: APP_PROTOCOL_VERSION, type: APP_READY_TYPE },
-            origin,
+            "*",
           );
         } catch (cause) {
           reportCatchFailure("connect.notify-host", cause);
@@ -110,13 +106,15 @@ class PendingAppConnection {
 
   #onMessage(
     event: MessageEvent<unknown>,
-    origin: string,
     finish: (error?: AppError, root?: AppRoot) => void,
     onMessage: (event: MessageEvent<unknown>) => void,
   ): void {
     if (!isConnectMessage(event.data)) return;
     performance.mark("fungi.app-open.agar-connect-received");
-    if (event.source !== this.#appWindow.parent || event.origin !== origin) {
+    if (
+      event.source !== this.#appWindow.parent ||
+      expectedOrigin(event.origin) === undefined
+    ) {
       finish(identityError());
       return;
     }
@@ -213,13 +211,6 @@ function expectedOrigin(value: string): string | undefined {
 function identityError(): AppError {
   return new AppError("The app connection identity is invalid", {
     code: "IDENTITY",
-    retryable: false,
-  });
-}
-
-function invalidOrigin(): AppError {
-  return new AppError("expectedHostOrigin must be an origin", {
-    code: "INVALID_ARGUMENT",
     retryable: false,
   });
 }

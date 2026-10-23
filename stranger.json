@@ -8,6 +8,8 @@
     "package/dist/agents.js",
     "package/dist/app-build-contract.d.ts",
     "package/dist/app-build-contract.js",
+    "package/dist/approvals.d.ts",
+    "package/dist/approvals.js",
     "package/dist/apps.d.ts",
     "package/dist/apps.js",
     "package/dist/backend-declaration.d.ts",
@@ -74,6 +76,8 @@
     "package/dist/internal/disconnect-host.js",
     "package/dist/internal/git-edit-tree.d.ts",
     "package/dist/internal/git-edit-tree.js",
+    "package/dist/internal/media-diagnostic.d.ts",
+    "package/dist/internal/media-diagnostic.js",
     "package/dist/internal/memory-fs.d.ts",
     "package/dist/internal/memory-fs.js",
     "package/dist/internal/protocol.d.ts",
@@ -102,6 +106,10 @@
     "package/dist/media-request-id.js",
     "package/dist/media.d.ts",
     "package/dist/media.js",
+    "package/dist/method-presentation.d.ts",
+    "package/dist/method-presentation.js",
+    "package/dist/method-refusal.d.ts",
+    "package/dist/method-refusal.js",
     "package/dist/pending.d.ts",
     "package/dist/pending.js",
     "package/dist/query.d.ts",
@@ -126,6 +134,8 @@
     "package/dist/storage.js",
     "package/dist/store.d.ts",
     "package/dist/store.js",
+    "package/dist/test-kit/git.d.ts",
+    "package/dist/test-kit/git.js",
     "package/dist/ui.d.ts",
     "package/dist/ui.js",
     "package/dist/window.d.ts",
@@ -148,6 +158,7 @@
     "package/docs/api/index.md",
     "package/docs/api/media-json.md",
     "package/docs/api/media-request-id.md",
+    "package/docs/api/method-presentation.md",
     "package/docs/api/modules.md",
     "package/docs/api/query.md",
     "package/docs/api/react.md",
@@ -157,14 +168,21 @@
     "package/package.json"
   ],
   "localDependencies": [
+    "../../forks/capnweb",
+    "../approvals",
     "../cairn",
     "../gills",
     "../puffball",
+    "../sprite",
     "../stipe",
     "../whistle"
   ],
   "runtimeFixture": "test/stranger/runtime.mjs",
-  "typecheckFixture": "test/stranger/consumer.mts",
+  "typechecks": [
+    {
+      "fixture": "test/stranger/consumer.mts"
+    }
+  ],
   "docs": {
     "sigil": "installApps",
     "home": {

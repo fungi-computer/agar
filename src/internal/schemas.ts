@@ -65,7 +65,7 @@ import {
   type AppNavigationState,
 } from "../window.js";
 
-import { AppError, type AppErrorCode } from "../errors.js";
+import { AppError, appErrorCodes, type AppErrorCode } from "../errors.js";
 import { parseFailure } from "@fungi.computer/whistle/wire";
 import {
   APP_CONNECT_TYPE,
@@ -78,24 +78,6 @@ import {
   type ReservedChord,
   type VersionedFact,
 } from "./protocol.js";
-
-const errorCodes = [
-  "PROTOCOL",
-  "IDENTITY",
-  "INSUFFICIENT_CREDIT",
-  "FILE_TOO_LARGE",
-  "CAPABILITY_DENIED",
-  "CAPABILITY_REVOKED",
-  "COMMAND_NOT_DECLARED",
-  "CONFLICT",
-  "INVALID_ARGUMENT",
-  "TIMEOUT",
-  "CANCELLED",
-  "DISCONNECTED",
-  "HOST_FAILURE",
-  "SELECTION_CHANGED",
-  "SAFETY_FILTER_REFUSED",
-] as const;
 
 const boundedText = (maximum: number) =>
   Schema.String.pipe(
@@ -338,6 +320,7 @@ const crumbSchema = Schema.Struct({
 const headerCommandSchema = Schema.Struct({
   id: navigationIdSchema,
   label: navigationLabelSchema,
+  icon: Schema.optional(Schema.Literal("play")),
   variant: Schema.optional(Schema.Literals(["primary", "outline", "ghost"])),
   tone: Schema.optional(Schema.Literal("destructive")),
   disabled: Schema.optional(Schema.Boolean),
@@ -354,6 +337,7 @@ const commandsSchema = (maximum: number) =>
 const headerStatusSchema = Schema.Struct({
   id: navigationIdSchema,
   label: navigationLabelSchema,
+  presentation: Schema.optional(Schema.Literal("bead")),
   tone: Schema.optional(
     Schema.Literals(["neutral", "info", "warning", "success", "error"]),
   ),
@@ -441,8 +425,15 @@ const toastSchema = Schema.Struct({
     Schema.Literals(["info", "success", "warning", "error"]),
   ),
 });
+const appErrorCodeSchema = Schema.Literals(appErrorCodes);
+
+/** Effect projection of the error owner's declaration-safe pending refusal. */
+export const appDeliveryPendingSchema = Schema.Struct({
+  code: appErrorCodeSchema.pick(["DELIVERY_PENDING"]),
+});
+
 const errorSchema = Schema.Struct({
-  code: Schema.Literals(errorCodes),
+  code: appErrorCodeSchema,
   message: boundedText(512),
   retryable: Schema.Boolean,
 });
@@ -657,8 +648,11 @@ type DecodedNavigation = {
 };
 type DecodedStatus = Schema.Schema.Type<typeof headerStatusSchema>;
 function statusOf(item: DecodedStatus): AppHeaderStatus {
-  const copy: AppHeaderStatus = { id: item.id, label: item.label };
-  return frozen(item.tone === undefined ? copy : { ...copy, tone: item.tone });
+  let copy: AppHeaderStatus = { id: item.id, label: item.label };
+  if (item.presentation !== undefined)
+    copy = { ...copy, presentation: item.presentation };
+  if (item.tone !== undefined) copy = { ...copy, tone: item.tone };
+  return frozen(copy);
 }
 function crumbOf(crumb: DecodedCrumb): AppCrumb {
   const copy: AppCrumb = { id: crumb.id, label: crumb.label };
@@ -670,6 +664,7 @@ function crumbOf(crumb: DecodedCrumb): AppCrumb {
 }
 function commandOf(command: DecodedCommand): AppHeaderCommand {
   let copy: AppHeaderCommand = { id: command.id, label: command.label };
+  if (command.icon !== undefined) copy = { ...copy, icon: command.icon };
   if (command.variant !== undefined)
     copy = { ...copy, variant: command.variant };
   if (command.tone !== undefined) copy = { ...copy, tone: command.tone };

@@ -1,27 +1,5 @@
 import * as z from "zod";
 
-/** Public metadata for one host-admitted Workflow Git pass; parsing never grants authority. */
-export const workflowGitPassResultSchema = z.lazy(() =>
-  z.strictObject({
-    passId: z.string().min(1),
-    remote: z.url({ protocol: /^https$/, abort: true }).refine((value) => {
-      const remote = new URL(value);
-      return remote.username === "" && remote.password === "";
-    }, "Workflow Git remotes must not contain credentials"),
-    expiresAt: z.number().int().positive(),
-    /**
-     * Present when the host admits this pass by `Authorization: Bearer` on the
-     * remote. It is never part of the remote; a command receives it only as
-     * command-local Git config, never written to a repository config.
-     */
-    bearer: z.string().min(1).exactOptional(),
-  }),
-);
-/** The complete remote stays opaque; the host owns admission, renewal and revocation. */
-export type WorkflowGitPassResult = z.output<
-  typeof workflowGitPassResultSchema
->;
-
 /** Existing attachment budget operation kinds shared by Computer and Media. */
 export const connectorOperationBudgetKindSchema = z.enum([
   "exec",
@@ -72,12 +50,5 @@ export const appComputerExecTimeoutSchema = z.lazy(() =>
   z.strictObject({
     error: z.literal("timeout"),
     requestId: z.string(),
-  }),
-);
-
-/** The Workflow Git-pass owner has exactly these existing domain refusals. */
-export const workflowGitPassRefusalSchema = z.lazy(() =>
-  z.strictObject({
-    error: z.enum(["revoked", "not_granted", "unavailable"]),
   }),
 );

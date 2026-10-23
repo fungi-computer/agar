@@ -6,21 +6,21 @@
 
 # Agar API overview
 
-| Import                                     | Export                                                 | Purpose                                                                                  |
-| ------------------------------------------ | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `@fungi.computer/agar`                     | `connectApp`                                           | Connect a host-mounted App frontend and receive its context and grants.                  |
-| `@fungi.computer/agar`                     | `defineCapability`, `AppError`                         | Declare a typed host capability; the SDK's one typed failure.                            |
-| `@fungi.computer/agar/host`                | `connectAppHost`                                       | Mount an App in an author-owned iframe test or standalone page.                          |
-| `@fungi.computer/agar/react`               | `mountApp`, `useAppContext`                            | Mount a React App and read its host context.                                             |
-| `@fungi.computer/agar/query`               | `queryKeys`                                            | TanStack Query keys and live feeds for host data.                                        |
-| `@fungi.computer/agar/errors`              | `describeAppError`                                     | Turn a failure into approved, action-hinted UI copy.                                     |
-| `@fungi.computer/agar/backend-definition`  | `defineAppBackend`, `defineAppMethod`                  | Define typed backend methods once, with Zod input and output.                            |
-| `@fungi.computer/agar/backend-declaration` | `buildAppApi`, `buildAppDeclaration`                   | Project the backend definition to the JSON Schema App API at build time.                 |
-| `@fungi.computer/agar/backend`             | `appBackend`                                           | Call the App's own backend from its frontend.                                            |
-| `@fungi.computer/agar/rpc`                 | `rpcHandleSchema`, `rpcMethod`                         | Validate object-capability handles received over Cap'n Web.                              |
-| `@fungi.computer/agar/files`               | `readAppFile`, `writeAppFile`                          | Turn a host-owned file read or write handle into a `File` or an upload.                  |
-| `@fungi.computer/agar/storage`             | `appStorage`                                           | Read, write and watch the App's own member and Team data.                                |
-| `@fungi.computer/agar/computer-contracts`  | `workflowGitPassResultSchema`, `WorkflowGitPassResult` | Validate host-issued, credential-free Workflow pass metadata without granting authority. |
+| Import                                     | Export                                                              | Purpose                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `@fungi.computer/agar`                     | `connectApp`                                                        | Connect a host-mounted App frontend and receive its context and grants.                             |
+| `@fungi.computer/agar`                     | `defineCapability`, `AppError`                                      | Declare a typed host capability; the SDK's one typed failure.                                       |
+| `@fungi.computer/agar/host`                | `connectAppHost`                                                    | Mount an App in an author-owned iframe test or standalone page.                                     |
+| `@fungi.computer/agar/react`               | `mountApp`, `useAppContext`                                         | Mount a React App and read its host context.                                                        |
+| `@fungi.computer/agar/query`               | `queryKeys`                                                         | TanStack Query keys and live feeds for host data.                                                   |
+| `@fungi.computer/agar/errors`              | `describeAppError`                                                  | Turn a failure into approved, action-hinted UI copy.                                                |
+| `@fungi.computer/agar/backend-definition`  | `defineAppBackend`, `defineAppMethod`                               | Define typed backend methods once, with Zod input and output.                                       |
+| `@fungi.computer/agar/backend-declaration` | `buildAppApi`, `buildAppDeclaration`                                | Project the backend definition to the JSON Schema App API at build time.                            |
+| `@fungi.computer/agar/backend`             | `appBackend`                                                        | Call the App's own backend from its frontend.                                                       |
+| `@fungi.computer/agar/rpc`                 | `rpcHandleSchema`, `rpcMethod`                                      | Validate object-capability handles received over Cap'n Web.                                         |
+| `@fungi.computer/agar/files`               | `readAppFile`, `writeAppFile`                                       | Turn a host-owned file read or write handle into a `File` or an upload.                             |
+| `@fungi.computer/agar/storage`             | `appStorage`                                                        | Read, write and watch the App's own member and Team data.                                           |
+| `@fungi.computer/agar/computer-contracts`  | `appComputerAdmissionRefusalSchema`, `appComputerExecTimeoutSchema` | Validate public Computer admission, dispatch and budget outcomes without exposing host credentials. |
 
 A host decides what an App may do: the frontend asks for a capability and the
 host grants, denies or revokes it. The backend definition is runtime-neutral;

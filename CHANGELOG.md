@@ -1,5 +1,50 @@
 # @fungi.computer/agar
 
+## 0.3.0
+
+### Minor Changes
+
+- Changes since 0.2.0:
+
+  - feat(stranger): typecheck each public entry in its own environment
+  - test(agar): align packed inventory with shipped modules
+  - fix(agar): keep Promise error declarations schema-independent
+  - test: migrate Workflow capture examples and declare Agar artifact dependency
+  - fix(tourtois): wait for pending delivery during preparation
+  - refactor(apps): remove public Workflow Git credential issuance
+  - fix(apps): stop in-flight App work on disable
+  - feat(docs): consolidate package documentation under one site
+  - fix(trellis): offer header variant A with status beads and icon Run
+  - test(agar): prove missing hosts and forbidden ancestors in Chromium
+  - fix(agar): discover the parent host without a referrer
+  - fix(stranger): unblock B4 machine-link package closure
+  - feat(agar): expose member-bound approval capability
+  - fix(media): expose diagnostic grammar to API document consumers
+  - fix(media): preserve safe provider diagnostics through replay
+  - docs(agar): refresh current public API contracts
+  - fix(hub): preserve caller identity through request withdrawal
+  - fix(agent-message): one author shape, agent wording for a failed Agent
+    message
+  - feat(session): show another Agent's message as a compact block
+  - feat(oyster): public release 0.2.0
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @fungi.computer/approvals@0.0.2
+  - @fungi.computer/cairn@0.1.0
+  - @fungi.computer/gills@0.2.0
+  - @fungi.computer/puffball@0.2.0
+  - @fungi.computer/sprite@0.2.0
+  - @fungi.computer/stipe@0.1.0
+  - @fungi.computer/whistle@0.1.0
+
 ## 0.2.0
 
 ### Minor Changes

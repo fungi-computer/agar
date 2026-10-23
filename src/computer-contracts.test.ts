@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import * as computerContracts from "./computer-contracts.js";
 import {
   appComputerAdmissionRefusalSchema,
   appComputerDispatchRefusalSchema,
@@ -6,8 +7,20 @@ import {
   appComputerInputRefusalSchema,
   connectorOperationBudgetKindSchema,
   connectorOperationBudgetRefusalSchema,
-  workflowGitPassRefusalSchema,
 } from "./computer-contracts.js";
+
+it("exports only public Computer outcomes, not host credential contracts", () => {
+  expect(Object.keys(computerContracts).sort()).toEqual(
+    [
+      "appComputerAdmissionRefusalSchema",
+      "appComputerDispatchRefusalSchema",
+      "appComputerExecTimeoutSchema",
+      "appComputerInputRefusalSchema",
+      "connectorOperationBudgetKindSchema",
+      "connectorOperationBudgetRefusalSchema",
+    ].sort(),
+  );
+});
 
 it("retains each existing admission and attachment budget outcome", () => {
   for (const error of [
@@ -37,7 +50,7 @@ it("retains each existing admission and attachment budget outcome", () => {
   ).toBe(false);
 });
 
-it("closes exactly the current argument, dispatch, timeout and Git-pass branches", () => {
+it("closes exactly the current argument, dispatch and timeout branches", () => {
   for (const error of ["too_large", "invalid_path", "invalid"]) {
     expect(appComputerInputRefusalSchema.parse({ error })).toEqual({ error });
   }
@@ -45,9 +58,6 @@ it("closes exactly the current argument, dispatch, timeout and Git-pass branches
     expect(appComputerDispatchRefusalSchema.parse({ error })).toEqual({
       error,
     });
-  }
-  for (const error of ["revoked", "not_granted", "unavailable"]) {
-    expect(workflowGitPassRefusalSchema.parse({ error })).toEqual({ error });
   }
   const timeout = { error: "timeout", requestId: "request-from-owner" };
   expect(appComputerExecTimeoutSchema.parse(timeout)).toEqual(timeout);
@@ -66,7 +76,6 @@ it("never admits a Loader refusal envelope or silently drops extra fields", () =
     appComputerInputRefusalSchema,
     appComputerDispatchRefusalSchema,
     appComputerExecTimeoutSchema,
-    workflowGitPassRefusalSchema,
     connectorOperationBudgetRefusalSchema,
   ]) {
     expect(

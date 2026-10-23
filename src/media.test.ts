@@ -427,12 +427,14 @@ describe("Media Agar capability", () => {
       stage: "provider",
       retryable: false,
       message: "Media generation failed",
+      provider: { category: "InferenceUpstreamError", code: 3031 },
     },
     {
       code: "HOST_FAILURE",
       stage: "normalization",
       retryable: false,
       message: "Media generation failed",
+      provider: { category: "result_download", status: 503 },
     },
     {
       code: "HOST_FAILURE",

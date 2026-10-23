@@ -1,6 +1,6 @@
 {
   "name": "@fungi.computer/agar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Levi <levi@technomancy.dev>",
   "description": "App contract for fungi.computer: typed backend methods, host capabilities and the App frontend connection",
   "type": "module",
@@ -161,6 +161,10 @@
     "./test-kit/git": {
       "types": "./dist/test-kit/git.d.ts",
       "import": "./dist/test-kit/git.js"
+    },
+    "./approvals": {
+      "types": "./dist/approvals.d.ts",
+      "import": "./dist/approvals.js"
     }
   },
   "scripts": {
@@ -191,7 +195,8 @@
     "buffer": "6.0.3",
     "@fungi.computer/gills": "workspace:*",
     "@fungi.computer/cairn": "workspace:*",
-    "@fungi.computer/sprite": "workspace:*"
+    "@fungi.computer/sprite": "workspace:*",
+    "@fungi.computer/approvals": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.2.0",

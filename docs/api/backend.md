@@ -99,6 +99,7 @@ const appBackendRefusalSchema: ZodObject<
   {
     error: ZodLiteral<"App execution unavailable">;
     reason: ZodEnum<{
+      disabled: "disabled";
       exec_isolation_required: "exec_isolation_required";
       execution_not_admitted: "execution_not_admitted";
       artifact_unavailable: "artifact_unavailable";

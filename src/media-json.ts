@@ -270,6 +270,7 @@ export class MediaGenerationAttempt
             retryable: true,
           },
         };
+      // Preserve the decoded failure intact, including safe provider facts.
       return response;
     } finally {
       active.delete(controller);

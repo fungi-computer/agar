@@ -100,6 +100,8 @@ export type {
   AppReadyMessage,
 } from "./internal/protocol.js";
 export { AppError } from "./errors.js";
+export { appDeliveryPendingSchema } from "./internal/schemas.js";
+export type { AppDeliveryPending } from "./errors.js";
 export { statusActionAllowed, statusText } from "./status.js";
 export {
   APP_BROWSER_SAVE_MAX_BYTES,
@@ -175,3 +177,5 @@ export type {
   AppStorageReset,
   ResolvedAppStorage,
 } from "./storage.js";
+
+export { approvals } from "./approvals.js";

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { appErrorData, appErrorFromData } from "./internal/app-error.js";
 import * as Schema from "effect/Schema";
 import { MediaGenerationError, mediaGenerationFailureSchema } from "./media.js";
 import {
@@ -9,6 +10,29 @@ import {
 } from "./errors.js";
 
 describe("describeAppError", () => {
+  it("round-trips pending delivery through the SDK's ordinary error decoder", () => {
+    const original = new AppError("delivery pending", {
+      code: "DELIVERY_PENDING",
+      retryable: true,
+    });
+    expect(appErrorFromData(appErrorData(original))).toMatchObject({
+      code: "DELIVERY_PENDING",
+      retryable: true,
+    });
+  });
+  it("describes pending delivery from the separately bundled shell without losing retry truth", () => {
+    const fromHostBundle = Object.assign(new Error("private host detail"), {
+      name: "AppError",
+      code: "DELIVERY_PENDING",
+      retryable: true,
+    });
+    expect(describeAppError(fromHostBundle)).toEqual({
+      title: "App delivery pending",
+      message: "The App hasn't finished getting ready. Try opening it again.",
+      retryable: true,
+      action: "retry",
+    });
+  });
   it("uses approved permission copy for a typed write denial, not the unknown fallback", () => {
     const diagnostic = "The Computer denied this write.";
     const denial = new AppError(diagnostic, {

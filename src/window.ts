@@ -37,6 +37,8 @@ export type AppCrumb = Readonly<{
 export type AppHeaderCommand = Readonly<{
   id: string;
   label: string;
+  /** Supported icon-only presentation; label remains the accessible name. */
+  icon?: "play";
   /** The Caps button a primary command wears; default `outline`. */
   variant?: "primary" | "outline" | "ghost";
   /** A menu command that removes or discards something. */
@@ -48,6 +50,8 @@ export type AppHeaderCommand = Readonly<{
 export type AppHeaderStatus = Readonly<{
   id: string;
   label: string;
+  /** Show the bead alone, with label retained as accessible text and a hint. */
+  presentation?: "bead";
   tone?: "neutral" | "info" | "warning" | "success" | "error";
 }>;
 

@@ -555,7 +555,7 @@ async function expectNextEpoch(
     hostWindow: asBrowserWindow(host),
     launch: launch(),
   });
-  const root = await connectApp({ expectedHostOrigin: host.origin });
+  const root = await connectApp({ host: "parent" });
   const mounted = await pending;
   root.dispose();
   mounted.dispose();
@@ -587,14 +587,11 @@ async function gracefulBreakRace(): Promise<void> {
 }
 
 async function invalidAppSession(): Promise<void> {
-  await expect(
-    connectApp({ expectedHostOrigin: "not-an-origin" }),
-  ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
   const controller = new AbortController();
   controller.abort();
   await expect(
     connectApp({
-      expectedHostOrigin: "https://host.example",
+      host: "parent",
       signal: controller.signal,
     }),
   ).rejects.toMatchObject({ code: "CANCELLED" });
@@ -632,7 +629,7 @@ async function localDisposal(): Promise<void> {
     hostWindow: asBrowserWindow(host),
     launch: launch(),
   });
-  await connectApp({ expectedHostOrigin: host.origin });
+  await connectApp({ host: "parent" });
   const mounted = await pending;
   mounted.dispose();
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -697,7 +694,7 @@ async function prepareMount(
     hostWindow: asBrowserWindow(host),
     launch: launch(capabilities),
   });
-  const root = await connectApp({ expectedHostOrigin: host.origin });
+  const root = await connectApp({ host: "parent" });
   const mountedHost = await hostPromise;
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
   return {
@@ -834,7 +831,7 @@ async function simultaneousMountsIgnoreForeignReady(): Promise<void> {
       configurable: true,
       value: firstApp,
     });
-    firstRoot = await connectApp({ expectedHostOrigin: host.origin });
+    firstRoot = await connectApp({ host: "parent" });
     firstMounted = await firstHost;
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(secondOutcome).toBeUndefined();
@@ -849,7 +846,7 @@ async function simultaneousMountsIgnoreForeignReady(): Promise<void> {
       configurable: true,
       value: secondApp,
     });
-    secondRoot = await connectApp({ expectedHostOrigin: host.origin });
+    secondRoot = await connectApp({ host: "parent" });
     secondMounted = await secondHost;
     expect(secondMounted).toBeDefined();
   } finally {

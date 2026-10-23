@@ -1,21 +1,102 @@
+import * as Schema from "effect/Schema";
+import * as Option from "effect/Option";
+import * as z from "zod";
+import {
+  mediaProviderDiagnosticSchema,
+  mediaProviderErrorCategorySchema,
+} from "./internal/media-diagnostic.js";
+
+/** Declaration-safe projection of the canonical Media diagnostic grammar. */
+export type MediaProviderDiagnostic =
+  | Readonly<{
+      /** Allowlisted Workers AI category; never a provider message. */
+      category:
+        | "InferenceUpstreamError"
+        | "AiInternalError"
+        | "TypeError"
+        | "AbortError"
+        | "TimeoutError"
+        | "Error";
+      /** Four- or five-digit provider prefix, or null when absent. */
+      code: number | null;
+    }>
+  | Readonly<{
+      /** A completed video result could not be downloaded. */
+      category: "result_download";
+      /** Native Response status, including zero. */
+      status: number;
+    }>;
+
+/** Decode only safe provider facts, rejecting unmodeled private fields. */
+export function decodeMediaProviderDiagnostic(
+  input: unknown,
+): MediaProviderDiagnostic {
+  // Bidirectional projection check, erased from the Promise declaration graph.
+  return Schema.decodeUnknownSync(mediaProviderDiagnosticSchema, {
+    onExcessProperty: "error",
+  })(input) satisfies [MediaProviderDiagnostic] extends [
+    typeof mediaProviderDiagnosticSchema.Type,
+  ]
+    ? MediaProviderDiagnostic
+    : never;
+}
+
+/**
+ * Documentable wire projection of the canonical diagnostic grammar.
+ * Maintained converters preserve its closed objects and numeric bounds;
+ * decoding still returns the declaration-safe public diagnostic type.
+ */
+export const mediaProviderDiagnosticWireSchema = z
+  .fromJSONSchema(
+    Schema.toJsonSchemaDocument(mediaProviderDiagnosticSchema, {
+      onExcessProperty: "error",
+    }).schema,
+  )
+  .transform(decodeMediaProviderDiagnostic);
+
+/** Decode an ordinary Error name without retaining arbitrary upstream text. */
+export function decodeMediaProviderErrorCategory(
+  input: string | undefined,
+): Exclude<MediaProviderDiagnostic["category"], "result_download"> {
+  return (
+    Option.getOrUndefined(
+      Schema.decodeUnknownOption(mediaProviderErrorCategorySchema)(input),
+    ) ?? "Error"
+  );
+}
+
 /** The closed set of reasons an AppError can state; every SDK and
  * host-reported failure is tagged with exactly one of these codes. */
-export type AppErrorCode =
-  | "CANCELLED"
-  | "CAPABILITY_DENIED"
-  | "CAPABILITY_REVOKED"
-  | "COMMAND_NOT_DECLARED"
-  | "CONFLICT"
-  | "DISCONNECTED"
-  | "FILE_TOO_LARGE"
-  | "HOST_FAILURE"
-  | "IDENTITY"
-  | "INSUFFICIENT_CREDIT"
-  | "INVALID_ARGUMENT"
-  | "PROTOCOL"
-  | "SAFETY_FILTER_REFUSED"
-  | "SELECTION_CHANGED"
-  | "TIMEOUT";
+export const appErrorCodes = [
+  "CANCELLED",
+  "CAPABILITY_DENIED",
+  "CAPABILITY_REVOKED",
+  "COMMAND_NOT_DECLARED",
+  "CONFLICT",
+  "DELIVERY_PENDING",
+  "DISCONNECTED",
+  "FILE_TOO_LARGE",
+  "HOST_FAILURE",
+  "IDENTITY",
+  "INSUFFICIENT_CREDIT",
+  "INVALID_ARGUMENT",
+  "PROTOCOL",
+  "SAFETY_FILTER_REFUSED",
+  "SELECTION_CHANGED",
+  "TIMEOUT",
+] as const;
+export type AppErrorCode = (typeof appErrorCodes)[number];
+
+/** One pending-delivery refusal shared by admission and the shell. */
+export type AppDeliveryPending = Readonly<{
+  code: Extract<AppErrorCode, "DELIVERY_PENDING">;
+}>;
+
+const describedAppErrorSchema = Schema.Struct({
+  name: Schema.Literal("AppError"),
+  code: Schema.Literals(appErrorCodes),
+  retryable: Schema.Boolean,
+});
 
 /** Required construction options for an AppError. */
 export type AppErrorOptions = {
@@ -79,6 +160,10 @@ const errorCopy = {
     title: "File changed",
     message: "This file changed elsewhere. Review it before saving again.",
   },
+  DELIVERY_PENDING: {
+    title: "App delivery pending",
+    message: "The App hasn't finished getting ready. Try opening it again.",
+  },
   DISCONNECTED: {
     title: "Connection lost",
     message: "Reopen the App to connect again.",
@@ -139,15 +224,17 @@ export function describeAppError(
   cause: unknown,
   overrides?: Partial<Record<AppErrorCode, ErrorCopy>>,
 ): ErrorDescription {
-  if (!(cause instanceof AppError))
-    return { ...errorCopy.UNKNOWN, retryable: false };
-  const entry: CopyEntry = errorCopy[cause.code];
-  const copy = overrides?.[cause.code] ?? entry;
-  const action = entry.action ?? (cause.retryable ? "retry" : undefined);
+  // The picked shell and host can be separate bundles of this same SDK.
+  const decoded = Schema.decodeUnknownOption(describedAppErrorSchema)(cause);
+  if (Option.isNone(decoded)) return { ...errorCopy.UNKNOWN, retryable: false };
+  const error = decoded.value;
+  const entry: CopyEntry = errorCopy[error.code];
+  const copy = overrides?.[error.code] ?? entry;
+  const action = entry.action ?? (error.retryable ? "retry" : undefined);
   const description = {
     title: copy.title,
     message: copy.message,
-    retryable: cause.retryable,
+    retryable: error.retryable,
   };
   if (action) return { ...description, action };
   return description;

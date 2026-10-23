@@ -61,6 +61,30 @@ readonly retryable: boolean;
 
 ## Type Aliases
 
+### MediaProviderDiagnostic
+
+```ts
+type MediaProviderDiagnostic =
+  | Readonly<{
+      category:
+        | "InferenceUpstreamError"
+        | "AiInternalError"
+        | "TypeError"
+        | "AbortError"
+        | "TimeoutError"
+        | "Error";
+      code: number | null;
+    }>
+  | Readonly<{
+      category: "result_download";
+      status: number;
+    }>;
+```
+
+Declaration-safe projection of the canonical Media diagnostic grammar.
+
+---
+
 ### AppErrorCode
 
 ```ts
@@ -145,7 +169,87 @@ type ErrorDescription = ErrorCopy &
 Recovery hints are for the caller's UI, never an instruction to retry
 automatically.
 
+## Variables
+
+### mediaProviderDiagnosticWireSchema
+
+```ts
+const mediaProviderDiagnosticWireSchema: ZodPipe<
+  ZodType<unknown, unknown, $ZodTypeInternals<unknown, unknown>>,
+  ZodTransform<
+    | Readonly<{
+        category:
+          | "InferenceUpstreamError"
+          | "AiInternalError"
+          | "TypeError"
+          | "AbortError"
+          | "TimeoutError"
+          | "Error";
+        code: number | null;
+      }>
+    | Readonly<{
+        category: "result_download";
+        status: number;
+      }>,
+    unknown
+  >
+>;
+```
+
+Documentable wire projection of the canonical diagnostic grammar. Maintained
+converters preserve its closed objects and numeric bounds; decoding still
+returns the declaration-safe public diagnostic type.
+
 ## Functions
+
+### decodeMediaProviderDiagnostic()
+
+```ts
+function decodeMediaProviderDiagnostic(input): MediaProviderDiagnostic;
+```
+
+Decode only safe provider facts, rejecting unmodeled private fields.
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `input`   | `unknown` |
+
+#### Returns
+
+[`MediaProviderDiagnostic`](#mediaproviderdiagnostic)
+
+---
+
+### decodeMediaProviderErrorCategory()
+
+```ts
+function decodeMediaProviderErrorCategory(
+  input,
+):
+  | "InferenceUpstreamError"
+  | "AiInternalError"
+  | "TypeError"
+  | "AbortError"
+  | "TimeoutError"
+  | "Error";
+```
+
+Decode an ordinary Error name without retaining arbitrary upstream text.
+
+#### Parameters
+
+| Parameter | Type                    |
+| --------- | ----------------------- |
+| `input`   | `string` \| `undefined` |
+
+#### Returns
+
+\| `"InferenceUpstreamError"` \| `"AiInternalError"` \| `"TypeError"` \|
+`"AbortError"` \| `"TimeoutError"` \| `"Error"`
+
+---
 
 ### describeAppError()
 

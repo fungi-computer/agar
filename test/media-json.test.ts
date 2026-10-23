@@ -218,4 +218,50 @@ describe("public Media browser handle", () => {
       ).generate(input),
     ).resolves.toEqual({ kind: "failed", failure });
   });
+  it.each([
+    { category: "InferenceUpstreamError", code: 3031 },
+    { category: "result_download", status: 503 },
+  ])(
+    "preserves safe provider facts through the JSON consumer: $category",
+    async (provider) => {
+      const failure = {
+        message: "Media provider failed.",
+        stage:
+          provider.category === "result_download"
+            ? "normalization"
+            : "provider",
+        code: "HOST_FAILURE",
+        retryable: false,
+        provider,
+      };
+      const attempt = await create(() =>
+        Promise.resolve(
+          Schema.decodeUnknownSync(Schema.Json)({ kind: "failed", failure }),
+        ),
+      ).createAttempt();
+      await expect(attempt.generate(input)).resolves.toEqual({
+        kind: "failed",
+        failure,
+      });
+    },
+  );
+  it("rejects a private provider body instead of forwarding it to the App", async () => {
+    const marker = "synthetic-private-json-provider-body";
+    const attempt = await create(() =>
+      Promise.resolve({
+        kind: "failed",
+        failure: {
+          message: "Media failed",
+          code: "HOST_FAILURE",
+          retryable: false,
+          provider: { category: "result_download", status: 503, body: marker },
+        },
+      }),
+    ).createAttempt();
+    const error: unknown = await attempt
+      .generate(input)
+      .catch((cause: unknown) => cause);
+    expect(error).toMatchObject({ code: "PROTOCOL" });
+    expect(JSON.stringify(error)).not.toContain(marker);
+  });
 });

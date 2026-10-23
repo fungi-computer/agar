@@ -400,65 +400,37 @@ A generation call carries paths and a replay ID; the host supplies authority.
 ### mediaGenerationJsonOutcomeSchema
 
 ```ts
-const mediaGenerationJsonOutcomeSchema: Union<
-  readonly [
-    Struct<{
-      kind: Literal<"succeeded">;
-      result: Struct<{
-        [dispose]: optional<Unknown>;
-        bytes: Number;
-        costMilliunits: Number;
-        destination: Struct<{
-          computerId: String;
-          path: String;
-        }>;
-        format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4"]>;
-        height: Number;
-        model: String;
-        width: Number;
-      }>;
-    }>,
-    Struct<{
-      kind: Literal<"failed">;
-      failure: Struct<{
-        message: String;
-        stage: optional<
-          Literals<
-            readonly [
-              "admission",
-              "generation-authorization",
-              "settings",
-              "estimate",
-              "billing",
-              "operation",
-              "provider",
-              "normalization",
-              "artifact",
-              "destination-authorization",
-              "destination-write",
-            ]
-          >
-        >;
-        code: Literals<
-          readonly [
-            "CANCELLED",
-            "CAPABILITY_DENIED",
-            "CAPABILITY_REVOKED",
-            "DISCONNECTED",
-            "HOST_FAILURE",
-            "IDENTITY",
-            "INSUFFICIENT_CREDIT",
-            "INVALID_ARGUMENT",
-            "PROTOCOL",
-            "SAFETY_FILTER_REFUSED",
-            "TIMEOUT",
-          ]
-        >;
-        retryable: Boolean;
-      }>;
-    }>,
-  ]
->;
+const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
+  kind: Literal<"succeeded">;
+  result: Struct<{
+     [dispose]: optional<Unknown>;
+     bytes: Number;
+     costMilliunits: Number;
+     destination: Struct<{
+        computerId: String;
+        path: String;
+     }>;
+     format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4"]>;
+     height: Number;
+     model: String;
+     width: Number;
+  }>;
+}>, Struct<{
+  kind: Literal<"failed">;
+  failure: Struct<{
+     message: String;
+     stage: optional<Literals<readonly ["admission", "generation-authorization", "settings", "estimate", "billing", "operation", "provider", "normalization", "artifact", "destination-authorization", "destination-write"]>>;
+     provider: optional<Union<readonly [Struct<{
+        category: ...;
+        code: ...;
+      }>, Struct<{
+        category: ...;
+        status: ...;
+     }>]>>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
+     retryable: Boolean;
+  }>;
+}>]>;
 ```
 
 A typed completion or refusal; no live attempt handles cross this boundary.
@@ -488,6 +460,7 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
   failure: Struct<{
      message: String;
      stage: optional<Literals<readonly [..., ..., ..., ..., ..., ..., ..., ..., ..., ..., ...]>>;
+     provider: optional<Union<readonly [..., ...]>>;
      code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
      retryable: Boolean;
   }>;

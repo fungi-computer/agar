@@ -208,6 +208,28 @@ describe("App navigation contract", () => {
   });
 });
 
+it("preserves bounded icon commands and bead statuses across the navigation wire", () => {
+  const state = {
+    canGoBack: true,
+    primary: [{ id: "run", label: "Run", icon: "play", disabled: true }],
+    status: [{ id: "saved", label: "Saved", presentation: "bead" }],
+  };
+  const wire = parseNavigationStateInput(state);
+  expect(parseNavigationState(wire)).toEqual(state);
+  expect(() =>
+    parseNavigationStateInput({
+      ...state,
+      primary: [{ ...state.primary[0], icon: "unregistered" }],
+    }),
+  ).toThrow(AppError);
+  expect(() =>
+    parseNavigationStateInput({
+      ...state,
+      status: [{ ...state.status[0], presentation: "invisible" }],
+    }),
+  ).toThrow(AppError);
+});
+
 it("preserves typed credit refusal in ordinary host RPC replies", () => {
   const failure = rpcFailure(
     new AppError("Credit is required", {

@@ -5,6 +5,12 @@ export const FungiAuthorSchema = z.lazy(() =>
   z.strictObject({
     id: z.string().min(1).max(256),
     name: z.string().min(1).max(128),
+    /**
+     * Present only when the author is another Agent the host admitted a
+     * delegated send or reply from; a line's text never sets it. Human
+     * authors carry no kind.
+     */
+    kind: z.literal("agent").optional(),
   }),
 );
 /** Who a Session line came from, as the admitting host authenticated them. */
@@ -43,6 +49,8 @@ export type FungiDelegationReply = z.infer<typeof FungiDelegationReplySchema>;
  */
 export const FungiMessageMetaSchema = z.strictObject({
   author: FungiAuthorSchema.optional(),
+  /** Original caller identity when the host translates its request into an owner key. */
+  sourceRequestId: identifier.optional(),
   /** Host-admitted delegation path and its inherited abuse bound. */
   delegation: z
     .strictObject({
@@ -88,9 +96,16 @@ export function messageDelegationReply(
 }
 
 /** The metadata the host attaches for one authenticated author, as JSON. */
-export type AuthorMeta = Readonly<{ author: Readonly<FungiAuthor> }>;
+export type AuthorMeta = Readonly<{
+  author: Readonly<{
+    [K in keyof FungiAuthor]: Exclude<FungiAuthor[K], undefined>;
+  }>;
+}>;
 
 /** The metadata the host attaches for one authenticated author. */
 export function authorMeta(author: FungiAuthor): AuthorMeta {
-  return { author: { id: author.id, name: author.name } };
+  const { id, name, kind } = author;
+  return kind === undefined
+    ? { author: { id, name } }
+    : { author: { id, name, kind } };
 }
