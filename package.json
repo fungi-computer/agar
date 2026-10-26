@@ -1,6 +1,6 @@
 {
   "name": "@fungi.computer/agar",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "Levi <levi@technomancy.dev>",
   "description": "App contract for fungi.computer: typed backend methods, host capabilities and the App frontend connection",
   "type": "module",
