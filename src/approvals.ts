@@ -2,7 +2,7 @@ import * as Schema from "effect/Schema";
 import * as z from "zod";
 import {
   ApprovalViewSchema,
-  ApprovalRefusalReasonSchema,
+  ApprovalRefusalSchema,
   AutoApproveInputSchema,
   type Approvals,
 } from "@fungi.computer/approvals";
@@ -15,10 +15,7 @@ import {
 
 export type { Approvals } from "@fungi.computer/approvals";
 
-const refusal = Schema.Struct({
-  kind: Schema.Literal("refused"),
-  reason: ApprovalRefusalReasonSchema,
-});
+const refusal = ApprovalRefusalSchema;
 const page = Schema.Struct({
   items: Schema.Array(ApprovalViewSchema),
   nextCursor: Schema.NullOr(Schema.String),

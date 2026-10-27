@@ -2531,6 +2531,18 @@ Message type the host posts to hand the App its RPC MessagePort.
 
 ---
 
+### appDeliveryPendingSchema
+
+```ts
+const appDeliveryPendingSchema: Struct<{
+  code: Literals<readonly ["DELIVERY_PENDING"]>;
+}>;
+```
+
+Effect projection of the error owner's declaration-safe pending refusal.
+
+---
+
 ### parseAppStatusItems
 
 ```ts
@@ -2603,6 +2615,7 @@ const mediaModelSchema: Struct<{
   }>;
   kind: Literals<readonly ["image", "video"]>;
   label: String;
+  maxPromptLength: Number;
   tier: Literals<readonly ["draft", "balanced", "premium", "max"]>;
   outputFormats: $Array<Literals<readonly ["png", "jpeg", "webp"]>>;
   sizes: NullOr<$Array<String>>;
@@ -2632,7 +2645,6 @@ const mediaModelSchema: Struct<{
         readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]
       >;
       defaultGenerateAudio: NullOr<Boolean>;
-      maxPromptLength: Number;
       referenceRoles: $Array<
         Literals<readonly ["first-frame", "last-frame", "reference"]>
       >;
@@ -3016,11 +3028,11 @@ The author a message's metadata names; none for anything else.
 }
 ```
 
-| Name    | Type      | Description                                                                                                                                               |
-| ------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`    | `string`  | -                                                                                                                                                         |
-| `name`  | `string`  | -                                                                                                                                                         |
-| `kind?` | `"agent"` | Present only when the author is another Agent the host admitted a delegated send or reply from; a line's text never sets it. Human authors carry no kind. |
+| Name    | Type      | Description                                                                                                                                                               |
+| ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`    | `string`  | -                                                                                                                                                                         |
+| `name`  | `string`  | -                                                                                                                                                                         |
+| `kind?` | `"agent"` | Present only when the author is another Agent the host admitted a delegated send or reply from; a line's text never sets it. Human and host/system authors carry no kind. |
 
 ---
 
@@ -3094,12 +3106,12 @@ The metadata the host attaches for one authenticated author.
 
 #### Parameters
 
-| Parameter      | Type                                                        | Description                                                                                                                                               |
-| -------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `author`       | \{ `id`: `string`; `name`: `string`; `kind?`: `"agent"`; \} | -                                                                                                                                                         |
-| `author.id`    | `string`                                                    | -                                                                                                                                                         |
-| `author.name`  | `string`                                                    | -                                                                                                                                                         |
-| `author.kind?` | `"agent"`                                                   | Present only when the author is another Agent the host admitted a delegated send or reply from; a line's text never sets it. Human authors carry no kind. |
+| Parameter      | Type                                                        | Description                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `author`       | \{ `id`: `string`; `name`: `string`; `kind?`: `"agent"`; \} | -                                                                                                                                                                         |
+| `author.id`    | `string`                                                    | -                                                                                                                                                                         |
+| `author.name`  | `string`                                                    | -                                                                                                                                                                         |
+| `author.kind?` | `"agent"`                                                   | Present only when the author is another Agent the host admitted a delegated send or reply from; a line's text never sets it. Human and host/system authors carry no kind. |
 
 #### Returns
 
@@ -3532,6 +3544,12 @@ latest copy of the report, so a stale shell cannot reach the App.
 ### AppError
 
 Re-exports [AppError](errors.md#apperror)
+
+---
+
+### AppDeliveryPending
+
+Re-exports [AppDeliveryPending](errors.md#appdeliverypending)
 
 ---
 

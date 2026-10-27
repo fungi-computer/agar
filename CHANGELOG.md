@@ -1,5 +1,26 @@
 # @fungi.computer/agar
 
+## 0.4.0
+
+### Minor Changes
+
+- Changes since 0.3.1:
+
+  - feat(prints): choose video frame roles and audio from the model's documented
+    capabilities
+  - feat(prints): widescreen presets within a documented maximum
+  - feat(prints): reference images per model, GPT Image 2 takes up to 16
+  - feat(approval): carry bounded denial feedback and optional rule coverage
+  - feat(prints): enforce a documented prompt limit per model
+  - fix(mesh): reply after carrier dead letters
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @fungi.computer/approvals@0.2.0
+  - @fungi.computer/whistle@0.2.0
+
 ## 0.3.1
 
 ### Patch Changes

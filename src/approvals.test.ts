@@ -36,7 +36,10 @@ const view: ApprovalView = {
 };
 
 class ApprovalHost extends RpcTarget {
-  constructor(private readonly malformed = false) {
+  constructor(
+    private readonly malformed = false,
+    private readonly denialNote?: string,
+  ) {
     super();
   }
   list() {
@@ -53,7 +56,9 @@ class ApprovalHost extends RpcTarget {
       : view;
   }
   answer() {
-    return { kind: "refused", reason: "not-eligible" };
+    return this.denialNote === undefined
+      ? { kind: "refused", reason: "not-eligible" }
+      : { kind: "refused", reason: "declined", denialNote: this.denialNote };
   }
   setAutoApprove(rule: AutoApproveInput) {
     return { kind: "updated", rule };
@@ -81,6 +86,20 @@ it("decodes all four approval methods through a native RPC handle without invent
     enabled: false,
   };
   expect(await handle.setAutoApprove(rule)).toEqual({ kind: "updated", rule });
+});
+
+it("preserves a human denial note across the native approval RPC result", async () => {
+  const note = "use npm, not pnpm";
+  using remote = new RpcStub(new ApprovalHost(false, note));
+  const handle = approvals.schema.parse(remote);
+  expect(
+    await handle.answer({
+      recordId: "approval:one",
+      decision: "deny",
+      expectedRevision: 1,
+      denialNote: note,
+    }),
+  ).toEqual({ kind: "refused", reason: "declined", denialNote: note });
 });
 
 it("rejects a private input field in a native approval result as a protocol error", async () => {

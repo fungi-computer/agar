@@ -331,6 +331,7 @@ const mediaGenerationDescriptionSchema: Struct<{
      }>;
      kind: Literals<readonly ["image", "video"]>;
      label: String;
+     maxPromptLength: Number;
      tier: Literals<readonly ["draft", "balanced", "premium", "max"]>;
      outputFormats: $Array<Literals<readonly ["png", "jpeg", "webp"]>>;
      sizes: NullOr<$Array<String>>;
@@ -349,7 +350,6 @@ const mediaGenerationDescriptionSchema: Struct<{
         defaultResolution: Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>;
         defaultAspectRatio: Literals<readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]>;
         defaultGenerateAudio: NullOr<Boolean>;
-        maxPromptLength: Number;
         referenceRoles: $Array<Literals<readonly [..., ..., ...]>>;
         maxReferenceImages: Number;
         referenceResolutions: $Array<Literals<readonly [..., ..., ..., ..., ...]>>;

@@ -236,6 +236,7 @@ const modelInputSchema = Schema.Struct({
   defaultWidth: positiveInteger,
   dimensions: Schema.Literals(["none", "own"]),
   maxDimension: Schema.NullOr(positiveInteger),
+  maxDimensionDocumented: Schema.Boolean,
   maxReferences: nonNegativeInteger,
   maxSteps: Schema.NullOr(positiveInteger),
   referenceField: Schema.NullOr(text(256)),
@@ -272,10 +273,10 @@ export const mediaVideoModelSchema = Schema.Struct({
   defaultResolution: mediaVideoResolutionSchema,
   /** Default requested aspect. */
   defaultAspectRatio: mediaVideoAspectRatioSchema,
+  /** Whether the model documents an audio on/off choice. */
+  supportsAudio: Schema.Boolean,
   /** Audio default, or null when the provider default is undocumented. */
   defaultGenerateAudio: Schema.NullOr(Schema.Boolean),
-  /** Host/provider prompt bound. */
-  maxPromptLength: positiveInteger,
   /** Roles admitted by this model. */
   referenceRoles: Schema.Array(mediaVideoReferenceRoleSchema),
   /** Maximum images in reference-image mode. */
@@ -303,6 +304,8 @@ export const mediaModelSchema = Schema.Struct({
   input: modelInputSchema,
   kind: Schema.Literals(["image", "video"]),
   label: text(512),
+  /** Maximum prompt length in characters for this model. */
+  maxPromptLength: positiveInteger,
   tier: Schema.Literals(["draft", "balanced", "premium", "max"]),
   outputFormats: Schema.Array(Schema.Literals(["png", "jpeg", "webp"])).pipe(
     Schema.check(Schema.isMaxLength(3)),
@@ -326,8 +329,14 @@ const descriptionSchema = Schema.Struct({
   models: modelsSchema,
   canGenerate: Schema.Boolean,
 });
-/** The most reference images one generation request may name. */
-export const MAX_MEDIA_REFERENCES = 4;
+/**
+ * Schema ceiling for reference images in one request: the largest per-model
+ * limit (GPT Image 2 takes 16). The host's catalog `maxReferences` is the
+ * authoritative per-model limit and is enforced after this parse.
+ */
+export const MAX_MEDIA_REFERENCES = 16;
+/** Video reference images: every verified video model's catalog value is 4. */
+export const MAX_VIDEO_REFERENCES = 4;
 
 /**
  * Validates the shape of an App's generation settings. Model-specific limits
@@ -378,7 +387,7 @@ export const mediaVideoSelectionSchema = Schema.Struct({
   /** At most four paths with explicit frame/reference roles. */
   references: Schema.optional(
     Schema.Array(mediaVideoReferenceSchema).pipe(
-      Schema.check(Schema.isMaxLength(MAX_MEDIA_REFERENCES)),
+      Schema.check(Schema.isMaxLength(MAX_VIDEO_REFERENCES)),
     ),
   ),
 });

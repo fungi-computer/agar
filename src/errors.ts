@@ -85,6 +85,7 @@ export const appErrorCodes = [
   "SELECTION_CHANGED",
   "TIMEOUT",
 ] as const;
+/** One closed App error code from `appErrorCodes`. */
 export type AppErrorCode = (typeof appErrorCodes)[number];
 
 /** One pending-delivery refusal shared by admission and the shell. */

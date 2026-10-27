@@ -7,8 +7,8 @@ export const FungiAuthorSchema = z.lazy(() =>
     name: z.string().min(1).max(128),
     /**
      * Present only when the author is another Agent the host admitted a
-     * delegated send or reply from; a line's text never sets it. Human
-     * authors carry no kind.
+     * delegated send or reply from; a line's text never sets it. Human and
+     * host/system authors carry no kind.
      */
     kind: z.literal("agent").optional(),
   }),

@@ -50,7 +50,23 @@ Error.constructor;
 ##### code
 
 ```ts
-readonly code: AppErrorCode;
+readonly code:
+  | "CANCELLED"
+  | "CAPABILITY_DENIED"
+  | "CAPABILITY_REVOKED"
+  | "COMMAND_NOT_DECLARED"
+  | "CONFLICT"
+  | "DELIVERY_PENDING"
+  | "DISCONNECTED"
+  | "FILE_TOO_LARGE"
+  | "HOST_FAILURE"
+  | "IDENTITY"
+  | "INSUFFICIENT_CREDIT"
+  | "INVALID_ARGUMENT"
+  | "PROTOCOL"
+  | "SAFETY_FILTER_REFUSED"
+  | "SELECTION_CHANGED"
+  | "TIMEOUT";
 ```
 
 ##### retryable
@@ -88,26 +104,22 @@ Declaration-safe projection of the canonical Media diagnostic grammar.
 ### AppErrorCode
 
 ```ts
-type AppErrorCode =
-  | "CANCELLED"
-  | "CAPABILITY_DENIED"
-  | "CAPABILITY_REVOKED"
-  | "COMMAND_NOT_DECLARED"
-  | "CONFLICT"
-  | "DISCONNECTED"
-  | "FILE_TOO_LARGE"
-  | "HOST_FAILURE"
-  | "IDENTITY"
-  | "INSUFFICIENT_CREDIT"
-  | "INVALID_ARGUMENT"
-  | "PROTOCOL"
-  | "SAFETY_FILTER_REFUSED"
-  | "SELECTION_CHANGED"
-  | "TIMEOUT";
+type AppErrorCode = (typeof appErrorCodes)[number];
 ```
 
-The closed set of reasons an AppError can state; every SDK and host-reported
-failure is tagged with exactly one of these codes.
+One closed App error code from `appErrorCodes`.
+
+---
+
+### AppDeliveryPending
+
+```ts
+type AppDeliveryPending = Readonly<{
+  code: Extract<AppErrorCode, "DELIVERY_PENDING">;
+}>;
+```
+
+One pending-delivery refusal shared by admission and the shell.
 
 ---
 
@@ -200,6 +212,34 @@ Documentable wire projection of the canonical diagnostic grammar. Maintained
 converters preserve its closed objects and numeric bounds; decoding still
 returns the declaration-safe public diagnostic type.
 
+---
+
+### appErrorCodes
+
+```ts
+const appErrorCodes: readonly [
+  "CANCELLED",
+  "CAPABILITY_DENIED",
+  "CAPABILITY_REVOKED",
+  "COMMAND_NOT_DECLARED",
+  "CONFLICT",
+  "DELIVERY_PENDING",
+  "DISCONNECTED",
+  "FILE_TOO_LARGE",
+  "HOST_FAILURE",
+  "IDENTITY",
+  "INSUFFICIENT_CREDIT",
+  "INVALID_ARGUMENT",
+  "PROTOCOL",
+  "SAFETY_FILTER_REFUSED",
+  "SELECTION_CHANGED",
+  "TIMEOUT",
+];
+```
+
+The closed set of reasons an AppError can state; every SDK and host-reported
+failure is tagged with exactly one of these codes.
+
 ## Functions
 
 ### decodeMediaProviderDiagnostic()
@@ -263,10 +303,10 @@ prerequisites, so they can accompany a non-retryable operation.
 
 #### Parameters
 
-| Parameter    | Type                                                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `cause`      | `unknown`                                                                                                             |
-| `overrides?` | `Partial`\<`Record`\<[`AppErrorCode`](#apperrorcode), `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
+| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
 
 #### Returns
 
