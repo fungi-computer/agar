@@ -323,6 +323,7 @@ const mediaGenerationDescriptionSchema: Struct<{
         defaultWidth: Number;
         dimensions: Literals<readonly ["none", "own"]>;
         maxDimension: NullOr<Number>;
+        maxDimensionDocumented: Boolean;
         maxReferences: Number;
         maxSteps: NullOr<Number>;
         referenceField: NullOr<String>;
@@ -349,6 +350,7 @@ const mediaGenerationDescriptionSchema: Struct<{
         }>>;
         defaultResolution: Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>;
         defaultAspectRatio: Literals<readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]>;
+        supportsAudio: Boolean;
         defaultGenerateAudio: NullOr<Boolean>;
         referenceRoles: $Array<Literals<readonly [..., ..., ...]>>;
         maxReferenceImages: Number;

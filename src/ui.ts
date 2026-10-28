@@ -88,6 +88,10 @@ export type AppStatusItem =
       icon?: AppStatusIcon;
       /** A positive count after the label; zero is hidden. */
       count?: number;
+      /** A small status light before the label; omitted draws none. */
+      tone?: AppStatusTone;
+      /** Work is under way: the light pulses (neutral tone when none is set). */
+      busy?: boolean;
       /** A longer description, such as a full folder path. */
       title?: string;
       disabled?: boolean;

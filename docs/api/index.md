@@ -1627,6 +1627,8 @@ type AppStatusItem =
       kind: "button";
       icon?: AppStatusIcon;
       count?: number;
+      tone?: AppStatusTone;
+      busy?: boolean;
       title?: string;
       disabled?: boolean;
       opens?: "dialog";
@@ -2071,6 +2073,18 @@ const FungiDelegationReplySchema: ZodLazy<
         outcome_unknown: "outcome_unknown";
       }>;
       diagnostic: ZodOptional<ZodString>;
+      waitingOnYou: ZodOptional<
+        ZodArray<
+          ZodObject<
+            {
+              itemId: ZodLazy<ZodString>;
+              kind: ZodString;
+              summary: ZodString;
+            },
+            $strict
+          >
+        >
+      >;
     },
     $strict
   >
@@ -2096,6 +2110,7 @@ const FungiMessageMetaSchema: ZodObject<{
   delegation: ZodOptional<ZodObject<{
      ancestors: ZodArray<ZodLazy<ZodString>>;
      maxDepth: ZodNumber;
+     steer: ZodOptional<ZodLiteral<true>>;
      reply: ZodOptional<ZodLazy<ZodObject<{
         agentId: ZodLazy<ZodString>;
         sessionId: ZodLazy<ZodString>;
@@ -2108,6 +2123,7 @@ const FungiMessageMetaSchema: ZodObject<{
            outcome_unknown: ...;
         }>;
         diagnostic: ZodOptional<ZodString>;
+        waitingOnYou: ZodOptional<ZodArray<...>>;
      }, $strict>>>;
   }, $strict>>;
 }, $strict>;
@@ -2607,6 +2623,7 @@ const mediaModelSchema: Struct<{
     defaultWidth: Number;
     dimensions: Literals<readonly ["none", "own"]>;
     maxDimension: NullOr<Number>;
+    maxDimensionDocumented: Boolean;
     maxReferences: Number;
     maxSteps: NullOr<Number>;
     referenceField: NullOr<String>;
@@ -2644,6 +2661,7 @@ const mediaModelSchema: Struct<{
       defaultAspectRatio: Literals<
         readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]
       >;
+      supportsAudio: Boolean;
       defaultGenerateAudio: NullOr<Boolean>;
       referenceRoles: $Array<
         Literals<readonly ["first-frame", "last-frame", "reference"]>
@@ -3055,6 +3073,7 @@ function messageDelegationReply(meta):
         | "cancelled"
         | "outcome_unknown";
       diagnostic?: string;
+      waitingOnYou?: object[];
     }
   | undefined;
 ```
@@ -3079,16 +3098,18 @@ other line, including text that merely looks like a reply.
   commandId: string;
   outcome: "completed" | "failed" | "interrupted" | "cancelled" | "outcome_unknown";
   diagnostic?: string;
+  waitingOnYou?: object[];
 }
 ```
 
-| Name          | Type                                                                                   | Default value | Description                                                              |
-| ------------- | -------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
-| `agentId`     | `string`                                                                               | `identifier`  | -                                                                        |
-| `sessionId`   | `string`                                                                               | `identifier`  | -                                                                        |
-| `commandId`   | `string`                                                                               | `identifier`  | -                                                                        |
-| `outcome`     | `"completed"` \| `"failed"` \| `"interrupted"` \| `"cancelled"` \| `"outcome_unknown"` | -             | The exact settlement outcome; failures are never collapsed.              |
-| `diagnostic?` | `string`                                                                               | -             | Bounded, single-line terminal diagnostic for work that did not complete. |
+| Name            | Type                                                                                   | Default value | Description                                                              |
+| --------------- | -------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| `agentId`       | `string`                                                                               | `identifier`  | -                                                                        |
+| `sessionId`     | `string`                                                                               | `identifier`  | -                                                                        |
+| `commandId`     | `string`                                                                               | `identifier`  | -                                                                        |
+| `outcome`       | `"completed"` \| `"failed"` \| `"interrupted"` \| `"cancelled"` \| `"outcome_unknown"` | -             | The exact settlement outcome; failures are never collapsed.              |
+| `diagnostic?`   | `string`                                                                               | -             | Bounded, single-line terminal diagnostic for work that did not complete. |
+| `waitingOnYou?` | `object`[]                                                                             | -             | Open items of the replying Session that now wait on the recipient.       |
 
 ---
 

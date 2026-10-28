@@ -38,6 +38,18 @@ export const FungiDelegationReplySchema = z.lazy(() =>
     ]),
     /** Bounded, single-line terminal diagnostic for work that did not complete. */
     diagnostic: z.string().min(1).max(200).optional(),
+    /** Open items of the replying Session that now wait on the recipient. */
+    waitingOnYou: z
+      .array(
+        z.strictObject({
+          itemId: identifier,
+          kind: z.string().min(1).max(64),
+          summary: z.string().min(1).max(200),
+        }),
+      )
+      .min(1)
+      .max(8)
+      .optional(),
   }),
 );
 /** A delegated Agent's reply as the admitting host authenticated it. */
@@ -56,6 +68,8 @@ export const FungiMessageMetaSchema = z.strictObject({
     .strictObject({
       ancestors: z.array(identifier).max(8),
       maxDepth: z.number().int().min(1).max(8),
+      /** The sender asked to steer the recipient's running turn, not queue behind it. */
+      steer: z.literal(true).optional(),
       /**
        * Present only on a line the host admitted as an authenticated reply;
        * a line's text never sets it.

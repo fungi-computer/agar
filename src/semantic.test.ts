@@ -1624,6 +1624,14 @@ it("LAW: an App's status items reach its window decoded and bounded, and actions
     const items = [
       { kind: "text", id: "state", text: "open", tone: "success" },
       { kind: "button", id: "ports", text: "Ports", count: 2 },
+      {
+        kind: "button",
+        id: "activity",
+        text: "Activity",
+        count: 1,
+        tone: "warning",
+        busy: true,
+      },
       { kind: "toggle", id: "preview", text: ":5173", pressed: true },
       {
         kind: "menu",

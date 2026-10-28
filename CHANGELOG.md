@@ -1,5 +1,21 @@
 # @fungi.computer/agar
 
+## 0.5.0
+
+### Minor Changes
+
+- Changes since 0.4.0:
+
+  - feat(agar): status buttons carry a status light
+  - feat(shiitake): route a child's waiting items to the Agent that sent the
+    work
+  - fix(delegation): every idle Session reports to whoever sent it work
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/whistle@0.3.0
+
 ## 0.4.0
 
 ### Minor Changes

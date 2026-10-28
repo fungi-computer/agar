@@ -238,6 +238,10 @@ const statusItemsSchema = Schema.Array(
         Schema.Literals(["folder", "ports", "processes", "access"]),
       ),
       count: statusCount,
+      tone: Schema.optionalKey(
+        Schema.Literals(["neutral", "success", "warning", "error"]),
+      ),
+      busy: Schema.optionalKey(Schema.Boolean),
       title: Schema.optionalKey(statusText(1_024)),
       disabled: Schema.optionalKey(Schema.Boolean),
       opens: Schema.optionalKey(Schema.Literal("dialog")),
