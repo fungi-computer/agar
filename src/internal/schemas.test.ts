@@ -19,7 +19,7 @@ const context = {
 
 it("preserves the non-retryable safety-filter verdict through the RPC failure codec", () => {
   const failure = new AppError(
-    "The model's safety filter refused this prompt — try rewording.",
+    "The model refused this generation. Change the prompt or reference image and send again.",
     {
       code: "SAFETY_FILTER_REFUSED",
       retryable: false,

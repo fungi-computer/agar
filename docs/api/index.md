@@ -2111,6 +2111,7 @@ const FungiMessageMetaSchema: ZodObject<{
      ancestors: ZodArray<ZodLazy<ZodString>>;
      maxDepth: ZodNumber;
      steer: ZodOptional<ZodLiteral<true>>;
+     goal: ZodOptional<ZodUnion<readonly [ZodString, ZodLiteral<false>]>>;
      reply: ZodOptional<ZodLazy<ZodObject<{
         agentId: ZodLazy<ZodString>;
         sessionId: ZodLazy<ZodString>;
@@ -2708,6 +2709,7 @@ const mediaGenerationSelectionSchema: Struct<{
   references: optional<
     $Array<
       Struct<{
+        computerId: optional<String>;
         path: String;
         role: optional<
           Literals<readonly ["first-frame", "last-frame", "reference"]>
@@ -2761,6 +2763,7 @@ const mediaGenerationFailureSchema: Struct<{
             ]
           >;
           code: NullOr<Int>;
+          reason: optionalKey<Literal<"credits_exhausted">>;
         }>,
         Struct<{
           category: Literal<"result_download">;
@@ -2779,6 +2782,8 @@ const mediaGenerationFailureSchema: Struct<{
       "IDENTITY",
       "INSUFFICIENT_CREDIT",
       "INVALID_ARGUMENT",
+      "MEDIA_PROVIDER_FAILURE",
+      "MEDIA_PROVIDER_FAILURE_UNCHARGED",
       "PROTOCOL",
       "SAFETY_FILTER_REFUSED",
       "TIMEOUT",

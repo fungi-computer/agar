@@ -40,8 +40,6 @@ export type MethodPolicy = Readonly<{
   requires: readonly AppCapabilityId[];
   /** Omit this method from Workflow and tool discovery; direct calls keep their validators. */
   hidden?: true;
-  /** Request anonymous read admission; hosts still require explicit installer approval. */
-  anonymous?: true;
   /** Allow the shared Pending result while this method is still working. */
   pending?: true;
   /** Past tense for timelines ("made", "wrote"); the row itself comes from {@link MethodPresentation}. */
@@ -136,7 +134,6 @@ export function defineAppMethod<
   };
   if (method.pending === true) policy = { ...policy, pending: true };
   if (method.hidden === true) policy = { ...policy, hidden: true };
-  if (method.anonymous === true) policy = { ...policy, anonymous: true };
   const call: AppBackendMethod<Context>["call"] = async (
     rawInput,
     context,

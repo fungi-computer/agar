@@ -210,6 +210,8 @@ export type MediaVideoAspectRatio = Schema.Schema.Type<
   typeof mediaVideoAspectRatioSchema
 >;
 const referenceSchema = Schema.Struct({
+  /** Omit for the selected Computer; a named Computer requires its own authorization. */
+  computerId: Schema.optional(text(256)),
   path: text(4_096),
   role: Schema.optional(mediaVideoReferenceRoleSchema),
 });
@@ -454,6 +456,8 @@ export const mediaGenerationFailureSchema = Schema.Struct({
     "IDENTITY",
     "INSUFFICIENT_CREDIT",
     "INVALID_ARGUMENT",
+    "MEDIA_PROVIDER_FAILURE",
+    "MEDIA_PROVIDER_FAILURE_UNCHARGED",
     "PROTOCOL",
     "SAFETY_FILTER_REFUSED",
     "TIMEOUT",

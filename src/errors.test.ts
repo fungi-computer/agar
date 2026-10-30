@@ -113,7 +113,7 @@ describe("describeAppError", () => {
     });
   });
 
-  it("decodes a Media safety refusal and offers rewording without retry or private diagnostics", () => {
+  it("describes a refused generation without claiming the prompt alone caused it", () => {
     const failure = Schema.decodeUnknownSync(mediaGenerationFailureSchema)({
       message: "private provider diagnostics",
       stage: "provider",
@@ -124,11 +124,39 @@ describe("describeAppError", () => {
     expect(error.code).toBe("SAFETY_FILTER_REFUSED");
     expect(error.stage).toBe("provider");
     expect(describeAppError(error)).toEqual({
-      title: "Safety filter refused this prompt",
-      message: "The model's safety filter refused this prompt — try rewording.",
+      title: "Generation refused",
+      message:
+        "The model refused this generation. Change the prompt or reference image and send again.",
       retryable: false,
     });
   });
+
+  it.each([
+    [
+      "MEDIA_PROVIDER_FAILURE",
+      "The model couldn't complete this generation. Change the prompt or model and send again.",
+    ],
+    [
+      "MEDIA_PROVIDER_FAILURE_UNCHARGED",
+      "The model couldn't complete this generation. You weren't charged. Change the prompt or model and send again.",
+    ],
+  ] as const)(
+    "decodes %s without guessing billing or transience from 3030",
+    (code, message) => {
+      const failure = Schema.decodeUnknownSync(mediaGenerationFailureSchema)({
+        message: "private provider diagnostics",
+        stage: "provider",
+        code,
+        retryable: false,
+        provider: { category: "Error", code: 3030 },
+      });
+      expect(describeAppError(new MediaGenerationError(failure))).toEqual({
+        title: "Generation failed",
+        message,
+        retryable: false,
+      });
+    },
+  );
 
   it("does not infer typed authority or retryability from unknown failures", () => {
     const unknownFailures: readonly unknown[] = [

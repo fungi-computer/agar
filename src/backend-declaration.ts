@@ -13,7 +13,7 @@ export function buildAppApi<Context>(
     "methods" | "events" | "toolFamily"
   >,
 ): AppApi {
-  let api: AppApi = {
+  const api = {
     methods: Object.fromEntries(
       Object.entries(backend.methods).map(([name, method]) => [
         name,
@@ -26,8 +26,7 @@ export function buildAppApi<Context>(
     ),
   };
   if (backend.events !== undefined)
-    api = {
-      ...api,
+    Object.assign(api, {
       events: Object.fromEntries(
         Object.entries(backend.events).map(([name, event]) => [
           name,
@@ -37,9 +36,9 @@ export function buildAppApi<Context>(
           },
         ]),
       ),
-    };
+    });
   if (backend.toolFamily !== undefined)
-    api = { ...api, toolFamily: backend.toolFamily };
+    Object.assign(api, { toolFamily: backend.toolFamily });
   return Schema.decodeUnknownSync(appApiSchema)(api);
 }
 /** Strict build-only declaration generation; Workers never import this module. */

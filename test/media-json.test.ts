@@ -220,6 +220,7 @@ describe("public Media browser handle", () => {
   });
   it.each([
     { category: "InferenceUpstreamError", code: 3031 },
+    { category: "Error", code: 2021, reason: "credits_exhausted" },
     { category: "result_download", status: 503 },
   ])(
     "preserves safe provider facts through the JSON consumer: $category",

@@ -77,7 +77,7 @@ const backend: AppBackendDefinition = defineAppBackend({
     }),
   },
 });
-const api = buildAppApi(backend);
+const api: ReturnType<typeof buildAppApi> = buildAppApi(backend);
 export const polling: Pending = pendingSchema.parse(pending(5000));
 export const pollingMethod = defineAppMethod({
   description: "Wait for work",

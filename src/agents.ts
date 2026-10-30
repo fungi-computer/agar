@@ -390,6 +390,7 @@ async function openOperationHandles(
   return {
     fetch: async (request: Request): Promise<Response> => {
       ensureOpen();
+      request.signal.throwIfAborted();
       const handle =
         request.method === "GET" ||
         request.method === "HEAD" ||
@@ -397,7 +398,20 @@ async function openOperationHandles(
           ? read
           : await (write ??= openWrite());
       ensureOpen();
-      return decodeResponse(await handle.fetch(request));
+      request.signal.throwIfAborted();
+      const response = decodeResponse(await handle.fetch(request));
+      if (response.body === null) return response;
+      // Request signals do not cross Cap'n Web. Cancelling the local response
+      // pipeline cancels its remote body, including EventSource's locked reader.
+      return new Response(
+        response.body.pipeThrough(
+          new TransformStream<Uint8Array, Uint8Array>(),
+          {
+            signal: request.signal,
+          },
+        ),
+        response,
+      );
     },
     close: (): Promise<void> => {
       if (!closing) {

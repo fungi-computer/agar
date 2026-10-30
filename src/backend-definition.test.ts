@@ -25,7 +25,6 @@ import {
   pending,
   type Pending,
   type AppBackendMethod,
-  type MethodPolicy,
 } from "./backend-definition.js";
 
 test("EVENTS.emit keeps its native void acknowledgement", () => {
@@ -38,26 +37,6 @@ test("EVENTS.emit keeps its native void acknowledgement", () => {
 });
 
 describe("typed App backend exports", () => {
-  test("projects an anonymous read request into the digest-covered API without granting admission", () => {
-    const anonymousPolicy = { anonymous: true } satisfies Pick<
-      MethodPolicy,
-      "anonymous"
-    >;
-    const method = defineAppMethod({
-      description: "Read a frozen public copy",
-      effect: "read",
-      requires: [],
-      ...anonymousPolicy,
-      input: z.strictObject({ token: z.string() }),
-      output: z.strictObject({ bytes: z.string(), sha256: z.string() }),
-      handler: () => ({ bytes: "{}", sha256: "digest" }),
-    });
-    expect(
-      buildAppApi(defineAppBackend({ methods: { readCopy: method } })).methods
-        .readCopy,
-    ).toHaveProperty("anonymous", true);
-  });
-
   test("signs the declared tool family without executing its methods", () => {
     const handler = vi.fn(() => ({}));
     const backend = defineAppBackend({

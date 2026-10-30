@@ -70,6 +70,10 @@ export const FungiMessageMetaSchema = z.strictObject({
       maxDepth: z.number().int().min(1).max(8),
       /** The sender asked to steer the recipient's running turn, not queue behind it. */
       steer: z.literal(true).optional(),
+      /** A new recipient Session's objective; false opts out of an automatic goal. */
+      goal: z
+        .union([z.string().min(1).max(4_000), z.literal(false)])
+        .optional(),
       /**
        * Present only on a line the host admitted as an authenticated reply;
        * a line's text never sets it.

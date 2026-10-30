@@ -385,6 +385,7 @@ const mediaGenerationJsonRequestSchema: Struct<{
      aspectRatio: optional<Literals<readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]>>;
      generateAudio: optional<Boolean>;
      references: optional<$Array<Struct<{
+        computerId: optional<String>;
         path: String;
         role: optional<Literals<readonly [..., ..., ...]>>;
      }>>>;
@@ -425,11 +426,12 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
      provider: optional<Union<readonly [Struct<{
         category: ...;
         code: ...;
+        reason: ...;
       }>, Struct<{
         category: ...;
         status: ...;
      }>]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
      retryable: Boolean;
   }>;
 }>]>;
@@ -463,7 +465,7 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
      message: String;
      stage: optional<Literals<readonly [..., ..., ..., ..., ..., ..., ..., ..., ..., ..., ...]>>;
      provider: optional<Union<readonly [..., ...]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
      retryable: Boolean;
   }>;
 }>]>, declare<Readonly<{

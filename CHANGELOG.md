@@ -1,5 +1,27 @@
 # @fungi.computer/agar
 
+## 0.6.0
+
+### Minor Changes
+
+- Changes since 0.5.0:
+
+  - fix(prints): map provider failures to one error toast
+  - fix(forage): retain load-on-request App catalogs on current Integration
+  - fix(oyster): close window bridge qualification gaps
+  - fix(oyster)!: remove owner consent for anonymous App methods
+  - fix(oyster): report new Sessions and release cancelled RPC streams
+  - feat(prints): add authorized Agent media parity
+  - feat(agents): adopt delegated goals on recipient admission
+  - fix(darkroom): retain a typed provider credits exhaustion reason
+  - fix(prints): merge video recovery and charge-safe failures
+  - fix(prints): reconcile Agent media parity with integration
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.3.0
+
 ## 0.5.0
 
 ### Minor Changes

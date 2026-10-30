@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as Schema from "effect/Schema";
+import * as z from "zod";
 import { readFile } from "node:fs/promises";
 import * as ts from "typescript";
 import {
@@ -9,9 +10,15 @@ import {
 import { mediaGenerationFailureSchema } from "../media.js";
 
 describe("safe Media provider facts", () => {
+  it("can declare provider facts in an App method's JSON Schema output", () => {
+    expect(z.toJSONSchema(mediaProviderDiagnosticWireSchema)).toHaveProperty(
+      "anyOf",
+    );
+  });
   it.each([
     { category: "InferenceUpstreamError", code: 3031 },
     { category: "Error", code: null },
+    { category: "Error", code: null, reason: "credits_exhausted" },
     { category: "AiInternalError", code: 0 },
     { category: "TypeError", code: 99_999 },
     { category: "AbortError", code: null },

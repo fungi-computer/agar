@@ -429,10 +429,17 @@ describe("Media Agar capability", () => {
         "Media generation is not permitted to spend this Team's credits.",
     },
     {
-      code: "HOST_FAILURE",
+      code: "MEDIA_PROVIDER_FAILURE",
       stage: "provider",
       retryable: false,
       message: "Media generation failed",
+      provider: { category: "InferenceUpstreamError", code: 3031 },
+    },
+    {
+      code: "MEDIA_PROVIDER_FAILURE_UNCHARGED",
+      stage: "provider",
+      retryable: false,
+      message: "Media generation failed without a customer charge",
       provider: { category: "InferenceUpstreamError", code: 3031 },
     },
     {

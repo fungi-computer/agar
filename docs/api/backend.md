@@ -135,8 +135,7 @@ const appMethods: CapabilityContract<{
 
 Call one of this App's declared, typed methods through its host. Unlike
 `appBackend`, the host knows which method is called, so it can apply the
-method's declared effect (for example, allow only `read` methods to a visitor of
-a public App).
+method's declared effect.
 
 ---
 

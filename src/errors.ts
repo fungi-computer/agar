@@ -3,6 +3,7 @@ import * as Option from "effect/Option";
 import * as z from "zod";
 import {
   mediaProviderDiagnosticSchema,
+  mediaProviderDiagnosticZodSchema,
   mediaProviderErrorCategorySchema,
 } from "./internal/media-diagnostic.js";
 
@@ -19,6 +20,8 @@ export type MediaProviderDiagnostic =
         | "Error";
       /** Four- or five-digit provider prefix, or null when absent. */
       code: number | null;
+      /** Host-classified provider refusal, independent of public error prose. */
+      reason?: "credits_exhausted";
     }>
   | Readonly<{
       /** A completed video result could not be downloaded. */
@@ -43,16 +46,11 @@ export function decodeMediaProviderDiagnostic(
 
 /**
  * Documentable wire projection of the canonical diagnostic grammar.
- * Maintained converters preserve its closed objects and numeric bounds;
- * decoding still returns the declaration-safe public diagnostic type.
+ * Its owner supplies the native Zod dialect so output declarations remain
+ * documentable without transforms, coercions or an unchecked type assertion.
  */
-export const mediaProviderDiagnosticWireSchema = z
-  .fromJSONSchema(
-    Schema.toJsonSchemaDocument(mediaProviderDiagnosticSchema, {
-      onExcessProperty: "error",
-    }).schema,
-  )
-  .transform(decodeMediaProviderDiagnostic);
+export const mediaProviderDiagnosticWireSchema: z.ZodType<MediaProviderDiagnostic> =
+  mediaProviderDiagnosticZodSchema;
 
 /** Decode an ordinary Error name without retaining arbitrary upstream text. */
 export function decodeMediaProviderErrorCategory(
@@ -80,6 +78,8 @@ export const appErrorCodes = [
   "IDENTITY",
   "INSUFFICIENT_CREDIT",
   "INVALID_ARGUMENT",
+  "MEDIA_PROVIDER_FAILURE",
+  "MEDIA_PROVIDER_FAILURE_UNCHARGED",
   "PROTOCOL",
   "SAFETY_FILTER_REFUSED",
   "SELECTION_CHANGED",
@@ -192,13 +192,24 @@ const errorCopy = {
     title: "Request not accepted",
     message: "The App couldn't use the details in this request.",
   },
+  MEDIA_PROVIDER_FAILURE: {
+    title: "Generation failed",
+    message:
+      "The model couldn't complete this generation. Change the prompt or model and send again.",
+  },
+  MEDIA_PROVIDER_FAILURE_UNCHARGED: {
+    title: "Generation failed",
+    message:
+      "The model couldn't complete this generation. You weren't charged. Change the prompt or model and send again.",
+  },
   PROTOCOL: {
     title: "Couldn't read the response",
     message: "The App received a response it couldn't use.",
   },
   SAFETY_FILTER_REFUSED: {
-    title: "Safety filter refused this prompt",
-    message: "The model's safety filter refused this prompt — try rewording.",
+    title: "Generation refused",
+    message:
+      "The model refused this generation. Change the prompt or reference image and send again.",
   },
   SELECTION_CHANGED: {
     title: "Selection changed",
