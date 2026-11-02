@@ -235,6 +235,18 @@ Create a new Agent with the given name and request id.
 `"crt"`; `watercolor`: `"watercolor"`; \}\>; \}; `sessionOperations`: readonly
 (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
 
+##### computers()
+
+```ts
+computers(): Promise<readonly object[] | null>;
+```
+
+The Team Computers a new Agent may use; null when the host offers no choice.
+
+###### Returns
+
+`Promise`\<readonly `object`[] \| `null`\>
+
 ---
 
 ### AppAgentDirectoryHandle
@@ -1243,6 +1255,67 @@ and Computer-relative reference paths.
 
 ---
 
+### MediaShareStatus
+
+```ts
+type MediaShareStatus = z.output<typeof mediaShareStatusSchema>;
+```
+
+A Print's share state as the host reports it.
+
+---
+
+### MediaShareInput
+
+```ts
+type MediaShareInput = z.output<typeof mediaShareInputSchema>;
+```
+
+What to share and whether to show its prompt.
+
+---
+
+### MediaShareHandle
+
+```ts
+type MediaShareHandle = Readonly<{
+  status: Promise<
+    | {
+        shared: false;
+      }
+    | {
+        shared: true;
+        url: string;
+        showPrompt: boolean;
+      }
+  >;
+  share: Promise<
+    | {
+        shared: false;
+      }
+    | {
+        shared: true;
+        url: string;
+        showPrompt: boolean;
+      }
+  >;
+  stop: Promise<
+    | {
+        shared: false;
+      }
+    | {
+        shared: true;
+        url: string;
+        showPrompt: boolean;
+      }
+  >;
+}>;
+```
+
+Host handle behind the `media.share` capability.
+
+---
+
 ### Pending
 
 ```ts
@@ -2246,7 +2319,16 @@ Agent has an avatar: the one its owner chose, else Sprite's
 const appAgentCreateInputSchema: Struct<{
   name: String;
   requestId: String;
-  computer: optionalKey<Literals<readonly ["new", "none"]>>;
+  computer: optionalKey<
+    Union<
+      readonly [
+        Literals<readonly ["new", "none"]>,
+        Struct<{
+          computerId: String;
+        }>,
+      ]
+    >
+  >;
   avatar: optionalKey<
     declare<
       {
@@ -2309,7 +2391,7 @@ Capability to list the Agents visible to this App in read-only form.
 
 ```ts
 const agentManage: CapabilityContract<
-  Pick<AppAgentDirectoryHandle, "create" | "open">
+  Pick<AppAgentDirectoryHandle, "create" | "computers" | "open">
 >;
 ```
 
@@ -2805,6 +2887,60 @@ const mediaGeneration: CapabilityContract<MediaGenerationHandle>;
 
 Capability contract for generating Media (images or video). Apps declare it to
 request access; openMediaGeneration uses it to obtain the host's handle.
+
+---
+
+### mediaShareStatusSchema
+
+```ts
+const mediaShareStatusSchema: ZodUnion<
+  readonly [
+    ZodObject<
+      {
+        shared: ZodLiteral<false>;
+      },
+      $strict
+    >,
+    ZodObject<
+      {
+        shared: ZodLiteral<true>;
+        url: ZodURL;
+        showPrompt: ZodBoolean;
+      },
+      $strict
+    >,
+  ]
+>;
+```
+
+Whether one generated Print has a public link, and what that link shows.
+
+---
+
+### mediaShareInputSchema
+
+```ts
+const mediaShareInputSchema: ZodObject<
+  {
+    requestId: ZodString;
+    showPrompt: ZodBoolean;
+  },
+  $strict
+>;
+```
+
+Turn a public link on for one generated Print.
+
+---
+
+### mediaShare
+
+```ts
+const mediaShare: CapabilityContract<MediaShareHandle>;
+```
+
+Capability contract for public links to generated Media. Off by default per
+output; the host keeps the link, the bytes it serves and who may change it.
 
 ---
 

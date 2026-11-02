@@ -17,19 +17,32 @@ export function realGit() {
     existsSync(join(root, `${name}.git`))
       ? { name, defaultBranch: "main", lastPushAt: null, source: null }
       : null;
+  const gitOutput = (name: string, ...args: string[]) =>
+    execFileSync("git", [`--git-dir=${join(root, `${name}.git`)}`, ...args], {
+      encoding: "utf8",
+      // A thousand-commit log page is over execFileSync's 1 MiB default.
+      maxBuffer: 256 * 1024 * 1024,
+    });
   // A full object id names an immutable commit, so one read serves every
   // later ask; refs and abbreviations move and are never cached.
   const commits = new Map<string, GitCommit>();
   const immutable = (hash: string) => /^[0-9a-f]{40,64}$/u.test(hash);
-  const readCommit = (name: string, hash: string): GitCommit | null => {
+  const cacheKey = (name: string, hash: string) => {
     // The repository's directory identity keeps a deleted-and-recreated name
     // from serving the old repository's commits, however it was removed.
     const dir = statSync(join(root, `${name}.git`), {
       bigint: true,
       throwIfNoEntry: false,
     });
-    const key = `${name}\0${String(dir?.ino)}\0${String(dir?.birthtimeNs)}\0${hash}`;
-    const cached = immutable(hash) ? commits.get(key) : undefined;
+    return `${name}\0${String(dir?.ino)}\0${String(dir?.birthtimeNs)}\0${hash}`;
+  };
+  const remember = (name: string, commit: GitCommit) => {
+    commits.set(cacheKey(name, commit.hash), structuredClone(commit));
+  };
+  const readCommit = (name: string, hash: string): GitCommit | null => {
+    const cached = immutable(hash)
+      ? commits.get(cacheKey(name, hash))
+      : undefined;
     if (cached !== undefined) return structuredClone(cached);
     const found = spawnSync(
       "git",
@@ -37,50 +50,11 @@ export function realGit() {
       { encoding: "utf8" },
     );
     if (found.status !== 0 || found.stdout.trim() !== "commit") return null;
-    const [
-      oid,
-      treeHash,
-      parents,
-      authorName,
-      authorEmail,
-      committerName,
-      committerEmail,
-      authoredAt,
-      committedAt,
-      message,
-    ] = z
-      .tuple([
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-        z.string(),
-      ])
-      .parse(
-        run(
-          name,
-          "show",
-          "-s",
-          "--format=%H%x00%T%x00%P%x00%an%x00%ae%x00%cn%x00%ce%x00%at%x00%ct%x00%B",
-          hash,
-        ).split("\0"),
-      );
-    const commit: GitCommit = {
-      hash: oid,
-      treeHash,
-      parents: parents ? parents.split(" ") : [],
-      author: { name: authorName, email: authorEmail },
-      committer: { name: committerName, email: committerEmail },
-      authoredAt: Number(authoredAt),
-      committedAt: Number(committedAt),
-      message,
-    };
-    if (immutable(hash)) commits.set(key, structuredClone(commit));
+    const commit = parseCommits(
+      gitOutput(name, "show", "-s", "-z", `--format=${COMMIT_FORMAT}`, hash),
+    ).at(0);
+    if (!commit) throw new Error("Commit unreadable");
+    if (immutable(hash)) remember(name, commit);
     return commit;
   };
   const git: GitBinding = {
@@ -119,23 +93,21 @@ export function realGit() {
     readCommit: (name, hash) => Promise.resolve(readCommit(name, hash)),
     log: (name, { ref, limit = 50, offset = 0 }) => {
       if (!readCommit(name, ref)) return Promise.resolve([]);
-      return Promise.resolve(
-        run(
+      // One walk with the same rev-list flags reads every page commit.
+      const page = parseCommits(
+        gitOutput(
           name,
-          "rev-list",
+          "log",
+          "-z",
+          `--format=${COMMIT_FORMAT}`,
           "--first-parent",
           `--max-count=${String(limit)}`,
           `--skip=${String(offset)}`,
           ref,
-        )
-          .split("\n")
-          .filter(Boolean)
-          .map((hash) => {
-            const commit = readCommit(name, hash);
-            if (!commit) throw new Error("Commit disappeared");
-            return commit;
-          }),
+        ),
       );
+      for (const commit of page) remember(name, commit);
+      return Promise.resolve(page);
     },
     readTree: (name, hash) =>
       Promise.resolve(
@@ -232,4 +204,56 @@ export function realGit() {
       rmSync(root, { recursive: true });
     },
   };
+}
+
+// Ten NUL-separated fields per commit; `-z` ends each commit with NUL too.
+const COMMIT_FORMAT =
+  "%H%x00%T%x00%P%x00%an%x00%ae%x00%cn%x00%ce%x00%at%x00%ct%x00%B";
+const COMMIT_FIELDS = 10;
+const commitFields = z.tuple([
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+  z.string(),
+]);
+
+function parseCommits(output: string): GitCommit[] {
+  const fields = output.split("\0");
+  // The final commit's NUL terminator leaves one empty trailing field.
+  if (fields.at(-1) === "") fields.pop();
+  if (fields.length % COMMIT_FIELDS !== 0)
+    throw new Error("Unexpected git commit format");
+  const parsed: GitCommit[] = [];
+  for (let start = 0; start < fields.length; start += COMMIT_FIELDS) {
+    const [
+      oid,
+      treeHash,
+      parents,
+      authorName,
+      authorEmail,
+      committerName,
+      committerEmail,
+      authoredAt,
+      committedAt,
+      message,
+    ] = commitFields.parse(fields.slice(start, start + COMMIT_FIELDS));
+    parsed.push({
+      hash: oid,
+      treeHash,
+      parents: parents ? parents.split(" ") : [],
+      author: { name: authorName, email: authorEmail },
+      committer: { name: committerName, email: committerEmail },
+      authoredAt: Number(authoredAt),
+      committedAt: Number(committedAt),
+      // %B keeps the raw message's trailing newline; readers see it trimmed.
+      message: message.trimEnd(),
+    });
+  }
+  return parsed;
 }

@@ -9,7 +9,7 @@ methods, connects its frontend to a host through typed capabilities, and gives
 App builders selected context, host-rendered permission requests and explicit
 cleanup. The host and resource owners authorize the work; the same App runs on
 Fungi's hosted Teams or on any host that composes
-[Oyster](https://oyster.shiit.app).
+[Oyster](https://github.com/fungi-computer/oyster).
 
 ## Install or set up
 

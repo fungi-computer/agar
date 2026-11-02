@@ -15,6 +15,7 @@ import {
   type AppAgentDirectoryHandle,
   listAppAgents,
   createAppAgent,
+  listAppAgentComputers,
   openAppAgent,
   openAppInbox,
   renameAppAgent,
@@ -39,11 +40,12 @@ it("decodes the broker Agent list projection without directory-only fields", () 
 });
 
 function directory(
-  handle: Omit<AppAgentDirectoryHandle, "openInbox"> &
-    Partial<Pick<AppAgentDirectoryHandle, "openInbox">>,
+  handle: Omit<AppAgentDirectoryHandle, "openInbox" | "computers"> &
+    Partial<Pick<AppAgentDirectoryHandle, "openInbox" | "computers">>,
 ): CapabilityDirectory {
   const value: AppAgentDirectoryHandle = {
     openInbox: () => Promise.reject(new Error("unexpected inbox")),
+    computers: () => Promise.resolve(null),
     ...handle,
   };
   const registry = createCapabilityRegistry();
@@ -55,8 +57,47 @@ function directory(
 }
 
 describe("Agent App capability", () => {
-  it.each([undefined, "new", "none"] as const)(
-    "forwards the admitted Computer create choice %s",
+  it("lists the host's Team Computers newest first, or no choice", async () => {
+    const studio = {
+      computerId: "computer_studio",
+      name: "Studio",
+      createdAt: 1,
+    };
+    const travel = {
+      computerId: "computer_travel",
+      name: "Travel",
+      createdAt: 2,
+    };
+    const offered = directory({
+      list: () => Promise.resolve([]),
+      create: () => Promise.reject(new Error("Unexpected create")),
+      open: () => Promise.reject(new Error("Unexpected open")),
+      computers: () => Promise.resolve([studio, travel]),
+    });
+    expect(await listAppAgentComputers(offered)).toEqual([travel, studio]);
+    const none = directory({
+      list: () => Promise.resolve([]),
+      create: () => Promise.reject(new Error("Unexpected create")),
+      open: () => Promise.reject(new Error("Unexpected open")),
+    });
+    expect(await listAppAgentComputers(none)).toBeNull();
+    const malformed = directory({
+      list: () => Promise.resolve([]),
+      create: () => Promise.reject(new Error("Unexpected create")),
+      open: () => Promise.reject(new Error("Unexpected open")),
+      computers: () =>
+        Promise.resolve([{ computerId: "", name: "Blank", createdAt: 1 }]),
+    });
+    await expect(listAppAgentComputers(malformed)).rejects.toThrow();
+  });
+
+  it.each([
+    undefined,
+    "new",
+    "none",
+    { computerId: "computer_studio" },
+  ] as const)(
+    "forwards the admitted Computer create choice %o",
     async (computer) => {
       const agent = {
         agentId: "agent-created",
@@ -274,6 +315,7 @@ it("opens a management-only App transport without adding read or send grants", a
   );
   registry.provide(agentManage, {
     create: () => Promise.reject(new Error("Agent creation is not requested")),
+    computers: () => Promise.resolve(null),
     open: opened,
   });
   const transport = await openAppAgent(registry, { agentId: "agent_one" });
@@ -311,6 +353,7 @@ it.each(["send", "manage"] as const)(
     registry.provide(agentManage, {
       open: open("manage"),
       create: () => Promise.reject(new Error("No Agent creation requested")),
+      computers: () => Promise.resolve(null),
     });
     if (writer === "send")
       registry.provide(agentSessionWrite, {

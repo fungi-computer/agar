@@ -76,8 +76,39 @@ export const appAgentListResultSchema = z.lazy(() =>
   }),
 );
 
-/** Computer provisioning is a Team creation choice, separate from Home policy. */
-export const appAgentComputerSchema = Schema.Literals(["new", "none"]);
+/**
+ * Computer provisioning is a Team creation choice, separate from Home policy:
+ * a new Computer, none, or one of the Team's existing Computers.
+ */
+export const appAgentComputerSchema = Schema.Union([
+  Schema.Literals(["new", "none"]),
+  Schema.Struct({ computerId: boundedIdentity }),
+]);
+/** The creation-time Computer choice for a new Agent. */
+export type AppAgentComputer = Schema.Schema.Type<
+  typeof appAgentComputerSchema
+>;
+/** One existing Team Computer a new Agent may start on. */
+export const appAgentComputerChoiceSchema = Schema.Struct({
+  computerId: boundedIdentity,
+  name: boundedIdentity,
+  createdAt: Schema.Number.pipe(Schema.check(Schema.isInt())),
+});
+/** An existing Team Computer offered when creating an Agent. */
+export type AppAgentComputerChoice = Schema.Schema.Type<
+  typeof appAgentComputerChoiceSchema
+>;
+/**
+ * The host's existing Computers for a new Agent, or null when the host makes
+ * no creation-time Computer choice at all.
+ */
+const appAgentComputerChoicesSchema = Schema.NullOr(
+  Schema.Array(appAgentComputerChoiceSchema),
+);
+const decodeComputerChoices = Schema.decodeUnknownSync(
+  appAgentComputerChoicesSchema,
+  { onExcessProperty: "error" },
+);
 /** Validates Agent creation input: a name, a caller-chosen request id, an
  * optional Computer provisioning choice and an optional chosen avatar. */
 export const appAgentCreateInputSchema = Schema.Struct({
@@ -121,6 +152,8 @@ export type AppAgentListHandle = {
 export type AppAgentCreateHandle = {
   /** Create a new Agent with the given name and request id. */
   create(input: AppAgentCreateInput): Promise<AppAgent>;
+  /** The Team Computers a new Agent may use; null when the host offers no choice. */
+  computers(): Promise<readonly AppAgentComputerChoice[] | null>;
 };
 /**
  * Live capability handle for listing and creating Agents in a Team or
@@ -149,13 +182,18 @@ export const agentList: CapabilityContract<AppAgentListHandle> =
   );
 /** Capability to create new Agents and open transports to them. */
 export const agentManage: CapabilityContract<
-  Pick<AppAgentDirectoryHandle, "create" | "open">
+  Pick<AppAgentDirectoryHandle, "create" | "computers" | "open">
 > = defineCapability(
   "agent.manage",
   1,
   z.lazy(() =>
     rpcHandleSchema({
       open: rpcMethod(rpcFetchHandleSchema),
+      computers: rpcMethod(
+        rpcDataSchema(
+          z.unknown().transform((value) => decodeComputerChoices(value)),
+        ),
+      ),
       create: rpcMethod(
         rpcDataSchema(
           z
@@ -350,6 +388,21 @@ export async function createAppAgent(
   const request = Schema.decodeUnknownSync(appAgentCreateInputSchema)(input);
   const agent = await capabilities.require(agentManage).create(request);
   return Schema.decodeUnknownSync(appAgentSchema)(agent);
+}
+
+/**
+ * The Team Computers a new Agent may use, newest first, or null when the host
+ * makes no creation-time Computer choice.
+ */
+export async function listAppAgentComputers(
+  capabilities: CapabilityDirectory,
+): Promise<readonly AppAgentComputerChoice[] | null> {
+  const choices = decodeComputerChoices(
+    await capabilities.require(agentManage).computers(),
+  );
+  return choices === null
+    ? null
+    : [...choices].sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**

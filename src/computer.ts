@@ -61,7 +61,8 @@ export const computerList: CapabilityContract<{
 
 export const computerRuntimeStateSchema = Schema.Union([
   Schema.Struct({
-    state: Schema.Literals(["running", "sleeping", "starting"]),
+    // start_failed: a queued start ended without running; start again.
+    state: Schema.Literals(["running", "sleeping", "starting", "start_failed"]),
   }),
   Schema.Struct({
     state: Schema.Literal("queued"),

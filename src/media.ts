@@ -539,6 +539,57 @@ export const mediaGeneration: CapabilityContract<MediaGenerationHandle> =
     ),
   );
 
+/** Whether one generated Print has a public link, and what that link shows. */
+export const mediaShareStatusSchema = z.union([
+  z.strictObject({ shared: z.literal(false) }),
+  z.strictObject({
+    shared: z.literal(true),
+    /** The public, read-only page; anyone with it can see this one Print. */
+    url: z.url(),
+    /** The page shows the prompt only when its owner chose to. */
+    showPrompt: z.boolean(),
+  }),
+]);
+/** A Print's share state as the host reports it. */
+export type MediaShareStatus = z.output<typeof mediaShareStatusSchema>;
+
+/** Turn a public link on for one generated Print. */
+export const mediaShareInputSchema = z.strictObject({
+  /** The generation's request identity (a Print's `printId`). */
+  requestId: z.string().min(1).max(256),
+  showPrompt: z.boolean(),
+});
+/** What to share and whether to show its prompt. */
+export type MediaShareInput = z.output<typeof mediaShareInputSchema>;
+
+/** Host handle behind the `media.share` capability. */
+export type MediaShareHandle = Readonly<{
+  /** Read whether this Print has a live public link. */
+  status(requestId: string): Promise<MediaShareStatus>;
+  /** Turn a public link on; repeating it returns the live link unchanged. */
+  share(input: MediaShareInput): Promise<MediaShareStatus>;
+  /** Stop sharing; the link stops working at once. */
+  stop(requestId: string): Promise<MediaShareStatus>;
+}>;
+
+/**
+ * Capability contract for public links to generated Media. Off by default
+ * per output; the host keeps the link, the bytes it serves and who may change
+ * it.
+ */
+export const mediaShare: CapabilityContract<MediaShareHandle> =
+  defineCapability(
+    "media.share",
+    1,
+    z.lazy(() =>
+      rpcHandleSchema({
+        status: rpcMethod(rpcDataSchema(mediaShareStatusSchema)),
+        share: rpcMethod(rpcDataSchema(mediaShareStatusSchema)),
+        stop: rpcMethod(rpcDataSchema(mediaShareStatusSchema)),
+      }),
+    ),
+  );
+
 /** Parse a value received from the host and turn schema failures into the
  * transport-safe Agar error used by the other capability helpers. */
 function decode<T>(schema: Schema.Codec<T>, value: T): T {

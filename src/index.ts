@@ -64,9 +64,15 @@ export {
   mediaGenerationReferenceSchema,
   mediaGenerationSelectionSchema,
   mediaModelSchema,
+  mediaShare,
+  mediaShareInputSchema,
+  mediaShareStatusSchema,
   openMediaGeneration,
 } from "./media.js";
 export type {
+  MediaShareHandle,
+  MediaShareInput,
+  MediaShareStatus,
   MediaGenerationHandle,
   MediaGenerationAttempt,
   MediaGenerationAttemptHandle,

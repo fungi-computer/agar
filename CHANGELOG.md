@@ -1,5 +1,23 @@
 # @fungi.computer/agar
 
+## 0.7.0
+
+### Minor Changes
+
+- Changes since 0.6.1:
+
+  - feat(prints): share one Print with a public, read-only link
+  - fix(docs): remove the Oyster public demo from public docs; correct landing
+    subscription claims
+  - feat(grove): choose the new Agent's Computer in New Agent
+  - fix(hub): keep a queued Computer start until it runs or visibly fails
+  - perf(agar): read a real-git log page in one git process
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.5.0
+
 ## 0.6.1
 
 ### Patch Changes
