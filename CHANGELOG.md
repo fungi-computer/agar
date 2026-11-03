@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/gills@0.2.1
+  - @fungi.computer/puffball@0.5.1
+
 ## 0.7.0
 
 ### Minor Changes
