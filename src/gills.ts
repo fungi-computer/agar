@@ -17,13 +17,17 @@ import type { WhistleJsonValue } from "@fungi.computer/whistle";
 import { appBackendRefusalSchema } from "./backend-refusal.js";
 import { decodeGillResponse, type GillResponse } from "@fungi.computer/gills";
 
-/** Decode the App host's strict isolation refusal into its permanent Gill state. */
+/** Decode the App host's isolation or disabled refusal into a typed Gill state. */
 export function decodeGillRefusal(
   raw: unknown,
   declaration: Readonly<{ id: string; title: string }>,
 ): GillResponse | undefined {
   const refusal = appBackendRefusalSchema.safeParse(raw);
-  if (!refusal.success || refusal.data.reason !== "exec_isolation_required")
+  if (
+    !refusal.success ||
+    (refusal.data.reason !== "exec_isolation_required" &&
+      refusal.data.reason !== "disabled")
+  )
     return undefined;
   return decodeGillResponse({
     viewId: declaration.id,
@@ -31,7 +35,10 @@ export function decodeGillRefusal(
     state: "error",
     rows: [],
     reason: refusal.data.reason,
-    error: `${declaration.title} isn't available on this preview.`,
+    error:
+      refusal.data.reason === "disabled"
+        ? `${declaration.title} is disabled.`
+        : `${declaration.title} isn't available on this preview.`,
   });
 }
 

@@ -103,3 +103,26 @@ it("turns only the strict isolation refusal into a permanent Gill state", async 
       client(Response.json(body, { status: 503 })).request({ viewId: "inbox" }),
     ).rejects.toThrow("HTTP 503");
 });
+
+it("preserves the host disabled outcome at the Gill caller", async () => {
+  const client = createGillClient({
+    decodeRefusal: decodeGillRefusal,
+    endpoint: "https://hub.example.test/gills",
+    declaration: { id: "inbox", title: "Inbox" },
+    fetch: () =>
+      Promise.resolve(
+        Response.json(
+          { error: "App execution unavailable", reason: "disabled" },
+          { status: 503 },
+        ),
+      ),
+  });
+  await expect(client.request({ viewId: "inbox" })).resolves.toEqual({
+    viewId: "inbox",
+    title: "Inbox",
+    state: "error",
+    rows: [],
+    reason: "disabled",
+    error: "Inbox is disabled.",
+  });
+});

@@ -1,5 +1,6 @@
 import * as Predicate from "effect/Predicate";
 import { type RpcStub, RpcTarget } from "@fungi.computer/capnweb";
+import { correlationKey } from "@fungi.computer/cairn";
 
 import type { AppCommandHandler, AppCommands } from "../commands.js";
 import { WhistleActionError } from "@fungi.computer/whistle";
@@ -14,7 +15,13 @@ import type {
 } from "./protocol.js";
 
 import { AppError } from "../errors.js";
-import { type RpcResult, callRpc, rpcFailure, rpcSuccess } from "./result.js";
+import {
+  type RpcResult,
+  callRpc,
+  rpcFailure,
+  rpcSuccess,
+  unwrapRpcResult,
+} from "./result.js";
 import {
   appInvocation,
   parseCommand,
@@ -33,7 +40,6 @@ export type AppCommandsController = {
 type CommandRegistration = {
   commandId: string | undefined;
   readonly definition: ReturnType<typeof parseCommand>;
-  readonly handler: AppCommandHandler;
   readonly target: CommandHandlerTarget;
 };
 
@@ -140,8 +146,8 @@ function localBindings(
 ): readonly LocalBinding[] {
   const bindings: LocalBinding[] = [];
   for (const registration of registrations.values()) {
-    const { definition, handler } = registration;
-    if (registration.commandId === undefined) continue;
+    const { commandId, definition, target } = registration;
+    if (commandId === undefined) continue;
     // An unavailable command still owns its chord, so the browser default
     // (e.g. Save Page) does not run in its place.
     const available = definition.availability?.status !== "unavailable";
@@ -152,12 +158,21 @@ function localBindings(
         run: () => {
           if (!available) return;
           void Promise.resolve()
-            .then(() =>
-              handler({
-                origin: "keyboard",
-                signal: new AbortController().signal,
-              }),
-            )
+            .then(async () => {
+              const outcome = unwrapRpcResult(
+                await target.invoke({
+                  commandId,
+                  origin: "keyboard",
+                  requestId: correlationKey(),
+                }),
+              );
+              if (outcome.status === "failed")
+                throw new WhistleActionError(
+                  outcome.error.code,
+                  outcome.error.message,
+                  outcome.error.details,
+                );
+            })
             .catch((cause: unknown) => {
               console.warn("App key command failed", cause);
             });
@@ -235,7 +250,6 @@ export function createAppCommands(
 function claimRegistration(
   registrations: Map<string, CommandRegistration>,
   definition: ReturnType<typeof parseCommand>,
-  handler: AppCommandHandler,
   target: CommandHandlerTarget,
 ): RegistrationLease {
   const id = definition.id;
@@ -249,7 +263,6 @@ function claimRegistration(
   const registration: CommandRegistration = {
     commandId: undefined,
     definition,
-    handler,
     target,
   };
   registrations.set(id, registration);
@@ -291,12 +304,7 @@ function createCommandApi(
       }
       const definition = parseCommand(command);
       const target = new CommandHandlerTarget(handler);
-      const lease = claimRegistration(
-        registrations,
-        definition,
-        handler,
-        target,
-      );
+      const lease = claimRegistration(registrations, definition, target);
       try {
         const registration = await registerRemoteCommand(
           remote,

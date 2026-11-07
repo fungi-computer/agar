@@ -1,5 +1,19 @@
 # @fungi.computer/agar
 
+## 0.7.2
+
+### Patch Changes
+
+- Changes since 0.7.1:
+
+  - fix(apps): preserve disabled foreground outcomes
+  - fix(agar): cancel keyboard commands with their registration
+
+- Updated dependencies
+  - @fungi.computer/gills@0.2.2
+  - @fungi.computer/puffball@0.5.2
+  - @fungi.computer/approvals@0.2.1
+
 ## 0.7.1
 
 ### Patch Changes

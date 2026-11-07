@@ -1101,6 +1101,69 @@ it("LAW: mounted command namespace enforces cap, duplicates, cancellation, and r
   }
 });
 
+it.each(["unregister", "dispose"] as const)(
+  "LAW: %s cancels a running local key command and refuses its queued successor",
+  async (release) => {
+    const host = new IframeWindow("https://host.example");
+    const app = new IframeWindow("https://app.example");
+    app.parent = host;
+    app.peer = host;
+    host.peer = app;
+    const originalWindow = replaceWindow(app);
+    const finished = Promise.withResolvers<undefined>();
+    const signals: AbortSignal[] = [];
+    const handler = vi.fn(({ signal }: { signal: AbortSignal }) => {
+      signals.push(signal);
+      return finished.promise;
+    });
+    const hostPromise = connectAppHost({
+      appWindow: asBrowserWindow(app),
+      expectedAppOrigin: app.origin,
+      handlers: mountedHandlers(),
+      hostWindow: asBrowserWindow(host),
+      launch: mountedLaunch(),
+    });
+    const root = await connectApp({ host: "parent" });
+    const mounted = await hostPromise;
+    try {
+      const unregister = await root.commands.register(
+        {
+          category: "editor",
+          id: "save",
+          title: "Save",
+          projections: { bindings: { values: ["ctrl+s"] } },
+        },
+        handler,
+      );
+      const press = () => {
+        const event = new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          ctrlKey: true,
+          key: "s",
+        });
+        document.documentElement.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+      };
+      press();
+      await vi.waitFor(() => {
+        expect(handler).toHaveBeenCalledOnce();
+      });
+      expect(signals[0]?.aborted).toBe(false);
+      press();
+      if (release === "unregister") unregister();
+      else root.dispose();
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      expect(signals[0]?.aborted).toBe(true);
+      expect(handler).toHaveBeenCalledOnce();
+    } finally {
+      finished.resolve(undefined);
+      disposePair(root, mounted);
+      restoreWindow(originalWindow);
+    }
+  },
+);
+
 it("LAW: an aborted mounted command sends the exact request cancellation and releases it", async () => {
   const host = new IframeWindow("https://host.example");
   const app = new IframeWindow("https://app.example");

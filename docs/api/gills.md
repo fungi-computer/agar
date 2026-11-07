@@ -49,7 +49,7 @@ function decodeGillRefusal(
       title: string;
       state: "error";
       rows: readonly [];
-      reason?: "exec_isolation_required" | "params_required";
+      reason?: "disabled" | "exec_isolation_required" | "params_required";
       error: string;
       recovery?:
         | {
@@ -70,7 +70,7 @@ function decodeGillRefusal(
   | undefined;
 ```
 
-Decode the App host's strict isolation refusal into its permanent Gill state.
+Decode the App host's isolation or disabled refusal into a typed Gill state.
 
 #### Parameters
 
@@ -103,7 +103,7 @@ Decode the App host's strict isolation refusal into its permanent Gill state.
   title: string;
   state: "error";
   rows: readonly [];
-  reason?: "exec_isolation_required" | "params_required";
+  reason?: "disabled" | "exec_isolation_required" | "params_required";
   error: string;
   recovery?:   | {
      kind: "configure";
@@ -121,7 +121,7 @@ Decode the App host's strict isolation refusal into its permanent Gill state.
 | `title`     | `string`                                                                      | -                                                                                 |
 | `state`     | `"error"`                                                                     | -                                                                                 |
 | `rows`      | readonly \[\]                                                                 | -                                                                                 |
-| `reason?`   | `"exec_isolation_required"` \| `"params_required"`                            | Host-owned permanent execution refusal; an ordinary error may still be refreshed. |
+| `reason?`   | `"disabled"` \| `"exec_isolation_required"` \| `"params_required"`            | Host-owned permanent execution refusal; an ordinary error may still be refreshed. |
 | `error`     | `string`                                                                      | -                                                                                 |
 | `recovery?` | \| \{ `kind`: `"configure"`; `param`: `string`; \} \| \{ `kind`: `"open"`; \} | The host supplies the same-placement picker and this App's launch.                |
 
