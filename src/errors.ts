@@ -163,7 +163,8 @@ function setupMessage(need: string | undefined): string {
 const errorCopy = {
   CANCELLED: {
     title: "Request cancelled",
-    message: "This request was cancelled.",
+    message:
+      "It stopped before it finished. Start it again if you still want it.",
   },
   CAPABILITY_DENIED: {
     title: "Access needed",
@@ -177,7 +178,7 @@ const errorCopy = {
   },
   COMMAND_NOT_DECLARED: {
     title: "Action unavailable",
-    message: "This action isn't available in this App.",
+    message: "This App doesn't include that action. It may need an update.",
   },
   CONFLICT: {
     title: "File changed",
@@ -194,7 +195,8 @@ const errorCopy = {
   },
   HOST_FAILURE: {
     title: "Couldn't complete the request",
-    message: "The service couldn't complete this request.",
+    message:
+      "The host stopped answering. Reopen the App or reload the workspace.",
   },
   FILE_TOO_LARGE: {
     title: "File too large",
@@ -212,7 +214,7 @@ const errorCopy = {
   },
   INVALID_ARGUMENT: {
     title: "Request not accepted",
-    message: "The App couldn't use the details in this request.",
+    message: "Some of the details weren't usable. Check them and try again.",
   },
   MEDIA_PROVIDER_FAILURE: {
     title: "Generation failed",
@@ -226,7 +228,8 @@ const errorCopy = {
   },
   PROTOCOL: {
     title: "Couldn't read the response",
-    message: "The App received a response it couldn't use.",
+    message:
+      "The host sent something this App doesn't understand. Reload the workspace; if it keeps happening, the App may need an update.",
   },
   SAFETY_FILTER_REFUSED: {
     title: "Generation refused",

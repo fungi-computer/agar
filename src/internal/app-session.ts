@@ -72,6 +72,8 @@ import {
   parseNavigationStateInput,
   parsePermissionOutcomeResult,
   parsePermissionRequest,
+  parseSetupNeed,
+  parseSetupOutcomeResult,
   parseReservedChords,
   parseTheme,
   parseToast,
@@ -640,6 +642,13 @@ function createRootUi(
     async openDesktopSettings() {
       assertConnected();
       await callRpc(remote.openDesktopSettings(), parseVoidResult);
+    },
+    async openSetup(need: Parameters<HostUi["openSetup"]>[0]) {
+      assertConnected();
+      return await callRpc(
+        remote.openSetup(parseSetupNeed(need)),
+        parseSetupOutcomeResult,
+      );
     },
     async openTeamBilling() {
       assertConnected();

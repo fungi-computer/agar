@@ -42,6 +42,10 @@ function decodeGillRefusal(
       title: string;
       state: "empty";
       rows: readonly [];
+      emptyText?: string;
+      action?: {
+        kind: "open";
+      };
       next?: string;
     }
   | {
@@ -89,9 +93,24 @@ Decode the App host's isolation or disabled refusal into a typed Gill state.
   title: string;
   state: "empty";
   rows: readonly [];
+  emptyText?: string;
+  action?: {
+     kind: "open";
+  };
   next?: string;
 }
 ```
+
+| Name          | Type          | Description                                                 |
+| ------------- | ------------- | ----------------------------------------------------------- |
+| `viewId`      | `string`      | -                                                           |
+| `title`       | `string`      | -                                                           |
+| `state`       | `"empty"`     | -                                                           |
+| `rows`        | readonly \[\] | -                                                           |
+| `emptyText?`  | `string`      | One line naming the first action, in the App's own words.   |
+| `action?`     | `object`      | The host supplies the button; the App only says it belongs. |
+| `action.kind` | `"open"`      | -                                                           |
+| `next?`       | `string`      | -                                                           |
 
 ---
 

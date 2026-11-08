@@ -1,5 +1,25 @@
 # @fungi.computer/agar
 
+## 0.9.0
+
+### Minor Changes
+
+- Changes since 0.8.0:
+
+  - feat(agar): publish which declared rights an App holds, and sharpen error
+    copy
+  - fix(agar): keep the setup open schema apart from the setup need schema
+  - feat(computer): retain process output and serve the last lines
+  - feat(agar): first-run setup facts, openSetup, more permission families
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @fungi.computer/gills@0.3.0
+  - @fungi.computer/sprite@0.2.2
+  - @fungi.computer/puffball@0.5.5
+
 ## 0.8.0
 
 ### Minor Changes

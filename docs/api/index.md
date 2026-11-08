@@ -849,6 +849,53 @@ readonly type: typeof APP_READY_TYPE;
 
 ---
 
+### SetupState
+
+```ts
+type SetupState = "ready" | "missing" | "unknown";
+```
+
+Whether one thing an App needs is available: `unknown` means the host has not
+checked.
+
+---
+
+### AppSetup
+
+```ts
+type AppSetup = Readonly<{
+  models: SetupState;
+  media: SetupState;
+  git: SetupState;
+  terminal: "ready" | "exec-only" | "missing" | "unknown";
+}>;
+```
+
+The host's up-front answer to "can this App work here?". Absent on hosts that do
+not publish it; Apps treat absence as `unknown` for every field.
+
+---
+
+### SetupNeed
+
+```ts
+type SetupNeed = "model" | "media" | "git" | "computer";
+```
+
+What an App can ask its host to help the person set up.
+
+---
+
+### SetupOutcome
+
+```ts
+type SetupOutcome = "opened" | "unavailable";
+```
+
+Whether the host opened its setup surface for the need.
+
+---
+
 ### AppContext
 
 ```ts
@@ -883,6 +930,24 @@ readonly optional computerAccessGranted?: boolean;
 ```
 
 Whether this App has execute access across the Team, when known.
+
+##### setup?
+
+```ts
+readonly optional setup?: AppSetup;
+```
+
+Setup facts the host publishes and updates live; absent on older hosts.
+
+##### permissions?
+
+```ts
+readonly optional permissions?: AppPermissions;
+```
+
+Which declared rights this App holds, so it can offer "Approve access" up front
+instead of discovering a refusal. Updated after a permission request; absent on
+hosts that do not publish it (treat as unknown).
 
 ##### focus
 
@@ -1582,6 +1647,27 @@ time; the host never renders App UI in its chrome.
 
 () => `void`
 
+##### openSetup()
+
+```ts
+openSetup(need): Promise<SetupOutcome>;
+```
+
+Take the person to the host's exact setup surface for what this App needs, such
+as a model key. `unavailable` when this host has no such surface; the App then
+keeps its own plain explanation. Context `setup` updates live once the person
+finishes.
+
+###### Parameters
+
+| Parameter | Type                      |
+| --------- | ------------------------- |
+| `need`    | [`SetupNeed`](#setupneed) |
+
+###### Returns
+
+`Promise`\<[`SetupOutcome`](#setupoutcome)\>
+
 ##### openTeamBilling()
 
 ```ts
@@ -1647,6 +1733,16 @@ Ask the host to show a transient toast notification.
 
 ---
 
+### AppStatusPriority
+
+```ts
+type AppStatusPriority = "low";
+```
+
+Items that may drop first when the window is too narrow for all of them.
+
+---
+
 ### AppStatusIcon
 
 ```ts
@@ -1690,6 +1786,7 @@ type AppStatusItem =
       id: string;
       text: string;
       end?: boolean;
+      priority?: AppStatusPriority;
       kind: "text";
       tone?: AppStatusTone;
     }>
@@ -1697,6 +1794,7 @@ type AppStatusItem =
       id: string;
       text: string;
       end?: boolean;
+      priority?: AppStatusPriority;
       kind: "button";
       icon?: AppStatusIcon;
       count?: number;
@@ -1711,6 +1809,7 @@ type AppStatusItem =
       id: string;
       text: string;
       end?: boolean;
+      priority?: AppStatusPriority;
       kind: "toggle";
       pressed: boolean;
     }>
@@ -1718,6 +1817,7 @@ type AppStatusItem =
       id: string;
       text: string;
       end?: boolean;
+      priority?: AppStatusPriority;
       kind: "menu";
       count?: number;
       title?: string;
@@ -1856,16 +1956,99 @@ Computer rights an App may ask its host to grant through consent.
 
 ---
 
+### GitAccessOperation
+
+```ts
+type GitAccessOperation = "git.repository";
+```
+
+Git rights an App may ask its host to grant through consent.
+
+---
+
+### WorkflowAccessOperation
+
+```ts
+type WorkflowAccessOperation =
+  "workflow.publish" | "workflow.arm" | "workflow.run";
+```
+
+Workflow rights an App may ask its host to grant through consent.
+
+---
+
+### EventAccessOperation
+
+```ts
+type EventAccessOperation = "app.events.emit";
+```
+
+Event rights an App may ask its host to grant through consent.
+
+---
+
+### GenerationAccessOperation
+
+```ts
+type GenerationAccessOperation =
+  "llm.generation" | "media.generation" | "media.share";
+```
+
+Generation rights an App may ask its host to grant through consent.
+
+---
+
 ### AppPermissionRequest
 
 ```ts
 type AppPermissionRequest = Readonly<{
   agents?: readonly AgentAccessOperation[];
   computers?: readonly ComputerAccessOperation[];
+  git?: readonly GitAccessOperation[];
+  workflows?: readonly WorkflowAccessOperation[];
+  events?: readonly EventAccessOperation[];
+  generation?: readonly GenerationAccessOperation[];
 }>;
 ```
 
 The rights an App asks for; the host bounds them by its declared ceiling.
+
+---
+
+### AppRight
+
+```ts
+type AppRight =
+  | AgentAccessOperation
+  | ComputerAccessOperation
+  | GitAccessOperation
+  | WorkflowAccessOperation
+  | EventAccessOperation
+  | GenerationAccessOperation;
+```
+
+Every right an App can ask for, by the grant catalog's own name.
+
+---
+
+### AppRightState
+
+```ts
+type AppRightState = "granted" | "missing";
+```
+
+Whether this App holds one right now. `granted`: the owner's grant covers it.
+`missing`: it is declared but not covered, so a request would ask the person.
+
+---
+
+### AppPermissions
+
+```ts
+type AppPermissions = Readonly<Partial<Record<AppRight, AppRightState>>>;
+```
+
+The App's own grants, by right. A right the App does not declare is absent.
 
 ---
 
@@ -2989,6 +3172,16 @@ const APP_STATUS_OPTIONS_MAX: 16 = 16;
 ```
 
 The most choices one status menu offers.
+
+---
+
+### APP\_RIGHTS
+
+```ts
+const APP_RIGHTS: readonly AppRight[];
+```
+
+Every `AppRight`, for hosts that read grants by catalog name.
 
 ---
 

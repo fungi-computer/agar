@@ -1,3 +1,5 @@
+import type { SetupNeed, SetupOutcome } from "./lifecycle.js";
+
 /** Deliberately narrow shell affordances; domain work belongs to capabilities. */
 export type HostUi = {
   /** Open the host-owned Computer picker; selection arrives through App context. */
@@ -26,6 +28,13 @@ export type HostUi = {
    * owner at a time; the host never renders App UI in its chrome.
    */
   onStatusAction(handler: AppStatusActionHandler): () => void;
+  /**
+   * Take the person to the host's exact setup surface for what this App needs,
+   * such as a model key. `unavailable` when this host has no such surface; the
+   * App then keeps its own plain explanation. Context `setup` updates live once
+   * the person finishes.
+   */
+  openSetup(need: SetupNeed): Promise<SetupOutcome>;
   /** Leave the App for the host's Billing page for this Team. */
   openTeamBilling(): Promise<void>;
   /** Suggest this App's desktop Gills while focused with browser activation.
@@ -48,6 +57,9 @@ export const APP_STATUS_TEXT_MAX = 80;
 
 /** The most choices one status menu offers. */
 export const APP_STATUS_OPTIONS_MAX = 16;
+
+/** Items that may drop first when the window is too narrow for all of them. */
+export type AppStatusPriority = "low";
 
 /** The marks a host can draw before a status button's label. */
 export type AppStatusIcon = "folder" | "ports" | "processes" | "access";
@@ -75,6 +87,8 @@ export type AppStatusItem =
       text: string;
       /** Hold this item at the bar's far end, like a save state. */
       end?: boolean;
+      /** `low` items drop first when the bar runs out of room. */
+      priority?: AppStatusPriority;
       kind: "text";
       tone?: AppStatusTone;
     }>
@@ -83,6 +97,8 @@ export type AppStatusItem =
       text: string;
       /** Hold this item at the bar's far end, like a save state. */
       end?: boolean;
+      /** `low` items drop first when the bar runs out of room. */
+      priority?: AppStatusPriority;
       kind: "button";
       /** A host-drawn mark before the label. */
       icon?: AppStatusIcon;
@@ -105,6 +121,8 @@ export type AppStatusItem =
       text: string;
       /** Hold this item at the bar's far end, like a save state. */
       end?: boolean;
+      /** `low` items drop first when the bar runs out of room. */
+      priority?: AppStatusPriority;
       kind: "toggle";
       pressed: boolean;
     }>
@@ -113,6 +131,8 @@ export type AppStatusItem =
       text: string;
       /** Hold this item at the bar's far end, like a save state. */
       end?: boolean;
+      /** `low` items drop first when the bar runs out of room. */
+      priority?: AppStatusPriority;
       kind: "menu";
       count?: number;
       title?: string;
@@ -163,11 +183,67 @@ export type ComputerAccessOperation =
   | "computer.writeFile"
   | "computer.execute";
 
+/** Git rights an App may ask its host to grant through consent. */
+export type GitAccessOperation = "git.repository";
+
+/** Workflow rights an App may ask its host to grant through consent. */
+export type WorkflowAccessOperation =
+  "workflow.publish" | "workflow.arm" | "workflow.run";
+
+/** Event rights an App may ask its host to grant through consent. */
+export type EventAccessOperation = "app.events.emit";
+
+/** Generation rights an App may ask its host to grant through consent. */
+export type GenerationAccessOperation =
+  "llm.generation" | "media.generation" | "media.share";
+
 /** The rights an App asks for; the host bounds them by its declared ceiling. */
 export type AppPermissionRequest = Readonly<{
   agents?: readonly AgentAccessOperation[];
   computers?: readonly ComputerAccessOperation[];
+  git?: readonly GitAccessOperation[];
+  workflows?: readonly WorkflowAccessOperation[];
+  events?: readonly EventAccessOperation[];
+  generation?: readonly GenerationAccessOperation[];
 }>;
+
+/** Every right an App can ask for, by the grant catalog's own name. */
+export type AppRight =
+  | AgentAccessOperation
+  | ComputerAccessOperation
+  | GitAccessOperation
+  | WorkflowAccessOperation
+  | EventAccessOperation
+  | GenerationAccessOperation;
+
+/** Every `AppRight`, for hosts that read grants by catalog name. */
+export const APP_RIGHTS: readonly AppRight[] = [
+  "agent.list",
+  "agent.manage",
+  "agent.read",
+  "agent.send",
+  "computer.list",
+  "computer.readFile",
+  "computer.writeFile",
+  "computer.execute",
+  "git.repository",
+  "workflow.publish",
+  "workflow.arm",
+  "workflow.run",
+  "app.events.emit",
+  "llm.generation",
+  "media.generation",
+  "media.share",
+];
+
+/**
+ * Whether this App holds one right now. `granted`: the owner's grant covers it.
+ * `missing`: it is declared but not covered, so a request would ask the person.
+ */
+export type AppRightState = "granted" | "missing";
+
+/** The App's own grants, by right. A right the App does not declare is absent. */
+export type AppPermissions = Readonly<Partial<Record<AppRight, AppRightState>>>;
 
 /**
  * `granted`: the host saved a grant covering the request. `declined`: the user

@@ -8,6 +8,8 @@ import type {
   AppIdentity,
   AppLifecycle,
   FocusState,
+  SetupNeed,
+  SetupOutcome,
 } from "../lifecycle.js";
 import type {
   AppBrowserAction,
@@ -75,6 +77,7 @@ export type AppHostRpc = {
   openNavigation(input: FileNavigationInput): Promise<RpcResult<void>>;
   openTeamBilling(): Promise<RpcResult<void>>;
   openDesktopSettings(): Promise<RpcResult<void>>;
+  openSetup(need: SetupNeed): Promise<RpcResult<SetupOutcome>>;
   requestAppPermissions(
     input: AppPermissionRequest,
   ): Promise<RpcResult<AppPermissionOutcome>>;

@@ -69,6 +69,7 @@ function fixture() {
       openNavigation: unused,
       reportStatus: unused,
       onStatusAction: unused,
+      openSetup: unused,
       openTeamBilling: unused,
       openDesktopSettings: unused,
       reportAgentSessionSelection: unused,

@@ -979,6 +979,7 @@ it("LAW: synchronous command supervision isolates a throwing fatal callback", as
     openNavigation: unused,
     reportStatus: unused,
     requestAppPermissions: unused,
+    openSetup: unused,
     openTeamBilling: unused,
     openDesktopSettings: unused,
     reportFocus: unused,
@@ -1566,6 +1567,7 @@ it("LAW: permission requests cross the host boundary decoded and bounded", async
   host.peer = app;
   const originalWindow = replaceWindow(app);
   const requests: unknown[] = [];
+  const setups: unknown[] = [];
   try {
     const hostPromise = connectAppHost({
       appWindow: asBrowserWindow(app),
@@ -1577,6 +1579,10 @@ it("LAW: permission requests cross the host boundary decoded and bounded", async
         requestAppPermissions: (input) => {
           requests.push(input);
           return Promise.resolve("granted");
+        },
+        openSetup: (need) => {
+          setups.push(need);
+          return Promise.resolve("opened");
         },
         registerCommands: () =>
           Promise.resolve({
@@ -1622,6 +1628,36 @@ it("LAW: permission requests cross the host boundary decoded and bounded", async
       }),
     ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
     expect(requests).toHaveLength(1);
+    await expect(
+      root.ui.requestAppPermissions({
+        git: ["git.repository"],
+        workflows: ["workflow.run", "workflow.arm", "workflow.run"],
+        events: ["app.events.emit"],
+        generation: ["llm.generation", "media.generation", "media.share"],
+      }),
+    ).resolves.toBe("granted");
+    expect(requests[1]).toEqual({
+      agents: [],
+      computers: [],
+      git: ["git.repository"],
+      workflows: ["workflow.run", "workflow.arm"],
+      events: ["app.events.emit"],
+      generation: ["llm.generation", "media.generation", "media.share"],
+    });
+    await expect(
+      root.ui.requestAppPermissions({
+        // @ts-expect-error a right the grant catalog does not name never reaches the host
+        workflows: ["workflow.delete"],
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
+    expect(requests).toHaveLength(2);
+    await expect(root.ui.openSetup("model")).resolves.toBe("opened");
+    expect(setups).toEqual(["model"]);
+    await expect(
+      // @ts-expect-error only the four named needs can be opened
+      root.ui.openSetup("billing"),
+    ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
+    expect(setups).toHaveLength(1);
     await expect(root.ui.openDesktopSettings()).rejects.toMatchObject({
       code: "CAPABILITY_DENIED",
     });

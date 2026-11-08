@@ -17,7 +17,13 @@ import type {
   WhistleJsonValue,
 } from "@fungi.computer/whistle";
 import { WhistleActionError } from "@fungi.computer/whistle";
-import type { AppContext, AppIdentity, FocusState } from "./lifecycle.js";
+import type {
+  AppContext,
+  AppIdentity,
+  FocusState,
+  SetupNeed,
+  SetupOutcome,
+} from "./lifecycle.js";
 import type { AppNavigationActivation, AppNavigationState } from "./window.js";
 import type {
   AppBrowserAction,
@@ -77,6 +83,7 @@ import {
   parseStatusAction,
   parseStatusItems,
   parsePermissionRequest,
+  parseSetupNeed,
   parseReady,
   parseReservedChordsFact,
   parseThemeFact,
@@ -131,6 +138,8 @@ export type AppHostHandlers = {
   readonly openNavigation: (input: FileNavigationInput) => Promise<void>;
   readonly openTeamBilling?: () => Promise<void>;
   readonly openDesktopSettings?: () => Promise<void>;
+  /** Route the person to the host's setup surface; absent means `unavailable`. */
+  readonly openSetup?: (need: SetupNeed) => Promise<SetupOutcome>;
   readonly requestAppPermissions?: (
     input: AppPermissionRequest,
   ) => Promise<AppPermissionOutcome>;
@@ -333,6 +342,13 @@ class MountedHost extends RpcTarget implements AppHostRpc {
           retryable: false,
         });
       return this.#handlers.openDesktopSettings();
+    });
+  }
+
+  async openSetup(value: SetupNeed) {
+    return this.#answer<SetupOutcome>(async () => {
+      const need = parseSetupNeed(value);
+      return (await this.#handlers.openSetup?.(need)) ?? "unavailable";
     });
   }
 

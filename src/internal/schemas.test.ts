@@ -7,6 +7,7 @@ import {
   parseContext,
   parseNavigationState,
   parseNavigationStateInput,
+  parseStatusItems,
 } from "./schemas.js";
 
 const context = {
@@ -55,6 +56,61 @@ describe("AppContext open request", () => {
     });
 
     expect(parsed.teamHasComputers).toBeNull();
+  });
+
+  it("decodes host setup facts and treats their absence as old-host", () => {
+    const setup = {
+      models: "missing",
+      media: "unknown",
+      git: "ready",
+      terminal: "exec-only",
+    } as const;
+    expect(
+      parseContext({ ...context, openRequest: null, setup }).setup,
+    ).toEqual(setup);
+    expect(parseContext({ ...context, openRequest: null })).not.toHaveProperty(
+      "setup",
+    );
+  });
+
+  it("decodes the App's own right states and refuses names the catalog lacks", () => {
+    const permissions = {
+      "git.repository": "missing",
+      "app.events.emit": "granted",
+    } as const;
+    expect(
+      parseContext({ ...context, openRequest: null, permissions }).permissions,
+    ).toEqual(permissions);
+    expect(parseContext({ ...context, openRequest: null })).not.toHaveProperty(
+      "permissions",
+    );
+    for (const bad of [
+      { "git.push": "granted" },
+      { "git.repository": "yes" },
+      { "git.repository": null },
+    ])
+      expect(() =>
+        parseContext({ ...context, openRequest: null, permissions: bad }),
+      ).toThrow(AppError);
+  });
+
+  it("refuses setup values the contract does not name", () => {
+    const setup = {
+      models: "ready",
+      media: "ready",
+      git: "ready",
+      terminal: "ready",
+    };
+    for (const bad of [
+      { ...setup, models: "yes" },
+      { ...setup, terminal: "pty" },
+      { ...setup, git: null },
+      { ...setup, extra: "ready" },
+      { models: "ready" },
+    ])
+      expect(() =>
+        parseContext({ ...context, openRequest: null, setup: bad }),
+      ).toThrow(AppError);
   });
 
   it("rejects the removed Agent Session launch kind", () => {
@@ -285,5 +341,28 @@ it("bounds browser actions by actual bytes and rejects filenames with a path", (
     name: "pond.bin",
     mime: "application/octet-stream",
     bytes: new Uint8Array([0, 255]),
+  });
+});
+
+describe("status item priority", () => {
+  it("keeps the low priority and refuses any other", () => {
+    const items = parseStatusItems([
+      { id: "saved", kind: "text", text: "Saved", priority: "low" },
+      { id: "plain", kind: "text", text: "Plain" },
+    ]);
+    expect(items[0]).toMatchObject({ priority: "low" });
+    expect(items[1]).not.toHaveProperty("priority");
+    for (const priority of ["high", "", null])
+      expect(() =>
+        parseStatusItems([
+          {
+            id: "saved",
+            kind: "toggle",
+            text: "Saved",
+            pressed: true,
+            priority,
+          },
+        ]),
+      ).toThrow(AppError);
   });
 });

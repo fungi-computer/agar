@@ -7,6 +7,7 @@ import {
   computerProcessesSchema,
   computerProcesses,
   describeComputerRefusal,
+  computerProcessLogsSchema,
   computerProcessKillSchema,
   computerPorts,
   computerPortsSchema,
@@ -19,6 +20,7 @@ import {
 import {
   listComputerProcesses,
   killComputerProcess,
+  readComputerProcessLogs,
   listComputerPorts,
   exposeComputerPort,
   unexposeComputerPort,
@@ -265,6 +267,42 @@ describe("Agar Computer process capability", () => {
       listComputerProcesses(capabilities.directory),
     ).resolves.toEqual(processes);
     capabilities.close();
+  });
+
+  it("reads the retained output tail and exit state of one process", async () => {
+    const process: ComputerProcesses["processes"][number] = {
+      port: null,
+      id: "proc-2",
+      command: "npm run build",
+      cwd: "/workspace",
+      startedAt: 1_750_000_000_100,
+      state: "exited",
+      exitCode: 1,
+      sync: "synced",
+      endedAt: 1_750_000_000_200,
+    };
+    const capabilities = processesDirectory({ processes: [process] });
+    await expect(
+      readComputerProcessLogs(capabilities.directory, "proc-2", 50),
+    ).resolves.toEqual({
+      process,
+      lines: ["compiled", "done"],
+      truncated: false,
+    });
+    expect(capabilities.owner.logRequests).toEqual([
+      { id: "proc-2", lines: 50 },
+    ]);
+    capabilities.close();
+  });
+
+  it("rejects malformed log data at the SDK boundary", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(computerProcessLogsSchema)({
+        process: {},
+        lines: ["x".repeat(2_001)],
+        truncated: false,
+      }),
+    ).toThrow();
   });
 
   it("rejects unknown or malformed lifecycle data at the SDK boundary", () => {
@@ -590,6 +628,18 @@ class ProcessesOwner extends RpcTarget {
   kill() {
     return Promise.resolve(this.killResult);
   }
+
+  readonly logRequests: { id: string; lines: number | undefined }[] = [];
+  logs(id: string, lines?: number) {
+    this.logRequests.push({ id, lines });
+    const process = this.processes.processes.at(0);
+    if (!process) throw new Error("Logs fixture needs a process");
+    return Promise.resolve({
+      process,
+      lines: ["compiled", "done"],
+      truncated: false,
+    });
+  }
 }
 
 describe("Agar Computer process Start", () => {
@@ -643,7 +693,8 @@ describe("Computer refusal", () => {
     const failed = refuse("HOST_FAILURE");
     expect(failed).toEqual({
       reason: "failed",
-      message: "The service couldn't complete this request.",
+      message:
+        "The host stopped answering. Reopen the App or reload the workspace.",
       action: "retry",
     });
     expect(JSON.stringify(failed)).not.toContain("private");

@@ -18,6 +18,8 @@ import type {
   AppIdentity,
   AppLifecycle,
   FocusState,
+  SetupNeed,
+  SetupOutcome,
 } from "../lifecycle.js";
 import type {
   AppBrowserAction,
@@ -25,6 +27,7 @@ import type {
   AppBrowserActionOutcome,
   AgentSessionSelection,
   AppPermissionOutcome,
+  AppRight,
   AppPermissionRequest,
   AppStatusAction,
   AppStatusItem,
@@ -122,21 +125,52 @@ const appOpenRequestSchema = Schema.Union([
     ).pipe(Schema.check(Schema.isMaxLength(16))),
   }),
 ]);
+const rightState = Schema.optionalKey(Schema.Literals(["granted", "missing"]));
+/** A strict struct, so an unknown right name is refused rather than ignored. */
+const permissionsSchema = Schema.Struct({
+  "agent.list": rightState,
+  "agent.manage": rightState,
+  "agent.read": rightState,
+  "agent.send": rightState,
+  "computer.list": rightState,
+  "computer.readFile": rightState,
+  "computer.writeFile": rightState,
+  "computer.execute": rightState,
+  "git.repository": rightState,
+  "workflow.publish": rightState,
+  "workflow.arm": rightState,
+  "workflow.run": rightState,
+  "app.events.emit": rightState,
+  "llm.generation": rightState,
+  "media.generation": rightState,
+  "media.share": rightState,
+} satisfies Record<AppRight, typeof rightState>);
+const setupStateSchema = Schema.Literals(["ready", "missing", "unknown"]);
+const setupSchema = Schema.Struct({
+  models: setupStateSchema,
+  media: setupStateSchema,
+  git: setupStateSchema,
+  terminal: Schema.Literals(["ready", "exec-only", "missing", "unknown"]),
+});
+const setupOpenSchema = Schema.Literals(["model", "media", "git", "computer"]);
+const setupOutcomeSchema = Schema.Literals(["opened", "unavailable"]);
 const contextSchema = Schema.Struct({
   computerId: Schema.Union([boundedText(256), Schema.Null]),
   teamHasComputers: Schema.optional(Schema.NullOr(Schema.Boolean)),
   computerAccessGranted: Schema.optional(Schema.Boolean),
+  setup: Schema.optional(setupSchema),
+  permissions: Schema.optional(permissionsSchema),
   focus: focusSchema,
   openRequest: Schema.Union([Schema.Null, appOpenRequestSchema]),
   visibility: Schema.Literals(["visible", "hidden"]),
 });
 type DecodedAppContext = Omit<
   Mutable<AppContext>,
-  "teamHasComputers" | "computerAccessGranted"
+  "teamHasComputers" | "computerAccessGranted" | "setup" | "permissions"
 > &
   Pick<
     Partial<Mutable<AppContext>>,
-    "teamHasComputers" | "computerAccessGranted"
+    "teamHasComputers" | "computerAccessGranted" | "setup" | "permissions"
   >;
 type Mutable<Value> = { -readonly [Key in keyof Value]: Value[Key] };
 const lifecycleSchema = Schema.Literals([
@@ -216,6 +250,7 @@ const statusBase = {
   id: boundedText(64),
   text: statusText(APP_STATUS_TEXT_MAX),
   end: Schema.optionalKey(Schema.Boolean),
+  priority: Schema.optionalKey(Schema.Literal("low")),
 };
 const statusCount = Schema.optionalKey(
   Schema.Number.pipe(
@@ -397,6 +432,14 @@ const agentSessionSelectionSchema = Schema.NullOr(
     sessionId: boundedText(256),
   }),
 );
+const operationList = <const Operations extends readonly [string, ...string[]]>(
+  operations: Operations,
+) =>
+  Schema.optional(
+    Schema.Array(Schema.Literals(operations)).pipe(
+      Schema.check(Schema.isMaxLength(operations.length)),
+    ),
+  );
 const permissionRequestSchema = Schema.Struct({
   agents: Schema.optional(
     Schema.Array(
@@ -418,6 +461,18 @@ const permissionRequestSchema = Schema.Struct({
       ]),
     ).pipe(Schema.check(Schema.isMaxLength(4))),
   ),
+  git: operationList(["git.repository"]),
+  workflows: operationList([
+    "workflow.publish",
+    "workflow.arm",
+    "workflow.run",
+  ]),
+  events: operationList(["app.events.emit"]),
+  generation: operationList([
+    "llm.generation",
+    "media.generation",
+    "media.share",
+  ]),
 });
 const permissionOutcomeSchema = Schema.Literals([
   "granted",
@@ -577,6 +632,9 @@ export const parseContext = decoder(
       context.teamHasComputers = parsed.teamHasComputers;
     if (parsed.computerAccessGranted !== undefined)
       context.computerAccessGranted = parsed.computerAccessGranted;
+    if (parsed.setup !== undefined) context.setup = frozen({ ...parsed.setup });
+    if (parsed.permissions !== undefined)
+      context.permissions = frozen({ ...parsed.permissions });
     return frozen(context);
   },
 );
@@ -745,10 +803,24 @@ export const parseAgentSessionSelection = decoder(
 export const parsePermissionRequest = decoder(
   permissionRequestSchema,
   (value): AppPermissionRequest =>
+    // Newer families appear only when named, so existing requests keep their shape.
     frozen({
       agents: frozen([...new Set(value.agents ?? [])]),
       computers: frozen([...new Set(value.computers ?? [])]),
+      ...(value.git && { git: frozen([...new Set(value.git)]) }),
+      ...(value.workflows && {
+        workflows: frozen([...new Set(value.workflows)]),
+      }),
+      ...(value.events && { events: frozen([...new Set(value.events)]) }),
+      ...(value.generation && {
+        generation: frozen([...new Set(value.generation)]),
+      }),
     }),
+  "INVALID_ARGUMENT",
+);
+export const parseSetupNeed = decoder(
+  setupOpenSchema,
+  (value): SetupNeed => value,
   "INVALID_ARGUMENT",
 );
 export const parseReady = decoder(readySchema, (value): AppReadyMessage =>
@@ -911,6 +983,9 @@ export const parseVoidResult = rpcDecoder(
 );
 export const parsePermissionOutcomeResult = rpcDecoder(
   decoder(permissionOutcomeSchema, (value): AppPermissionOutcome => value),
+);
+export const parseSetupOutcomeResult = rpcDecoder(
+  decoder(setupOutcomeSchema, (value): SetupOutcome => value),
 );
 export const parseCloseDecisionResult = rpcDecoder(
   decoder(Schema.Boolean, (value) => value),

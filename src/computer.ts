@@ -388,7 +388,21 @@ export const computerProcessKillSchema = Schema.Struct({
   signalled: Schema.Boolean,
 });
 
+/** The last output lines a process wrote, with its record for state and exit code. */
+export const computerProcessLogsSchema = Schema.Struct({
+  process: computerProcessSchema,
+  /** Most recent stdout and stderr lines, oldest first. */
+  lines: Schema.Array(
+    Schema.String.pipe(Schema.check(Schema.isMaxLength(2_000))),
+  ).pipe(Schema.check(Schema.isMaxLength(200))),
+  /** Older output was dropped to stay within the retained bound. */
+  truncated: Schema.Boolean,
+});
+
 export type ComputerProcess = Schema.Schema.Type<typeof computerProcessSchema>;
+export type ComputerProcessLogs = Schema.Schema.Type<
+  typeof computerProcessLogsSchema
+>;
 export type ComputerProcessSync = Schema.Schema.Type<
   typeof computerProcessSyncSchema
 >;
@@ -416,6 +430,8 @@ export const computerProcesses: CapabilityContract<{
   kill(
     id: string,
   ): Promise<Schema.Schema.Type<typeof computerProcessKillSchema>>;
+  /** The retained last output lines (at most 200) and exit state of one process. */
+  logs(id: string, lines?: number): Promise<ComputerProcessLogs>;
 }> = defineCapability(
   "computer.processes",
   1,
@@ -445,6 +461,15 @@ export const computerProcesses: CapabilityContract<{
             .unknown()
             .transform((value) =>
               Schema.decodeUnknownSync(computerProcessKillSchema)(value),
+            ),
+        ),
+      ),
+      logs: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(computerProcessLogsSchema)(value),
             ),
         ),
       ),
@@ -490,6 +515,17 @@ export function describeComputerRefusal(cause: unknown): ComputerRefusal {
       action: "grant",
     };
   return { reason: "failed", message: described.message, action: "retry" };
+}
+
+/** Read the retained output tail and exit state of one Computer process. */
+export async function readComputerProcessLogs(
+  capabilities: CapabilityDirectory,
+  id: string,
+  lines?: number,
+): Promise<ComputerProcessLogs> {
+  return Schema.decodeUnknownSync(computerProcessLogsSchema)(
+    await capabilities.require(computerProcesses).logs(id, lines),
+  );
 }
 
 /** Stop one process owned by the selected Computer. */

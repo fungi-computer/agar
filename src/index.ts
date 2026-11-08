@@ -112,6 +112,7 @@ export { statusActionAllowed, statusText } from "./status.js";
 export {
   APP_BROWSER_SAVE_MAX_BYTES,
   APP_BROWSER_COPY_MAX_BYTES,
+  APP_RIGHTS,
   APP_STATUS_ITEMS_MAX,
   APP_STATUS_OPTIONS_MAX,
   APP_STATUS_TEXT_MAX,
@@ -126,7 +127,11 @@ export type {
   AppIdentity,
   AppOpenRequest,
   AppLifecycle,
+  AppSetup,
   FocusState,
+  SetupNeed,
+  SetupOutcome,
+  SetupState,
 } from "./lifecycle.js";
 export type { AppRoot } from "./root.js";
 export type { AgentSessionSelection } from "./ui.js";
@@ -138,6 +143,10 @@ export type {
   AgentAccessOperation,
   AppPermissionOutcome,
   AppPermissionRequest,
+  AppPermissions,
+  AppRight,
+  AppRightState,
+  AppStatusPriority,
   AppStatusAction,
   AppStatusActionHandler,
   AppStatusIcon,
@@ -145,9 +154,13 @@ export type {
   AppStatusOption,
   AppStatusTone,
   ComputerAccessOperation,
+  EventAccessOperation,
   FileNavigationInput,
+  GenerationAccessOperation,
+  GitAccessOperation,
   HostUi,
   ToastInput,
+  WorkflowAccessOperation,
 } from "./ui.js";
 export { resultRowSchemaV1, type ResultRow } from "@fungi.computer/gills";
 export {

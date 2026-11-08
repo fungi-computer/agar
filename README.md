@@ -156,6 +156,11 @@ if (outcome === "granted") {
 }
 ```
 
+A request may also name `git` (`git.repository`), `workflows`
+(`workflow.publish`, `workflow.arm`, `workflow.run`), `events`
+(`app.events.emit`) and `generation` (`llm.generation`, `media.generation`,
+`media.share`) rights, using the grant catalog's own names.
+
 `declined` and `customize` are ordinary outcomes. The host bounds consent by the
 App's Release declaration, and the resource rechecks authority on every request.
 The browser gets capability handles, never Team cookies, namespace bindings or
@@ -167,6 +172,26 @@ processes and ports on the host-selected Computer), `./agents`, `./apps`,
 `./marketplace`, `./game-servers` and `./world`. They only work against a host
 that grants them, such as a Fungi Team. `appBackend` from `./backend` calls the
 App's own admitted backend.
+
+## Check setup first
+
+A host that knows what is installed publishes `context.setup` (`models`,
+`media`, `git`: `ready | missing | unknown`; `terminal`:
+`ready | exec-only | missing | unknown`) and updates it live. A host that does
+not publish it omits the field, so treat absence as `unknown` and still try.
+When something is `missing`, call
+`root.ui.openSetup("model" | "media" | "git" | "computer")`. It resolves
+`opened` or `unavailable` (a host with no such surface); the App keeps its own
+plain explanation in the second case.
+
+`context.permissions` says which of its declared rights this App holds now
+(`granted` or `missing`, keyed by the catalog's own names such as
+`git.repository`), so it can offer "Approve access" up front. A host updates it
+after `requestAppPermissions`; a right the App does not declare, or a host that
+does not publish it, leaves the key absent (treat as unknown).
+
+An App may mark a status item `priority: "low"`; the host drops those first when
+the window is too narrow for the whole bar.
 
 ## Store an App's own data
 
