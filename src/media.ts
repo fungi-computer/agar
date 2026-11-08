@@ -8,6 +8,7 @@ import {
 } from "./internal/rpc-contract.js";
 import * as Schema from "effect/Schema";
 import { mediaProviderDiagnosticSchema } from "./internal/media-diagnostic.js";
+import { setupNeedSchema } from "./internal/setup-need.js";
 import type { MediaProviderDiagnostic } from "./errors.js";
 
 export {
@@ -69,6 +70,7 @@ export class MediaGenerationError extends AppError {
     super(failure.message, {
       code: failure.code,
       retryable: failure.retryable,
+      ...(failure.need !== undefined && { need: failure.need }),
     });
     this.stage = failure.stage ?? null;
     this.provider = failure.provider;
@@ -460,9 +462,12 @@ export const mediaGenerationFailureSchema = Schema.Struct({
     "MEDIA_PROVIDER_FAILURE_UNCHARGED",
     "PROTOCOL",
     "SAFETY_FILTER_REFUSED",
+    "SETUP_REQUIRED",
     "TIMEOUT",
   ]),
   retryable: Schema.Boolean,
+  /** Names the missing setup for `SETUP_REQUIRED`, in plain words. */
+  need: Schema.optional(setupNeedSchema),
 });
 const outcomeSchema = Schema.Union([
   Schema.Struct({

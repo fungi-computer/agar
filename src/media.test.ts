@@ -429,6 +429,13 @@ describe("Media Agar capability", () => {
         "Media generation is not permitted to spend this Team's credits.",
     },
     {
+      code: "SETUP_REQUIRED",
+      stage: "admission",
+      retryable: false,
+      message: "Media generation has no provider",
+      need: "an image provider",
+    },
+    {
       code: "MEDIA_PROVIDER_FAILURE",
       stage: "provider",
       retryable: false,

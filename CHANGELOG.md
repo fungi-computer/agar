@@ -1,5 +1,25 @@
 # @fungi.computer/agar
 
+## 0.8.0
+
+### Minor Changes
+
+- Changes since 0.7.3:
+
+  - feat(agar): classify a Computer readout refusal with its cause and fix
+  - feat(agar): add a setup-required error that names what to set up
+  - fix(docs): build each package before its own docs check
+  - fix(docs): build agar before its docs check
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @fungi.computer/sprite@0.2.1
+  - @fungi.computer/stipe@0.1.1
+  - @fungi.computer/approvals@0.2.3
+  - @fungi.computer/puffball@0.5.4
+
 ## 0.7.3
 
 ### Patch Changes

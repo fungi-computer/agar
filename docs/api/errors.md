@@ -68,6 +68,7 @@ readonly code:
   | "PROTOCOL"
   | "SAFETY_FILTER_REFUSED"
   | "SELECTION_CHANGED"
+  | "SETUP_REQUIRED"
   | "TIMEOUT";
 ```
 
@@ -76,6 +77,14 @@ readonly code:
 ```ts
 readonly retryable: boolean;
 ```
+
+##### need
+
+```ts
+readonly need: string | undefined;
+```
+
+Set only on `SETUP_REQUIRED`: the missing thing, for the copy.
 
 ## Type Aliases
 
@@ -156,6 +165,14 @@ readonly retryable: boolean;
 
 Every error states retry truth explicitly; absence is not a verdict.
 
+##### need?
+
+```ts
+readonly optional need?: string;
+```
+
+What a `SETUP_REQUIRED` failure needs, in plain words such as "a model".
+
 ---
 
 ### ErrorCopy
@@ -177,7 +194,7 @@ Trusted presentation copy; overrides never change recovery or retry policy.
 type ErrorDescription = ErrorCopy &
   Readonly<{
     retryable: boolean;
-    action?: "grant" | "retry" | "reconnect" | "billing";
+    action?: "grant" | "retry" | "reconnect" | "billing" | "setup";
   }>;
 ```
 
@@ -220,6 +237,7 @@ const appErrorCodes: readonly [
   "PROTOCOL",
   "SAFETY_FILTER_REFUSED",
   "SELECTION_CHANGED",
+  "SETUP_REQUIRED",
   "TIMEOUT",
 ];
 ```
@@ -290,10 +308,10 @@ prerequisites, so they can accompany a non-retryable operation.
 
 #### Parameters
 
-| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
+| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
 
 #### Returns
 

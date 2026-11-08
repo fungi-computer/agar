@@ -65,6 +65,7 @@ import {
   type AppNavigationState,
 } from "../window.js";
 
+import { setupNeedSchema } from "./setup-need.js";
 import { AppError, appErrorCodes, type AppErrorCode } from "../errors.js";
 import { parseFailure } from "@fungi.computer/whistle/wire";
 import {
@@ -440,6 +441,7 @@ const errorSchema = Schema.Struct({
   code: appErrorCodeSchema,
   message: boundedText(512),
   retryable: Schema.Boolean,
+  need: Schema.optionalKey(setupNeedSchema),
 });
 const readySchema = Schema.Struct({
   protocolVersion: Schema.Literal(APP_PROTOCOL_VERSION),

@@ -5,6 +5,8 @@ export type AppErrorData = {
   readonly code: AppErrorCode;
   readonly message: string;
   readonly retryable: boolean;
+  /** Only `SETUP_REQUIRED` carries one: what the person must set up. */
+  readonly need?: string;
 };
 
 export function appErrorData(cause: unknown): AppErrorData {
@@ -13,6 +15,7 @@ export function appErrorData(cause: unknown): AppErrorData {
       code: cause.code,
       message: bounded(cause.message),
       retryable: cause.retryable,
+      ...(cause.need !== undefined && { need: cause.need }),
     };
   }
   return {
@@ -28,6 +31,7 @@ export function appErrorFromData(value: AppErrorData): AppError {
     return new AppError(parsed.message, {
       code: parsed.code,
       retryable: parsed.retryable,
+      ...(parsed.need !== undefined && { need: parsed.need }),
     });
   } catch (cause) {
     return new AppError("The host returned a malformed error", {

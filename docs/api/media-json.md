@@ -431,8 +431,9 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
         category: ...;
         status: ...;
      }>]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
+     need: optional<String>;
   }>;
 }>]>;
 ```
@@ -465,8 +466,9 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
      message: String;
      stage: optional<Literals<readonly [..., ..., ..., ..., ..., ..., ..., ..., ..., ..., ...]>>;
      provider: optional<Union<readonly [..., ...]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
+     need: optional<String>;
   }>;
 }>]>, declare<Readonly<{
   kind: "pending";

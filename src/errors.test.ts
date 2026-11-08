@@ -71,6 +71,7 @@ describe("describeAppError", () => {
     { code: "PROTOCOL" },
     { code: "SAFETY_FILTER_REFUSED" },
     { code: "SELECTION_CHANGED", action: "reconnect" },
+    { code: "SETUP_REQUIRED", action: "setup" },
     { code: "TIMEOUT" },
   ];
 
@@ -96,6 +97,62 @@ describe("describeAppError", () => {
       }
     },
   );
+
+  it("names what a missing setup needs and sends the person to setup", () => {
+    const missing = new AppError("private provider binding", {
+      code: "SETUP_REQUIRED",
+      retryable: false,
+      need: "a model",
+    });
+    expect(describeAppError(missing)).toEqual({
+      title: "Setup needed",
+      message: "This needs a model first.",
+      action: "setup",
+      retryable: false,
+    });
+    // The need crosses the host RPC boundary with the code.
+    const crossed = appErrorFromData(appErrorData(missing));
+    expect(crossed).toMatchObject({ code: "SETUP_REQUIRED", need: "a model" });
+    expect(describeAppError(crossed).message).toBe("This needs a model first.");
+  });
+
+  it("falls back to plain setup copy when the need is absent or out of contract", () => {
+    for (const need of [undefined, "", "x".repeat(81)]) {
+      const error = new AppError("x", {
+        code: "SETUP_REQUIRED",
+        retryable: false,
+        ...(need !== undefined && { need }),
+      });
+      expect(describeAppError(error).message).toBe("This needs setup first.");
+    }
+    // A malformed need on the wire is refused, never half-trusted.
+    expect(
+      appErrorFromData({
+        code: "SETUP_REQUIRED",
+        message: "x",
+        retryable: false,
+        need: "x".repeat(81),
+      }),
+    ).toMatchObject({ code: "PROTOCOL" });
+  });
+
+  it("accepts SETUP_REQUIRED from Media hosts and keeps the need", () => {
+    const failure = Schema.decodeUnknownSync(mediaGenerationFailureSchema)({
+      message: "private binding name",
+      stage: "admission",
+      code: "SETUP_REQUIRED",
+      need: "an image provider",
+      retryable: false,
+    });
+    const error = new MediaGenerationError(failure);
+    expect(error.need).toBe("an image provider");
+    expect(describeAppError(error)).toEqual({
+      title: "Setup needed",
+      message: "This needs an image provider first.",
+      action: "setup",
+      retryable: false,
+    });
+  });
 
   it("offers Billing for typed credit exhaustion with the existing generic fallback copy", () => {
     expect(

@@ -18,7 +18,7 @@ import {
   type AppFileWrite,
 } from "./files.js";
 import { reportCatchFailure } from "./failure.js";
-import { AppError } from "./errors.js";
+import { AppError, describeAppError } from "./errors.js";
 
 export const computerListingSchema = Schema.Struct({
   path: Schema.String,
@@ -459,6 +459,37 @@ export async function listComputerProcesses(
   return Schema.decodeUnknownSync(computerProcessesSchema)(
     await capabilities.require(computerProcesses).list(),
   );
+}
+
+/**
+ * Why a Computer readout (processes, ports) is unavailable, with the cause and
+ * the fix the window can offer. `no-runtime`: nothing is running to answer, so
+ * the fix is setup. `not-granted`: the App lacks the right, so the fix is a
+ * grant. `failed`: the request itself failed; retry.
+ */
+export type ComputerRefusal = Readonly<{
+  reason: "no-runtime" | "not-granted" | "failed";
+  /** One plain sentence naming the cause; never raw diagnostics. */
+  message: string;
+  action: "setup" | "grant" | "retry";
+}>;
+
+/** Classify a failed Computer readout from its SDK-decoded error. */
+export function describeComputerRefusal(cause: unknown): ComputerRefusal {
+  const described = describeAppError(cause);
+  if (described.action === "setup")
+    return {
+      reason: "no-runtime",
+      message: "No Computer is running to answer this yet.",
+      action: "setup",
+    };
+  if (described.action === "grant")
+    return {
+      reason: "not-granted",
+      message: "This App needs permission to see this Computer.",
+      action: "grant",
+    };
+  return { reason: "failed", message: described.message, action: "retry" };
 }
 
 /** Stop one process owned by the selected Computer. */

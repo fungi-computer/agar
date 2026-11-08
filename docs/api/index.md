@@ -2868,10 +2868,12 @@ const mediaGenerationFailureSchema: Struct<{
       "MEDIA_PROVIDER_FAILURE_UNCHARGED",
       "PROTOCOL",
       "SAFETY_FILTER_REFUSED",
+      "SETUP_REQUIRED",
       "TIMEOUT",
     ]
   >;
   retryable: Boolean;
+  need: optional<String>;
 }>;
 ```
 

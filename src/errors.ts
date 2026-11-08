@@ -1,6 +1,7 @@
 import * as Schema from "effect/Schema";
 import * as Option from "effect/Option";
 import * as z from "zod";
+import { setupNeedSchema } from "./internal/setup-need.js";
 import {
   mediaProviderDiagnosticSchema,
   mediaProviderDiagnosticZodSchema,
@@ -78,11 +79,15 @@ export const appErrorCodes = [
   "IDENTITY",
   "INSUFFICIENT_CREDIT",
   "INVALID_ARGUMENT",
+  /** A provider tried and failed. Never use it for a missing provider, account
+   * or binding: that is `SETUP_REQUIRED`, which names what to set up. */
   "MEDIA_PROVIDER_FAILURE",
   "MEDIA_PROVIDER_FAILURE_UNCHARGED",
   "PROTOCOL",
   "SAFETY_FILTER_REFUSED",
   "SELECTION_CHANGED",
+  /** Something the App needs is not set up; carries `need` for the copy. */
+  "SETUP_REQUIRED",
   "TIMEOUT",
 ] as const;
 /** One closed App error code from `appErrorCodes`. */
@@ -97,6 +102,7 @@ const describedAppErrorSchema = Schema.Struct({
   name: Schema.Literal("AppError"),
   code: Schema.Literals(appErrorCodes),
   retryable: Schema.Boolean,
+  need: Schema.optional(Schema.String),
 });
 
 /** Required construction options for an AppError. */
@@ -105,6 +111,8 @@ export type AppErrorOptions = {
   readonly code: AppErrorCode;
   /** Every error states retry truth explicitly; absence is not a verdict. */
   readonly retryable: boolean;
+  /** What a `SETUP_REQUIRED` failure needs, in plain words such as "a model". */
+  readonly need?: string;
 };
 
 /** The SDK's one typed failure. Carries a closed `code` naming the failure
@@ -113,12 +121,15 @@ export type AppErrorOptions = {
 export class AppError extends Error {
   readonly code: AppErrorCode;
   readonly retryable: boolean;
+  /** Set only on `SETUP_REQUIRED`: the missing thing, for the copy. */
+  readonly need: string | undefined;
 
   constructor(message: string, options: AppErrorOptions) {
     super(message, { cause: options.cause });
     this.name = "AppError";
     this.code = options.code;
     this.retryable = options.retryable;
+    this.need = options.need;
   }
 }
 
@@ -132,10 +143,21 @@ export type ErrorCopy = Readonly<{
 export type ErrorDescription = ErrorCopy &
   Readonly<{
     retryable: boolean;
-    action?: "grant" | "retry" | "reconnect" | "billing";
+    action?: "grant" | "retry" | "reconnect" | "billing" | "setup";
   }>;
 
 type CopyEntry = ErrorCopy & Pick<ErrorDescription, "action">;
+
+/** An out-of-contract `need` is ignored rather than failing the whole description. */
+function setupNeed(value: string | undefined): string | undefined {
+  return Option.getOrUndefined(
+    Schema.decodeUnknownOption(setupNeedSchema)(value),
+  );
+}
+
+function setupMessage(need: string | undefined): string {
+  return `This needs ${need ?? "setup"} first.`;
+}
 
 // User-facing wording approved by Levi; keep it in one reviewable table.
 const errorCopy = {
@@ -217,6 +239,11 @@ const errorCopy = {
       "The selection changed during this request. Reopen the App to continue.",
     action: "reconnect",
   },
+  SETUP_REQUIRED: {
+    title: "Setup needed",
+    message: setupMessage(undefined),
+    action: "setup",
+  },
   TIMEOUT: {
     title: "Still waiting",
     message: "The request didn't respond in time. Its outcome isn't known yet.",
@@ -241,7 +268,11 @@ export function describeAppError(
   if (Option.isNone(decoded)) return { ...errorCopy.UNKNOWN, retryable: false };
   const error = decoded.value;
   const entry: CopyEntry = errorCopy[error.code];
-  const copy = overrides?.[error.code] ?? entry;
+  const copy =
+    overrides?.[error.code] ??
+    (error.code === "SETUP_REQUIRED"
+      ? { title: entry.title, message: setupMessage(setupNeed(error.need)) }
+      : entry);
   const action = entry.action ?? (error.retryable ? "retry" : undefined);
   const description = {
     title: copy.title,

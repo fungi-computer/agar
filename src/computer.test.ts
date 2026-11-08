@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { newMessagePortRpcSession, RpcTarget } from "@fungi.computer/capnweb";
 import * as Schema from "effect/Schema";
+import { AppError } from "./errors.js";
 import { createCapabilityDirectory } from "./internal/capabilities.js";
 import {
   computerProcessesSchema,
   computerProcesses,
+  describeComputerRefusal,
   computerProcessKillSchema,
   computerPorts,
   computerPortsSchema,
@@ -617,5 +619,37 @@ describe("Agar Computer process Start", () => {
     } finally {
       owner.close();
     }
+  });
+});
+
+describe("Computer refusal", () => {
+  const refuse = (code: ConstructorParameters<typeof AppError>[1]["code"]) =>
+    describeComputerRefusal(
+      new AppError("private details", { code, retryable: false }),
+    );
+
+  it("names the cause and the fix for each reason", () => {
+    expect(refuse("SETUP_REQUIRED")).toMatchObject({
+      reason: "no-runtime",
+      action: "setup",
+    });
+    expect(refuse("CAPABILITY_DENIED")).toMatchObject({
+      reason: "not-granted",
+      action: "grant",
+    });
+    expect(refuse("CAPABILITY_REVOKED")).toMatchObject({
+      reason: "not-granted",
+    });
+    const failed = refuse("HOST_FAILURE");
+    expect(failed).toEqual({
+      reason: "failed",
+      message: "The service couldn't complete this request.",
+      action: "retry",
+    });
+    expect(JSON.stringify(failed)).not.toContain("private");
+  });
+
+  it("treats a non-AppError as a plain failure", () => {
+    expect(describeComputerRefusal(new Error("boom")).reason).toBe("failed");
   });
 });
