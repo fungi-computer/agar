@@ -1,5 +1,12 @@
 # @fungi.computer/agar
 
+## 0.7.3
+
+### Patch Changes
+
+- @fungi.computer/approvals@0.2.2
+  - @fungi.computer/puffball@0.5.3
+
 ## 0.7.2
 
 ### Patch Changes
