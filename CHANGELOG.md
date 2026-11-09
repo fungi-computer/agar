@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.9.1
+
+### Patch Changes
+
+- Changes since 0.9.0:
+
+  - fix(oyster): run trial Computers in a workspace sandbox
+
 ## 0.9.0
 
 ### Minor Changes

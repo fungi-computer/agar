@@ -94,6 +94,19 @@ describe("AppContext open request", () => {
       ).toThrow(AppError);
   });
 
+  it("preserves a host runtime refusal in App context", () => {
+    const setup = {
+      models: "missing",
+      media: "missing",
+      git: "unknown",
+      terminal: "missing",
+      terminalReason: "Workspace sandbox unavailable",
+    };
+    expect(
+      parseContext({ ...context, openRequest: null, setup }).setup,
+    ).toEqual(setup);
+  });
+
   it("refuses setup values the contract does not name", () => {
     const setup = {
       models: "ready",

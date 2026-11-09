@@ -868,6 +868,7 @@ type AppSetup = Readonly<{
   media: SetupState;
   git: SetupState;
   terminal: "ready" | "exec-only" | "missing" | "unknown";
+  terminalReason?: string;
 }>;
 ```
 

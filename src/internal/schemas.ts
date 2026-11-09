@@ -151,6 +151,7 @@ const setupSchema = Schema.Struct({
   media: setupStateSchema,
   git: setupStateSchema,
   terminal: Schema.Literals(["ready", "exec-only", "missing", "unknown"]),
+  terminalReason: Schema.optional(Schema.String),
 });
 const setupOpenSchema = Schema.Literals(["model", "media", "git", "computer"]);
 const setupOutcomeSchema = Schema.Literals(["opened", "unavailable"]);

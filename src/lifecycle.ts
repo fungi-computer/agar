@@ -14,6 +14,8 @@ export type AppSetup = Readonly<{
   git: SetupState;
   /** `exec-only` means commands run but there is no interactive terminal. */
   terminal: "ready" | "exec-only" | "missing" | "unknown";
+  /** Why command execution is unavailable, when the host has checked. */
+  terminalReason?: string | undefined;
 }>;
 
 /** What an App can ask its host to help the person set up. */
