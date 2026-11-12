@@ -243,7 +243,9 @@ const modelInputSchema = Schema.Struct({
   maxDimensionDocumented: Schema.Boolean,
   maxReferences: nonNegativeInteger,
   maxSteps: Schema.NullOr(positiveInteger),
+  referenceDimension: Schema.NullOr(positiveInteger),
   referenceField: Schema.NullOr(text(256)),
+  referenceFormat: Schema.Literals(["png", "webp"]),
   steps: Schema.Literals(["steps", "num_steps", "fixed"]),
   transport: Schema.Literals(["json", "multipart"]),
 });

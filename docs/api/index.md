@@ -2957,7 +2957,9 @@ const mediaModelSchema: Struct<{
     maxDimensionDocumented: Boolean;
     maxReferences: Number;
     maxSteps: NullOr<Number>;
+    referenceDimension: NullOr<Number>;
     referenceField: NullOr<String>;
+    referenceFormat: Literals<readonly ["png", "webp"]>;
     steps: Literals<readonly ["steps", "num_steps", "fixed"]>;
     transport: Literals<readonly ["json", "multipart"]>;
   }>;

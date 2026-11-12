@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.10.1
+
+### Patch Changes
+
+- Changes since 0.10.0:
+
+  - fix(darkroom): regenerate API docs and the Prints catalog pin for reference
+    fields
+  - fix(darkroom): fit GPT Image 2 references at 1024 px as WebP with a body
+    bound
+
 ## 0.10.0
 
 ### Minor Changes

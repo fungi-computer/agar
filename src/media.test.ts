@@ -38,6 +38,8 @@ const knownModel: MediaModel = {
     defaultSteps: 4,
     referenceField: "input_image_",
     maxReferences: 4,
+    referenceDimension: 512,
+    referenceFormat: "png",
   },
 };
 const gptModel: MediaModel = {
@@ -61,6 +63,8 @@ const gptModel: MediaModel = {
     defaultSteps: null,
     referenceField: null,
     maxReferences: 0,
+    referenceDimension: 512,
+    referenceFormat: "png",
   },
 };
 const input: MediaGenerationInput = {
@@ -236,6 +240,8 @@ describe("Media Agar capability", () => {
               defaultSteps: 4,
               referenceField: "input_image_",
               maxReferences: 4,
+              referenceDimension: 512,
+              referenceFormat: "png",
             },
           },
         ]),
@@ -746,6 +752,8 @@ describe("Media Agar capability", () => {
               defaultSteps: null,
               referenceField: null,
               maxReferences: 0,
+              referenceDimension: 512,
+              referenceFormat: "png",
             },
           },
         ]),
