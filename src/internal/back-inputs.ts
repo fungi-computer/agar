@@ -10,18 +10,22 @@ type Direction = "back" | "forward";
 
 export type BackInputOptions = Readonly<{
   window: Pick<Window, "addEventListener" | "removeEventListener">;
-  /** macOS uses ⌘[ and ⌘←; other platforms use Alt+←. */
+  /** macOS uses ⌘[ / ⌘] and ⌘← / ⌘→; other platforms use Alt+←. */
   mac: boolean;
   /** Whether the App last reported it can go back. */
   canGoBack: () => boolean;
   /** Ask the App's own Back handler to move. */
   back: () => void;
+  /** Whether the App last reported it can go forward. */
+  canGoForward: () => boolean;
+  /** Ask the App's own Forward handler to move. */
+  forward: () => void;
 }>;
 
 /**
- * Turn the browser's back keys and mouse back button into App Back while the
- * App can go back, and keep every back or forward input from leaving the
- * page. Input the App already handled (`defaultPrevented`) is left alone.
+ * Turn the browser's back and forward keys and mouse buttons into App Back
+ * and Forward while the App can move that way, and keep every back or forward
+ * input from leaving the page. Input the App already handled (`defaultPrevented`) is left alone.
  */
 export function installBackInputs(options: BackInputOptions): () => void {
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -29,21 +33,18 @@ export function installBackInputs(options: BackInputOptions): () => void {
     const direction = keyDirection(event, options.mac);
     if (direction === null) return;
     event.preventDefault();
-    if (direction === "back" && !event.repeat && options.canGoBack())
-      options.back();
+    if (event.repeat) return;
+    if (direction === "back" && options.canGoBack()) options.back();
+    if (direction === "forward" && options.canGoForward()) options.forward();
   };
   const onMouse = (event: MouseEvent): void => {
     const direction = mouseDirection(event.button);
     if (direction === null) return;
     const handled = event.defaultPrevented;
     event.preventDefault();
-    if (
-      event.type === "mouseup" &&
-      direction === "back" &&
-      !handled &&
-      options.canGoBack()
-    )
-      options.back();
+    if (event.type !== "mouseup" || handled) return;
+    if (direction === "back" && options.canGoBack()) options.back();
+    if (direction === "forward" && options.canGoForward()) options.forward();
   };
   options.window.addEventListener("keydown", onKeyDown);
   for (const type of mouseEvents)
@@ -55,7 +56,7 @@ export function installBackInputs(options: BackInputOptions): () => void {
   };
 }
 
-/** Browsers navigate on one of these; all are cancelled, Back runs once. */
+/** Browsers navigate on one of these; all are cancelled, the App moves once. */
 const mouseEvents = ["mousedown", "mouseup", "auxclick"] as const;
 
 function mouseDirection(button: number): Direction | null {

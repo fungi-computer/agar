@@ -20,6 +20,7 @@ import type {
 import { statusActionAllowed } from "../status.js";
 import type {
   AppBackHandler,
+  AppForwardHandler,
   AppNavigationActivation,
   AppNavigationActivationHandler,
   AppNavigationState,
@@ -89,6 +90,7 @@ type ClientState = {
   capabilities?: CapabilityDirectoryController;
   beforeClose?: BeforeAppClose;
   back?: AppBackHandler;
+  forward?: AppForwardHandler;
   activate?: AppNavigationActivationHandler;
   /** The last navigation report; activations must match it. */
   navigation: AppNavigationState;
@@ -97,6 +99,7 @@ type ClientState = {
   statusItems: readonly AppStatusItem[];
   /** What the App last published; browser back inputs follow it. */
   canGoBack: boolean;
+  canGoForward: boolean;
   readonly bindings: ReturnType<typeof createLocalBindingState>;
   readonly chords: ReturnType<typeof createReservedChordState>;
   readonly context: ReturnType<typeof createReadonlyStore<AppContext>>;
@@ -149,6 +152,15 @@ class AppClientTarget extends RpcTarget implements AppClientRpc {
     try {
       if (this.#disposed) throw disconnected();
       return rpcSuccess(await (this.#state.back?.() ?? false));
+    } catch (cause) {
+      return rpcFailure<boolean>(cause);
+    }
+  }
+
+  async requestForward() {
+    try {
+      if (this.#disposed) throw disconnected();
+      return rpcSuccess(await (this.#state.forward?.() ?? false));
     } catch (cause) {
       return rpcFailure<boolean>(cause);
     }
@@ -359,7 +371,7 @@ function createBrokenPromise(remote: RpcStub<AppHostRpc>): Promise<never> {
 function createClientState(): ClientState {
   return {
     statusItems: [],
-    navigation: { canGoBack: false },
+    navigation: { canGoBack: false, canGoForward: false },
     bindings: createLocalBindingState(),
     chords: createReservedChordState([]),
     context: createReadonlyStore({
@@ -371,6 +383,7 @@ function createClientState(): ClientState {
     lifecycle: createReadonlyStore("connecting"),
     theme: createReadonlyStore("default"),
     canGoBack: false,
+    canGoForward: false,
     versions: { chords: -1, context: -1, lifecycle: -1, theme: -1 },
   };
 }
@@ -446,6 +459,7 @@ function createRootRuntime(
         () => {
           options.state.beforeClose = undefined;
           options.state.back = undefined;
+          options.state.forward = undefined;
           options.state.activate = undefined;
           options.state.statusAction = undefined;
         },
@@ -512,6 +526,17 @@ function createRootRuntime(
           reportCatchFailure("app-window.back-input", cause);
         });
     },
+    canGoForward: () =>
+      options.state.canGoForward && options.state.forward !== undefined,
+    forward: () => {
+      const forward = options.state.forward;
+      if (!forward) return;
+      void Promise.resolve()
+        .then(forward)
+        .catch((cause: unknown) => {
+          reportCatchFailure("app-window.forward-input", cause);
+        });
+    },
   });
   options.state.disconnect = dispose;
   options.remote.onRpcBroken(() => {
@@ -540,6 +565,7 @@ function createAppWindow(
       assertConnected();
       const wire = parseNavigationStateInput(input);
       state.canGoBack = wire.canGoBack;
+      state.canGoForward = wire.canGoForward;
       state.navigation = parseNavigationState(wire);
       await callRpc(remote.reportNavigation(wire), parseVoidResult);
     },
@@ -556,6 +582,21 @@ function createAppWindow(
         if (released) return;
         released = true;
         if (state.activate === handler) state.activate = undefined;
+      };
+    },
+    onForward(handler: AppForwardHandler) {
+      assertConnected();
+      if (state.forward !== undefined)
+        throw new AppError("The App already owns Forward requests", {
+          code: "INVALID_ARGUMENT",
+          retryable: false,
+        });
+      state.forward = handler;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        if (state.forward === handler) state.forward = undefined;
       };
     },
     onBack(handler: AppBackHandler) {

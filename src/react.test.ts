@@ -7,6 +7,7 @@ import { AppError } from "./errors.js";
 import { useHostNavigation } from "./react.js";
 import type {
   AppBackHandler,
+  AppForwardHandler,
   AppNavigationActivation,
   AppNavigationActivationHandler,
   AppNavigationState,
@@ -19,6 +20,7 @@ Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
 function recordingNavigation() {
   const reports: AppNavigationState[] = [];
   let back: AppBackHandler | undefined;
+  let forward: AppForwardHandler | undefined;
   let activate: AppNavigationActivationHandler | undefined;
   const navigation: HostNavigation = {
     publish: (state) => {
@@ -29,6 +31,12 @@ function recordingNavigation() {
       back = handler;
       return () => {
         if (back === handler) back = undefined;
+      };
+    },
+    onForward: (handler) => {
+      forward = handler;
+      return () => {
+        if (forward === handler) forward = undefined;
       };
     },
     onActivate: (handler) => {
@@ -42,6 +50,7 @@ function recordingNavigation() {
     navigation,
     reports,
     requestBack: () => back?.() ?? false,
+    requestForward: () => forward?.() ?? false,
     activate: (activation: AppNavigationActivation) =>
       activate?.(activation) ?? false,
   };
@@ -79,36 +88,61 @@ it("publishes changes, routes Back to the latest handler and withdraws on unmoun
   update({
     navigation: host.navigation,
     canGoBack: false,
+    canGoForward: false,
     title: "List",
     onBack: () => false,
+    onForward: () => false,
   });
   update({
     navigation: host.navigation,
     canGoBack: true,
+    canGoForward: false,
     title: "Detail",
     onBack: () => {
       visited.push("list");
       return true;
     },
+    onForward: () => false,
   });
   expect(await host.requestBack()).toBe(true);
   expect(visited).toEqual(["list"]);
+  update({
+    navigation: host.navigation,
+    canGoBack: false,
+    canGoForward: true,
+    title: "List",
+    onBack: () => false,
+    onForward: () => {
+      visited.push("detail");
+      return true;
+    },
+  });
+  expect(await host.requestForward()).toBe(true);
+  expect(visited).toEqual(["list", "detail"]);
 
   act(() => {
     roots.splice(0)[0]?.unmount();
   });
   expect(host.reports).toEqual([
-    { canGoBack: false, title: "List" },
-    { canGoBack: true, title: "Detail" },
-    { canGoBack: false },
+    { canGoBack: false, canGoForward: false, title: "List" },
+    { canGoBack: true, canGoForward: false, title: "Detail" },
+    { canGoBack: false, canGoForward: true, title: "List" },
+    { canGoBack: false, canGoForward: false },
   ]);
   expect(await host.requestBack()).toBe(false);
+  expect(await host.requestForward()).toBe(false);
 });
 
 it("does nothing without a connected App", () => {
   const update = render();
   expect(() => {
-    update({ navigation: null, canGoBack: true, onBack: () => true });
+    update({
+      navigation: null,
+      canGoBack: true,
+      canGoForward: false,
+      onBack: () => true,
+      onForward: () => false,
+    });
   }).not.toThrow();
 });
 
@@ -129,9 +163,12 @@ it("stays quiet when a closing App can no longer reach its host", async () => {
             }),
           ),
         onBack: () => () => undefined,
+        onForward: () => () => undefined,
       },
       canGoBack: true,
+      canGoForward: false,
       onBack: () => true,
+      onForward: () => false,
     });
     await act(() => Promise.resolve());
     expect(warnings).toEqual([]);
@@ -147,6 +184,7 @@ it("publishes crumbs once per content and routes activations to the latest handl
   const props = () => ({
     navigation: host.navigation,
     canGoBack: false,
+    canGoForward: false,
     crumbs: [
       { id: "app", label: "Trellis" },
       {
@@ -159,6 +197,7 @@ it("publishes crumbs once per content and routes activations to the latest handl
     menu: [{ id: "fork", label: "Fork" }],
     status: [{ id: "valid", label: "Valid", tone: "success" as const }],
     onBack: () => false,
+    onForward: () => false,
     onCrumb: (id: string, sibling?: string) => {
       chosen.push(sibling === undefined ? id : `${id}/${sibling}`);
     },
@@ -171,6 +210,7 @@ it("publishes crumbs once per content and routes activations to the latest handl
   expect(host.reports).toHaveLength(1);
   expect(host.reports[0]).toEqual({
     canGoBack: false,
+    canGoForward: false,
     crumbs: props().crumbs,
     primary: props().primary,
     menu: props().menu,
@@ -190,8 +230,10 @@ it("declines an activation when the App has no handler for it", () => {
   update({
     navigation: host.navigation,
     canGoBack: false,
+    canGoForward: false,
     onBack: () => false,
+    onForward: () => false,
   });
   expect(host.activate({ kind: "action", actionId: "run" })).toBe(false);
-  expect(host.reports).toEqual([{ canGoBack: false }]);
+  expect(host.reports).toEqual([{ canGoBack: false, canGoForward: false }]);
 });

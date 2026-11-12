@@ -43,6 +43,8 @@ export type AppClientRpc = {
   requestClose(): Promise<RpcResult<boolean>>;
   /** Ask the App to go back one step in its own history; `true` when it did. */
   requestBack(): Promise<RpcResult<boolean>>;
+  /** Ask the App to go forward one step in its own history; `true` when it did. */
+  requestForward(): Promise<RpcResult<boolean>>;
   /** The person used a crumb or header command; `true` when the App acted. */
   activateNavigation(
     activation: AppNavigationActivation,

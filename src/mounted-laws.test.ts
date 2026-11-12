@@ -219,6 +219,10 @@ class DeferredClient extends RpcTarget implements AppClientRpc {
     return Promise.resolve(rpcSuccess(false));
   }
 
+  requestForward() {
+    return Promise.resolve(rpcSuccess(false));
+  }
+
   activateStatus() {
     return Promise.resolve(rpcSuccess(false));
   }

@@ -14,6 +14,7 @@ import { registerCatalog } from "./commands.js";
 import { AppError } from "./errors.js";
 import type {
   AppBackHandler,
+  AppForwardHandler,
   AppCrumb,
   AppHeaderCommand,
   AppHeaderStatus,
@@ -128,6 +129,8 @@ export function useAppCommandCatalog(
 /** What an App's router can do now, and how it goes back. */
 export type HostNavigationOptions = Readonly<{
   canGoBack: boolean;
+  /** Whether Forward has somewhere to go; shows Forward in window chrome. */
+  canGoForward: boolean;
   /** The current page's title, shown after the App name in window chrome. */
   title?: string | undefined;
   /** The App's path, shown in the window header in place of the title. */
@@ -139,6 +142,7 @@ export type HostNavigationOptions = Readonly<{
   /** Facts about the view, shown as muted text with a status bead. */
   status?: readonly AppHeaderStatus[] | undefined;
   onBack: AppBackHandler;
+  onForward: AppForwardHandler;
   /** The person chose a crumb, or a sibling from a switcher crumb. */
   onCrumb?: ((crumbId: string, siblingId?: string) => void) | undefined;
   /** The person used a primary or menu command. */
@@ -154,28 +158,33 @@ export function useHostNavigation(
   navigation: HostNavigation | null | undefined,
   {
     canGoBack,
+    canGoForward,
     title,
     crumbs,
     primary,
     menu,
     status,
     onBack,
+    onForward,
     onCrumb,
     onAction,
   }: HostNavigationOptions,
 ): void {
   const latestBack = useRef(onBack);
+  const latestForward = useRef(onForward);
   const latestCrumb = useRef(onCrumb);
   const latestAction = useRef(onAction);
   useEffect(() => {
     latestBack.current = onBack;
+    latestForward.current = onForward;
     latestCrumb.current = onCrumb;
     latestAction.current = onAction;
-  }, [onBack, onCrumb, onAction]);
+  }, [onBack, onForward, onCrumb, onAction]);
 
   useEffect(() => {
     if (!navigation) return undefined;
-    const release = navigation.onBack(() => latestBack.current());
+    const releaseBack = navigation.onBack(() => latestBack.current());
+    const releaseForward = navigation.onForward(() => latestForward.current());
     const releaseActivation = navigation.onActivate((activation) => {
       if (activation.kind === "action") {
         const handler = latestAction.current;
@@ -188,9 +197,10 @@ export function useHostNavigation(
       return handler !== undefined;
     });
     return () => {
-      release();
+      releaseBack();
+      releaseForward();
       releaseActivation();
-      report(navigation, { canGoBack: false });
+      report(navigation, { canGoBack: false, canGoForward: false });
     };
   }, [navigation]);
 
@@ -200,10 +210,10 @@ export function useHostNavigation(
   useEffect(() => {
     latestLists.current = { crumbs, primary, menu, status };
   }, [crumbs, primary, menu, status]);
-  // Each change replaces the last report; only unmount withdraws Back.
+  // Each change replaces the last report; only unmount withdraws Back and Forward.
   useEffect(() => {
     if (!navigation) return;
-    let state: AppNavigationState = { canGoBack };
+    let state: AppNavigationState = { canGoBack, canGoForward };
     if (title !== undefined) state = { ...state, title };
     const current = latestLists.current;
     if (current.crumbs !== undefined)
@@ -214,7 +224,7 @@ export function useHostNavigation(
     if (current.status !== undefined)
       state = { ...state, status: current.status };
     report(navigation, state);
-  }, [navigation, canGoBack, title, lists]);
+  }, [navigation, canGoBack, canGoForward, title, lists]);
 }
 
 function report(

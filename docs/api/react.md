@@ -55,12 +55,14 @@ Options passed to `mountApp`.
 ```ts
 type HostNavigationOptions = Readonly<{
   canGoBack: boolean;
+  canGoForward: boolean;
   title?: string;
   crumbs?: readonly AppCrumb[];
   primary?: readonly AppHeaderCommand[];
   menu?: readonly AppHeaderCommand[];
   status?: readonly AppHeaderStatus[];
   onBack: AppBackHandler;
+  onForward: AppForwardHandler;
   onCrumb?: (crumbId, siblingId?) => void;
   onAction?: (actionId) => void;
 }>;
@@ -219,10 +221,10 @@ nothing. Unmounting withdraws Back from the host chrome.
 
 #### Parameters
 
-| Parameter           | Type                                                                                                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `navigation`        | \| `Readonly`\<\{ `publish`: `Promise`\<`void`\>; `onBack`: [`Disposer`](index.md#disposer); `onActivate`: [`Disposer`](index.md#disposer); \}\> \| `null` \| `undefined` |
-| `__namedParameters` | [`HostNavigationOptions`](#hostnavigationoptions)                                                                                                                         |
+| Parameter           | Type                                                                                                                                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `navigation`        | \| `Readonly`\<\{ `publish`: `Promise`\<`void`\>; `onBack`: [`Disposer`](index.md#disposer); `onForward`: [`Disposer`](index.md#disposer); `onActivate`: [`Disposer`](index.md#disposer); \}\> \| `null` \| `undefined` |
+| `__namedParameters` | [`HostNavigationOptions`](#hostnavigationoptions)                                                                                                                                                                       |
 
 #### Returns
 

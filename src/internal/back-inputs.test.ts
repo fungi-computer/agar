@@ -9,8 +9,8 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-function install(mac: boolean, canGoBack = true) {
-  const state = { canGoBack, backs: 0 };
+function install(mac: boolean, canGoBack = true, canGoForward = true) {
+  const state = { canGoBack, canGoForward, backs: 0, forwards: 0 };
   cleanups.push(
     installBackInputs({
       window,
@@ -18,6 +18,10 @@ function install(mac: boolean, canGoBack = true) {
       canGoBack: () => state.canGoBack,
       back: () => {
         state.backs += 1;
+      },
+      canGoForward: () => state.canGoForward,
+      forward: () => {
+        state.forwards += 1;
       },
     }),
   );
@@ -48,7 +52,7 @@ function mouse(type: string, button: number): MouseEvent {
 }
 
 describe("browser back inputs inside an App", () => {
-  it("turns Alt+Left into App Back and keeps Alt+Right from leaving the page", () => {
+  it("turns Alt+Left into App Back and Alt+Right into App Forward", () => {
     const state = install(false);
     expect(key({ key: "ArrowLeft", altKey: true }).defaultPrevented).toBe(true);
     expect(state.backs).toBe(1);
@@ -59,6 +63,7 @@ describe("browser back inputs inside an App", () => {
       key({ key: "ArrowLeft", altKey: true, repeat: true }).defaultPrevented,
     ).toBe(true);
     expect(state.backs).toBe(1);
+    expect(state.forwards).toBe(1);
     // Other chords stay the App's own.
     expect(key({ key: "ArrowLeft" }).defaultPrevented).toBe(false);
     expect(
@@ -72,27 +77,51 @@ describe("browser back inputs inside an App", () => {
     expect(key({ key: "ArrowLeft", metaKey: true }).defaultPrevented).toBe(
       true,
     );
+    expect(key({ key: "]", metaKey: true }).defaultPrevented).toBe(true);
+    expect(key({ key: "ArrowRight", metaKey: true }).defaultPrevented).toBe(
+      true,
+    );
     expect(state.backs).toBe(2);
+    expect(state.forwards).toBe(2);
     const input = document.createElement("input");
     document.body.append(input);
     expect(
       key({ key: "ArrowLeft", metaKey: true }, input).defaultPrevented,
+    ).toBe(false);
+    expect(
+      key({ key: "ArrowRight", metaKey: true }, input).defaultPrevented,
     ).toBe(false);
     // Alt+Left is word-left on a Mac, never history.
     expect(key({ key: "ArrowLeft", altKey: true }).defaultPrevented).toBe(
       false,
     );
     expect(state.backs).toBe(2);
+    expect(state.forwards).toBe(2);
   });
 
-  it("runs Back once per mouse back press and cancels every navigation event", () => {
+  it("runs Back and Forward once per mouse press and cancels every navigation event", () => {
     const state = install(false);
     expect(mouse("mousedown", 3).defaultPrevented).toBe(true);
     expect(mouse("mouseup", 3).defaultPrevented).toBe(true);
     expect(mouse("auxclick", 3).defaultPrevented).toBe(true);
+    expect(mouse("mousedown", 4).defaultPrevented).toBe(true);
     expect(mouse("mouseup", 4).defaultPrevented).toBe(true);
+    expect(mouse("auxclick", 4).defaultPrevented).toBe(true);
     expect(mouse("mouseup", 0).defaultPrevented).toBe(false);
     expect(state.backs).toBe(1);
+    expect(state.forwards).toBe(1);
+  });
+
+  it("only guards while the App cannot go forward", () => {
+    const state = install(false, true, false);
+    expect(key({ key: "ArrowRight", altKey: true }).defaultPrevented).toBe(
+      true,
+    );
+    expect(mouse("mouseup", 4).defaultPrevented).toBe(true);
+    expect(state.forwards).toBe(0);
+    state.canGoForward = true;
+    mouse("mouseup", 4);
+    expect(state.forwards).toBe(1);
   });
 
   it("only guards while the App cannot go back, and defers to input the App handled", () => {

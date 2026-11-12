@@ -13,6 +13,8 @@ export type {
   MessageMetaValue,
   AuthorMeta,
 } from "./agent-message-meta.js";
+export { createAppHistory } from "./history.js";
+export type { AppHistory, AppHistorySnapshot } from "./history.js";
 export { createCapabilityRegistry, defineCapability } from "./capabilities.js";
 export { pending, pendingSchema } from "./pending.js";
 export type { Pending } from "./pending.js";
@@ -177,6 +179,7 @@ export {
 } from "./window.js";
 export type {
   AppBackHandler,
+  AppForwardHandler,
   AppCrumb,
   AppHeaderCommand,
   AppHeaderStatus,

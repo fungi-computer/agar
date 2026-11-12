@@ -408,11 +408,13 @@ const navigationFields = {
 const navigationStateWireSchema = Schema.Struct({
   contractVersion: Schema.Literal(APP_NAVIGATION_CONTRACT_VERSION),
   canGoBack: Schema.Boolean,
+  canGoForward: Schema.Boolean,
   title: Schema.optional(navigationTitleSchema),
   ...navigationFields,
 });
 const navigationStateInputSchema = Schema.Struct({
   canGoBack: Schema.Boolean,
+  canGoForward: Schema.Boolean,
   title: Schema.optional(Schema.String),
   ...navigationFields,
 });
@@ -705,6 +707,7 @@ type DecodedCrumb = Schema.Schema.Type<typeof crumbSchema>;
 type DecodedCommand = Schema.Schema.Type<typeof headerCommandSchema>;
 type DecodedNavigation = {
   readonly canGoBack: boolean;
+  readonly canGoForward: boolean;
   readonly title?: string | undefined;
   readonly crumbs?: readonly DecodedCrumb[] | undefined;
   readonly primary?: readonly DecodedCommand[] | undefined;
@@ -739,7 +742,10 @@ function commandOf(command: DecodedCommand): AppHeaderCommand {
 }
 /** One report's fields, each present only when the App sent it. */
 function navigationOf(value: DecodedNavigation): AppNavigationState {
-  let state: AppNavigationState = { canGoBack: value.canGoBack };
+  let state: AppNavigationState = {
+    canGoBack: value.canGoBack,
+    canGoForward: value.canGoForward,
+  };
   if (value.title !== undefined) state = { ...state, title: value.title };
   if (value.crumbs !== undefined)
     state = { ...state, crumbs: frozen(value.crumbs.map(crumbOf)) };

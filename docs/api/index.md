@@ -795,6 +795,54 @@ Cancels a pending connection attempt.
 
 ---
 
+### AppHistorySnapshot
+
+```ts
+type AppHistorySnapshot<Entry> = Readonly<{
+  current: Entry;
+  canGoBack: boolean;
+  canGoForward: boolean;
+}>;
+```
+
+What an App's history can do right now; publish these as `canGoBack` and
+`canGoForward`.
+
+#### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `Entry`        |
+
+---
+
+### AppHistory
+
+```ts
+type AppHistory<Entry> = ReadonlyStore<AppHistorySnapshot<Entry>> & object;
+```
+
+An App's own history: a back stack and a forward stack around the current entry.
+The browser's history is not available to an App because its iframe shares the
+Hub tab, so an App that has no router of its own keeps this.
+
+#### Type Declaration
+
+| Name        | Type                | Description                                                          |
+| ----------- | ------------------- | -------------------------------------------------------------------- |
+| `push()`    | (`entry`) => `void` | Go to a new place; whatever Forward could reach is dropped.          |
+| `replace()` | (`entry`) => `void` | Swap the current place without adding a step.                        |
+| `back()`    | () => `boolean`     | Step back; `false` when there is nowhere to go. Fits `onBack`.       |
+| `forward()` | () => `boolean`     | Step forward; `false` when there is nowhere to go. Fits `onForward`. |
+
+#### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `Entry`        |
+
+---
+
 ### AppConnectMessage
 
 ```ts
@@ -2230,6 +2278,7 @@ Handles one activation; `true` when the App acted on it.
 ```ts
 type AppNavigationState = Readonly<{
   canGoBack: boolean;
+  canGoForward: boolean;
   title?: string;
   crumbs?: readonly AppCrumb[];
   primary?: readonly AppHeaderCommand[];
@@ -2257,12 +2306,27 @@ Go back one step in the App's own history; `true` when it moved.
 
 ---
 
+### AppForwardHandler
+
+```ts
+type AppForwardHandler = () => boolean | Promise<boolean>;
+```
+
+Go forward one step in the App's own history; `true` when it moved.
+
+#### Returns
+
+`boolean` \| `Promise`\<`boolean`\>
+
+---
+
 ### HostNavigation
 
 ```ts
 type HostNavigation = Readonly<{
   publish: Promise<void>;
   onBack: Disposer;
+  onForward: Disposer;
   onActivate: Disposer;
 }>;
 ```
@@ -3209,7 +3273,7 @@ Maximum UTF-8 text size sent to the host clipboard.
 ### APP\_NAVIGATION\_CONTRACT\_VERSION
 
 ```ts
-const APP_NAVIGATION_CONTRACT_VERSION: 1;
+const APP_NAVIGATION_CONTRACT_VERSION: 2;
 ```
 
 Version of the navigation contract an App publishes. The host rejects any other
@@ -3776,6 +3840,32 @@ Connects this iframe page to its authenticated host.
 #### Returns
 
 `Promise`\<[`AppRoot`](#approot)\>
+
+---
+
+### createAppHistory()
+
+```ts
+function createAppHistory<Entry>(initial): AppHistory<Entry>;
+```
+
+Start a history at `initial`; entries are held as given, so keep them immutable.
+
+#### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `Entry`        |
+
+#### Parameters
+
+| Parameter | Type    |
+| --------- | ------- |
+| `initial` | `Entry` |
+
+#### Returns
+
+[`AppHistory`](#apphistory)\<`Entry`\>
 
 ---
 

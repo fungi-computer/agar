@@ -34,6 +34,14 @@ export type AppCommands = {
 };
 
 /**
+ * Each command id's last registration, settled and released if its catalog was.
+ * The host keeps one registration per id from the moment `register` is called,
+ * so a replacement catalog must wait for the one it replaces to finish
+ * releasing; otherwise the host refuses the id and the command is lost.
+ */
+const lastRegistration = new WeakMap<AppCommands, Map<string, Promise<void>>>();
+
+/**
  * Register one App's Whistle catalog with its host. An App defines each
  * command once, contributes the same catalog to its own composer runtime for
  * slash commands, and registers it here so the shell projects it into the
@@ -57,24 +65,35 @@ export function registerCatalog(
       availability === undefined
         ? metadata
         : { ...metadata, availability: availability() };
-    void commands
-      .register(definition, async ({ arguments: args, origin, signal }) => {
-        const input: WhistleExecutionInput =
-          args === undefined
-            ? { origin, signal }
-            : { arguments: args, origin, signal };
-        const result = await run(input);
-        return result === undefined ? undefined : parseJsonValue(result);
-      })
-      .then(
-        (release) => {
-          if (released) release();
-          else releases.push(release);
-        },
-        (cause: unknown) => {
-          console.warn(`App command ${command.id} was not registered`, cause);
+    const tails =
+      lastRegistration.get(commands) ?? new Map<string, Promise<void>>();
+    lastRegistration.set(commands, tails);
+    const previous = tails.get(command.id);
+    const start = () =>
+      commands.register(
+        definition,
+        async ({ arguments: args, origin, signal }) => {
+          const input: WhistleExecutionInput =
+            args === undefined
+              ? { origin, signal }
+              : { arguments: args, origin, signal };
+          const result = await run(input);
+          return result === undefined ? undefined : parseJsonValue(result);
         },
       );
+    const settled = (previous ? previous.then(start) : start()).then(
+      (release) => {
+        if (released) release();
+        else releases.push(release);
+      },
+      (cause: unknown) => {
+        console.warn(`App command ${command.id} was not registered`, cause);
+      },
+    );
+    tails.set(command.id, settled);
+    void settled.finally(() => {
+      if (tails.get(command.id) === settled) tails.delete(command.id);
+    });
   }
   return () => {
     if (released) return;

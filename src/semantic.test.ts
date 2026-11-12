@@ -247,12 +247,17 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
 
     await root.window.navigation.publish({
       canGoBack: true,
+      canGoForward: false,
       title: "  Leaderboard ",
     });
-    await root.window.navigation.publish({ canGoBack: false, title: "   " });
+    await root.window.navigation.publish({
+      canGoBack: false,
+      canGoForward: false,
+      title: "   ",
+    });
     expect(reports).toEqual([
-      { canGoBack: true, title: "Leaderboard" },
-      { canGoBack: false },
+      { canGoBack: true, canGoForward: false, title: "Leaderboard" },
+      { canGoBack: false, canGoForward: false },
     ]);
     const crumbs = [
       { id: "app", label: "Trellis" },
@@ -264,6 +269,7 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
     ];
     await root.window.navigation.publish({
       canGoBack: false,
+      canGoForward: false,
       crumbs,
       primary: [{ id: "run", label: "Run", variant: "primary" }],
       menu: [{ id: "fork", label: "Fork", disabled: true }],
@@ -271,6 +277,7 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
     });
     expect(reports.pop()).toEqual({
       canGoBack: false,
+      canGoForward: false,
       crumbs,
       primary: [{ id: "run", label: "Run", variant: "primary" }],
       menu: [{ id: "fork", label: "Fork", disabled: true }],
@@ -313,17 +320,22 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
     await expect(
       root.window.navigation.publish({
         canGoBack: false,
+        canGoForward: false,
         crumbs: [
           crumbs[0] ?? { id: "x", label: "x" },
           crumbs[0] ?? { id: "x", label: "x" },
         ],
       }),
     ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
-    await root.window.navigation.publish({ canGoBack: false });
+    await root.window.navigation.publish({
+      canGoBack: false,
+      canGoForward: false,
+    });
     reports.pop();
     await expect(
       root.window.navigation.publish({
         canGoBack: true,
+        canGoForward: false,
         title: "x".repeat(81),
       }),
     ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
@@ -353,7 +365,10 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
     expect(altLeft().defaultPrevented).toBe(true);
     await Promise.resolve();
     expect(backs).toBe(1);
-    await root.window.navigation.publish({ canGoBack: true });
+    await root.window.navigation.publish({
+      canGoBack: true,
+      canGoForward: false,
+    });
     expect(altLeft().defaultPrevented).toBe(true);
     await vi.waitFor(() => {
       expect(backs).toBe(2);
@@ -361,6 +376,43 @@ it("LAW: navigation reports reach the host parsed and Back reaches its one owner
     release();
     release();
     expect(await mounted.requestBack()).toBe(false);
+
+    // Forward mirrors Back: its own owner, request and browser inputs.
+    expect(await mounted.requestForward()).toBe(false);
+    let forwards = 0;
+    const releaseForward = root.window.navigation.onForward(() => {
+      forwards += 1;
+      return true;
+    });
+    expect(() => root.window.navigation.onForward(() => true)).toThrow(
+      "already owns Forward requests",
+    );
+    expect(await mounted.requestForward()).toBe(true);
+    expect(forwards).toBe(1);
+    const altRight = () => {
+      const event = new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        altKey: true,
+        cancelable: true,
+      });
+      app.dispatchEvent(event);
+      return event;
+    };
+    expect(altRight().defaultPrevented).toBe(true);
+    await Promise.resolve();
+    expect(forwards).toBe(1);
+    await root.window.navigation.publish({
+      canGoBack: false,
+      canGoForward: true,
+    });
+    expect(reports.pop()).toEqual({ canGoBack: false, canGoForward: true });
+    expect(altRight().defaultPrevented).toBe(true);
+    await vi.waitFor(() => {
+      expect(forwards).toBe(2);
+    });
+    releaseForward();
+    releaseForward();
+    expect(await mounted.requestForward()).toBe(false);
     disposePair(root, mounted);
   } finally {
     restoreWindow(originalWindow);

@@ -238,27 +238,49 @@ describe("AppContext open request", () => {
 });
 
 describe("App navigation contract", () => {
-  it("projects a version 1 report without its contract version", () => {
+  it("projects a version 2 report without its contract version", () => {
     expect(
       parseNavigationState({
-        contractVersion: 1,
+        contractVersion: 2,
         canGoBack: true,
+        canGoForward: false,
         title: "Leaderboard",
       }),
-    ).toEqual({ canGoBack: true, title: "Leaderboard" });
+    ).toEqual({ canGoBack: true, canGoForward: false, title: "Leaderboard" });
     expect(
-      parseNavigationState({ contractVersion: 1, canGoBack: false }),
-    ).toEqual({ canGoBack: false });
+      parseNavigationState({
+        contractVersion: 2,
+        canGoBack: false,
+        canGoForward: false,
+      }),
+    ).toEqual({ canGoBack: false, canGoForward: false });
   });
 
   it.each([
+    { contractVersion: 1, canGoBack: true, canGoForward: false },
+    { canGoBack: true, canGoForward: false },
     { contractVersion: 2, canGoBack: true },
-    { canGoBack: true },
-    { contractVersion: 1, canGoBack: "yes" },
-    { contractVersion: 1, canGoBack: true, title: "" },
-    { contractVersion: 1, canGoBack: true, title: " padded " },
-    { contractVersion: 1, canGoBack: true, title: "x".repeat(81) },
-    { contractVersion: 1, canGoBack: true, href: "/secret" },
+    { contractVersion: 2, canGoBack: true, canGoForward: "yes" },
+    { contractVersion: 2, canGoBack: "yes" },
+    { contractVersion: 2, canGoBack: true, canGoForward: false, title: "" },
+    {
+      contractVersion: 2,
+      canGoBack: true,
+      canGoForward: false,
+      title: " padded ",
+    },
+    {
+      contractVersion: 2,
+      canGoBack: true,
+      canGoForward: false,
+      title: "x".repeat(81),
+    },
+    {
+      contractVersion: 2,
+      canGoBack: true,
+      canGoForward: false,
+      href: "/secret",
+    },
     null,
   ])("rejects a malformed host-edge report %#", (value) => {
     expect(() => parseNavigationState(value)).toThrow(AppError);
@@ -266,13 +288,30 @@ describe("App navigation contract", () => {
 
   it("trims the App's title and drops an empty one before it travels", () => {
     expect(
-      parseNavigationStateInput({ canGoBack: true, title: "  Detail  " }),
-    ).toEqual({ contractVersion: 1, canGoBack: true, title: "Detail" });
-    expect(parseNavigationStateInput({ canGoBack: false, title: " " })).toEqual(
-      { contractVersion: 1, canGoBack: false },
-    );
+      parseNavigationStateInput({
+        canGoBack: true,
+        canGoForward: false,
+        title: "  Detail  ",
+      }),
+    ).toEqual({
+      contractVersion: 2,
+      canGoBack: true,
+      canGoForward: false,
+      title: "Detail",
+    });
+    expect(
+      parseNavigationStateInput({
+        canGoBack: false,
+        canGoForward: false,
+        title: " ",
+      }),
+    ).toEqual({ contractVersion: 2, canGoBack: false, canGoForward: false });
     expect(() =>
-      parseNavigationStateInput({ canGoBack: true, title: "x".repeat(81) }),
+      parseNavigationStateInput({
+        canGoBack: true,
+        canGoForward: false,
+        title: "x".repeat(81),
+      }),
     ).toThrow(AppError);
   });
 });
@@ -280,6 +319,7 @@ describe("App navigation contract", () => {
 it("preserves bounded icon commands and bead statuses across the navigation wire", () => {
   const state = {
     canGoBack: true,
+    canGoForward: false,
     primary: [{ id: "run", label: "Run", icon: "play", disabled: true }],
     status: [{ id: "saved", label: "Saved", presentation: "bead" }],
   };

@@ -480,8 +480,11 @@ it("owns local and host command leases across StrictMode, catalog changes and la
   ).toEqual(["test:second"]);
   act(release);
   expect(runtime?.snapshot().palette).toEqual([]);
-  for (const resolve of pending) resolve();
-  await settle();
-  expect(registered).toEqual(["first", "first", "second"]);
+  // A repeat of an id registers only once the earlier one settles.
+  while (pending.length > 0) {
+    for (const resolve of pending.splice(0)) resolve();
+    await settle();
+  }
+  expect(registered).toEqual(["first", "second", "first"]);
   expect(released).toEqual(registered);
 });

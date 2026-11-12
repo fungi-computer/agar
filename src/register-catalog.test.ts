@@ -74,4 +74,37 @@ describe("registerCatalog", () => {
       }),
     ).rejects.toThrow();
   });
+  it("LAW: a replacement catalog registered before the first settles still registers", async () => {
+    // The host owns an id from the call to `register` until its disposer runs,
+    // and answers a duplicate with "Command registration is unavailable".
+    const owned = new Set<string>();
+    const live = new Set<string>();
+    const commands: AppCommands = {
+      register: async (definition) => {
+        if (owned.has(definition.id))
+          throw new Error("Command registration is unavailable");
+        owned.add(definition.id);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        live.add(definition.id);
+        return () => {
+          owned.delete(definition.id);
+          live.delete(definition.id);
+        };
+      },
+    };
+    const catalog = [
+      { id: "save", title: "Save", category: "File", handler: () => undefined },
+    ];
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const first = registerCatalog(commands, catalog);
+    first();
+    const second = registerCatalog(commands, catalog);
+    await vi.waitFor(() => {
+      expect(live.has("save")).toBe(true);
+    });
+    expect(warn).not.toHaveBeenCalled();
+    second();
+    expect(live.size).toBe(0);
+    warn.mockRestore();
+  });
 });

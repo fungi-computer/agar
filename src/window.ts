@@ -8,7 +8,7 @@ export type BeforeAppClose = () => boolean | Promise<boolean>;
  * Version of the navigation contract an App publishes. The host rejects any
  * other version, so a future shape can never be misread as this one.
  */
-export const APP_NAVIGATION_CONTRACT_VERSION = 1 as const;
+export const APP_NAVIGATION_CONTRACT_VERSION = 2 as const;
 
 /** The longest page title a host shows beside the App's own name. */
 export const APP_NAVIGATION_TITLE_MAX = 80;
@@ -71,6 +71,8 @@ export type AppNavigationActivationHandler = (
  */
 export type AppNavigationState = Readonly<{
   canGoBack: boolean;
+  /** Whether a step undone by Back can be redone; shows Forward in window chrome. */
+  canGoForward: boolean;
   /** The current page's title, shown after the App name in window chrome. */
   title?: string;
   /** The App's path; the host shows it in place of the App name and title. */
@@ -86,12 +88,17 @@ export type AppNavigationState = Readonly<{
 /** Go back one step in the App's own history; `true` when it moved. */
 export type AppBackHandler = () => boolean | Promise<boolean>;
 
+/** Go forward one step in the App's own history; `true` when it moved. */
+export type AppForwardHandler = () => boolean | Promise<boolean>;
+
 /** The App's half of the host navigation contract. */
 export type HostNavigation = Readonly<{
   /** Report the latest navigation state; the newest report wins. */
   publish(state: AppNavigationState): Promise<void>;
   /** Own the host's Back requests; one owner at a time. */
   onBack(handler: AppBackHandler): Disposer;
+  /** Own the host's Forward requests; one owner at a time. */
+  onForward(handler: AppForwardHandler): Disposer;
   /** Own the host's crumb and command activations; one owner at a time. */
   onActivate(handler: AppNavigationActivationHandler): Disposer;
 }>;
@@ -111,6 +118,7 @@ export type AppWindow = Readonly<{
 export const inertHostNavigation: HostNavigation = Object.freeze({
   publish: () => Promise.resolve(),
   onBack: () => () => undefined,
+  onForward: () => () => undefined,
   onActivate: () => () => undefined,
 });
 
