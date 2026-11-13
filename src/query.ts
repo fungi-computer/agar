@@ -21,6 +21,10 @@ import {
   type FeedSnapshot,
 } from "./internal/query-feed.js";
 import type { MemberInboxItem } from "./inbox.js";
+import {
+  retryTransientRead,
+  transientReadDelay,
+} from "./internal/transient-retry.js";
 
 export { useFeedQuery } from "./internal/query-feed.js";
 export type { FeedSnapshot, FeedWatch } from "./internal/query-feed.js";
@@ -104,7 +108,8 @@ export function capabilityQuery<H, T>(
     queryKey,
     meta: scopeMeta(app),
     enabled: app !== null,
-    retry: false,
+    retry: retryTransientRead,
+    retryDelay: transientReadDelay,
     queryFn: async ({ signal }) => {
       try {
         if (!app)

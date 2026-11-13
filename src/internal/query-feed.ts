@@ -15,6 +15,7 @@ import { reportCatchFailure } from "../failure.js";
 import { watchMemberInbox, type MemberInboxItem } from "../inbox.js";
 import type { AppRoot } from "../root.js";
 import type { Disposer } from "../store.js";
+import { retryTransientRead, transientReadDelay } from "./transient-retry.js";
 
 /** A feed can lose its connection without losing its last owner snapshot. */
 export type FeedSnapshot<T> =
@@ -46,7 +47,8 @@ export function useFeedQuery<T>(
   return useQuery<FeedSnapshot<T>, AppError>({
     queryKey,
     ...options,
-    retry: false,
+    retry: retryTransientRead,
+    retryDelay: transientReadDelay,
     staleTime: Infinity,
     refetchOnMount: "always",
     queryFn: experimental_streamedQuery<FeedSnapshot<T>, FeedSnapshot<T>>({

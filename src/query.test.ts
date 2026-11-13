@@ -133,6 +133,74 @@ it("preserves typed capability refusals and maps unexpected failures without ret
   expect(read).toHaveBeenCalledOnce();
 });
 
+it("retries a transient network read failure and keeps the final error when retries run out", async () => {
+  const cache = client();
+  const source = app();
+  const read = vi
+    .fn<() => Promise<string>>()
+    .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    .mockResolvedValue("list");
+  source.capabilities.provide(reader, { read });
+  expect(
+    await cache.query(
+      capabilityQuery(source, reader, queryKeys.of(source, "blip"), (handle) =>
+        handle.read(),
+      ),
+    ),
+  ).toBe("list");
+  expect(read).toHaveBeenCalledTimes(2);
+  const down = vi.fn(() => Promise.reject(new TypeError("Failed to fetch")));
+  source.capabilities.provide(reader, { read: down });
+  await expect(
+    cache.query(
+      capabilityQuery(source, reader, queryKeys.of(source, "down"), (handle) =>
+        handle.read(),
+      ),
+    ),
+  ).rejects.toMatchObject({ code: "HOST_FAILURE" });
+  expect(down).toHaveBeenCalledTimes(4);
+  const refused = vi.fn(() =>
+    Promise.reject(Object.assign(new Error("bad request"), { status: 400 })),
+  );
+  source.capabilities.provide(reader, { read: refused });
+  await expect(
+    cache.query(
+      capabilityQuery(
+        source,
+        reader,
+        queryKeys.of(source, "refused"),
+        (handle) => handle.read(),
+      ),
+    ),
+  ).rejects.toMatchObject({ code: "HOST_FAILURE" });
+  expect(refused).toHaveBeenCalledOnce();
+});
+
+it("retries a feed whose watch failed in transit once, then shows live rows", async () => {
+  const cache = client();
+  const watch = vi
+    .fn<FeedWatch<string[]>>()
+    .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    .mockImplementation((onChange) => {
+      onChange({ status: "live", data: ["row"] });
+      return () => undefined;
+    });
+  function Probe() {
+    const query = useFeedQuery(["retry-feed"], watch);
+    return createElement(
+      "output",
+      null,
+      `${query.error?.message ?? "no-error"}:${JSON.stringify(query.data)}`,
+    );
+  }
+  const view = mount(cache, Probe);
+  await vi.waitFor(() => {
+    expect(view.container.textContent).toContain("row");
+  });
+  expect(view.container.textContent).toContain("no-error");
+  expect(watch).toHaveBeenCalledTimes(2);
+});
+
 it("rebinds grant changes after context publication and never runs new grants under an old Computer key", async () => {
   const cache = client();
   const source = app();

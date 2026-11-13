@@ -1,5 +1,17 @@
 # @fungi.computer/agar
 
+## 0.12.1
+
+### Patch Changes
+
+- Changes since 0.12.0:
+
+  - fix(agar): keep the transient read check internal
+  - fix(agar): retry a read that failed in transit
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.7.0
+
 ## 0.12.0
 
 ### Minor Changes
