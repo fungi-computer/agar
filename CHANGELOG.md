@@ -1,5 +1,18 @@
 # @fungi.computer/agar
 
+## 0.12.0
+
+### Minor Changes
+
+- Changes since 0.11.0:
+
+  - feat(oyster): give each Agent standing owner instructions, set from Grove
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.6.0
+
 ## 0.11.0
 
 ### Minor Changes

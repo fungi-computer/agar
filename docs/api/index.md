@@ -418,6 +418,84 @@ Set an existing Agent's avatar and return its updated record.
 
 ---
 
+### AppAgentInstructions
+
+```ts
+type AppAgentInstructions = Readonly<
+  Schema.Schema.Type<typeof appAgentInstructionsSchema>
+>;
+```
+
+One Agent's standing instructions.
+
+---
+
+### AppAgentInstructionsSetInput
+
+```ts
+type AppAgentInstructionsSetInput = Readonly<
+  Schema.Schema.Type<typeof appAgentInstructionsSetInputSchema>
+>;
+```
+
+Input for changing one Agent's standing instructions.
+
+---
+
+### AppAgentInstructionsHandle
+
+```ts
+type AppAgentInstructionsHandle = object;
+```
+
+Capability handle for reading and changing an Agent's standing instructions.
+
+#### Methods
+
+##### read()
+
+```ts
+read(input): Promise<Readonly<{
+  agentId: string;
+  instructions: string;
+}>>;
+```
+
+Read what the owner told this Agent to do on every turn.
+
+###### Parameters
+
+| Parameter | Type                                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `input`   | `Readonly`\<`Schema.Schema.Type`\<_typeof_ [`appAgentInstructionsReadInputSchema`](#appagentinstructionsreadinputschema)\>\> |
+
+###### Returns
+
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+
+##### set()
+
+```ts
+set(input): Promise<Readonly<{
+  agentId: string;
+  instructions: string;
+}>>;
+```
+
+Replace them; the host appends them after its own fixed instructions.
+
+###### Parameters
+
+| Parameter | Type                                                            |
+| --------- | --------------------------------------------------------------- |
+| `input`   | [`AppAgentInstructionsSetInput`](#appagentinstructionssetinput) |
+
+###### Returns
+
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+
+---
+
 ### AppAgentToolPolicyStatus
 
 ```ts
@@ -2731,6 +2809,66 @@ grants it.
 
 ---
 
+### appAgentInstructionsMaxLength
+
+```ts
+const appAgentInstructionsMaxLength: 4000 = 4_000;
+```
+
+The longest standing instructions an owner may give one Agent.
+
+---
+
+### appAgentInstructionsReadInputSchema
+
+```ts
+const appAgentInstructionsReadInputSchema: Struct<{
+  agentId: String;
+}>;
+```
+
+Validates a read of one Agent's standing instructions.
+
+---
+
+### appAgentInstructionsSetInputSchema
+
+```ts
+const appAgentInstructionsSetInputSchema: Struct<{
+  agentId: String;
+  instructions: String;
+}>;
+```
+
+Validates the owner's new standing instructions for one Agent; empty clears
+them.
+
+---
+
+### appAgentInstructionsSchema
+
+```ts
+const appAgentInstructionsSchema: Struct<{
+  agentId: String;
+  instructions: String;
+}>;
+```
+
+The standing instructions an owner gave one Agent, as the host stores them.
+
+---
+
+### agentInstructions
+
+```ts
+const agentInstructions: CapabilityContract<AppAgentInstructionsHandle>;
+```
+
+Owner-only capability over an Agent's standing instructions; not every host
+grants it.
+
+---
+
 ### appAgentToolPolicyStatusSchema
 
 ```ts
@@ -3644,6 +3782,64 @@ Change an Agent's avatar through the host-granted owner-only capability.
 `"plain"` \| `"pencil"` \| `"manga"` \| `"riso"` \| `"halftone"` \|
 `"blueprint"` \| `"crt"` \| `"watercolor"`; \}; `sessionOperations`: readonly
 (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+
+---
+
+### readAppAgentInstructions()
+
+```ts
+function readAppAgentInstructions(
+  capabilities,
+  agentId,
+): Promise<
+  Readonly<{
+    agentId: string;
+    instructions: string;
+  }>
+>;
+```
+
+Read an Agent's standing instructions through the owner-only capability.
+
+#### Parameters
+
+| Parameter      | Type                                          |
+| -------------- | --------------------------------------------- |
+| `capabilities` | [`CapabilityDirectory`](#capabilitydirectory) |
+| `agentId`      | `string`                                      |
+
+#### Returns
+
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+
+---
+
+### setAppAgentInstructions()
+
+```ts
+function setAppAgentInstructions(
+  capabilities,
+  input,
+): Promise<
+  Readonly<{
+    agentId: string;
+    instructions: string;
+  }>
+>;
+```
+
+Change an Agent's standing instructions through the owner-only capability.
+
+#### Parameters
+
+| Parameter      | Type                                                            |
+| -------------- | --------------------------------------------------------------- |
+| `capabilities` | [`CapabilityDirectory`](#capabilitydirectory)                   |
+| `input`        | [`AppAgentInstructionsSetInput`](#appagentinstructionssetinput) |
+
+#### Returns
+
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
 
 ---
 

@@ -25,6 +25,13 @@ export type {
 } from "./capabilities.js";
 export {
   agentAvatar,
+  agentInstructions,
+  readAppAgentInstructions,
+  setAppAgentInstructions,
+  appAgentInstructionsMaxLength,
+  appAgentInstructionsReadInputSchema,
+  appAgentInstructionsSchema,
+  appAgentInstructionsSetInputSchema,
   agentList,
   agentManage,
   agentRename,
@@ -46,6 +53,9 @@ export {
 } from "./agents.js";
 export type {
   AppAgent,
+  AppAgentInstructions,
+  AppAgentInstructionsHandle,
+  AppAgentInstructionsSetInput,
   AppAgentAvatarHandle,
   AppAgentAvatarInput,
   AppAgentCreateHandle,

@@ -6,6 +6,9 @@ import type { CapabilityDirectory } from "./capabilities.js";
 import { seededAvatar } from "@fungi.computer/sprite/avatar";
 import {
   agentAvatar,
+  agentInstructions,
+  readAppAgentInstructions,
+  setAppAgentInstructions,
   agentList,
   agentManage,
   agentRename,
@@ -439,6 +442,34 @@ describe("Agent avatar capability", () => {
     const request = { agentId: "agent-one", avatar: cat };
     expect(await setAppAgentAvatar(registry, request)).toEqual(agent);
     expect(setAvatar).toHaveBeenCalledWith(request);
+  });
+
+  it("reads and sets an Agent's standing instructions through the owner-only capability, within the bound", async () => {
+    const registry = createCapabilityRegistry();
+    const read = vi.fn((input: { agentId: string }) =>
+      Promise.resolve({ agentId: input.agentId, instructions: "Be brief." }),
+    );
+    const set = vi.fn((input: { agentId: string; instructions: string }) =>
+      Promise.resolve(input),
+    );
+    registry.provide(agentInstructions, { read, set });
+    expect(await readAppAgentInstructions(registry, "agent-one")).toEqual({
+      agentId: "agent-one",
+      instructions: "Be brief.",
+    });
+    expect(
+      await setAppAgentInstructions(registry, {
+        agentId: "agent-one",
+        instructions: "Be kind.",
+      }),
+    ).toEqual({ agentId: "agent-one", instructions: "Be kind." });
+    await expect(
+      setAppAgentInstructions(registry, {
+        agentId: "agent-one",
+        instructions: "x".repeat(4_001),
+      }),
+    ).rejects.toThrow();
+    expect(set).toHaveBeenCalledTimes(1);
   });
 
   it("decodes only an Avatar v1 envelope, and only Agent records that carry one", () => {

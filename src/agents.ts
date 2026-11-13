@@ -295,6 +295,99 @@ export async function setAppAgentAvatar(
   return Schema.decodeUnknownSync(appAgentSchema)(agent);
 }
 
+/** The longest standing instructions an owner may give one Agent. */
+export const appAgentInstructionsMaxLength = 4_000;
+const appAgentInstructionsText = Schema.String.pipe(
+  Schema.check(Schema.isMaxLength(appAgentInstructionsMaxLength)),
+);
+/** Validates a read of one Agent's standing instructions. */
+export const appAgentInstructionsReadInputSchema = Schema.Struct({
+  agentId: boundedIdentity,
+});
+/** Validates the owner's new standing instructions for one Agent; empty clears them. */
+export const appAgentInstructionsSetInputSchema = Schema.Struct({
+  agentId: boundedIdentity,
+  instructions: appAgentInstructionsText,
+});
+/** The standing instructions an owner gave one Agent, as the host stores them. */
+export const appAgentInstructionsSchema = Schema.Struct({
+  agentId: boundedIdentity,
+  instructions: appAgentInstructionsText,
+});
+/** One Agent's standing instructions. */
+export type AppAgentInstructions = Readonly<
+  Schema.Schema.Type<typeof appAgentInstructionsSchema>
+>;
+/** Input for changing one Agent's standing instructions. */
+export type AppAgentInstructionsSetInput = Readonly<
+  Schema.Schema.Type<typeof appAgentInstructionsSetInputSchema>
+>;
+/** Capability handle for reading and changing an Agent's standing instructions. */
+export type AppAgentInstructionsHandle = {
+  /** Read what the owner told this Agent to do on every turn. */
+  read(
+    input: Readonly<
+      Schema.Schema.Type<typeof appAgentInstructionsReadInputSchema>
+    >,
+  ): Promise<AppAgentInstructions>;
+  /** Replace them; the host appends them after its own fixed instructions. */
+  set(input: AppAgentInstructionsSetInput): Promise<AppAgentInstructions>;
+};
+/** Owner-only capability over an Agent's standing instructions; not every host grants it. */
+export const agentInstructions: CapabilityContract<AppAgentInstructionsHandle> =
+  defineCapability(
+    "agent.instructions",
+    1,
+    z.lazy(() =>
+      rpcHandleSchema({
+        read: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) =>
+                Schema.decodeUnknownSync(appAgentInstructionsSchema)(value),
+              ),
+          ),
+        ),
+        set: rpcMethod(
+          rpcDataSchema(
+            z
+              .unknown()
+              .transform((value) =>
+                Schema.decodeUnknownSync(appAgentInstructionsSchema)(value),
+              ),
+          ),
+        ),
+      }),
+    ),
+  );
+/** Read an Agent's standing instructions through the owner-only capability. */
+export async function readAppAgentInstructions(
+  capabilities: CapabilityDirectory,
+  agentId: string,
+): Promise<AppAgentInstructions> {
+  const request = Schema.decodeUnknownSync(appAgentInstructionsReadInputSchema)(
+    {
+      agentId,
+    },
+  );
+  return Schema.decodeUnknownSync(appAgentInstructionsSchema)(
+    await capabilities.require(agentInstructions).read(request),
+  );
+}
+/** Change an Agent's standing instructions through the owner-only capability. */
+export async function setAppAgentInstructions(
+  capabilities: CapabilityDirectory,
+  input: AppAgentInstructionsSetInput,
+): Promise<AppAgentInstructions> {
+  const request = Schema.decodeUnknownSync(appAgentInstructionsSetInputSchema)(
+    input,
+  );
+  return Schema.decodeUnknownSync(appAgentInstructionsSchema)(
+    await capabilities.require(agentInstructions).set(request),
+  );
+}
+
 /** One Agent's App-tool policy, as the owner-only policy capability reports it. */
 export const appAgentToolPolicyStatusSchema = z.lazy(() =>
   z.union([
