@@ -378,6 +378,8 @@ export const computerProcessSchema = Schema.Struct({
       Schema.check(Schema.isGreaterThanOrEqualTo(0)),
     ),
   ),
+  /** "idle-sleep": the Computer slept after sitting idle and the command stopped with it. */
+  endedReason: Schema.NullOr(Schema.Literal("idle-sleep")),
 });
 
 export const computerProcessesSchema = Schema.Struct({

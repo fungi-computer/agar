@@ -236,6 +236,7 @@ describe("Agar Computer process capability", () => {
           exitCode: null,
           sync: "synced",
           endedAt: null,
+          endedReason: null,
         },
         {
           port: null,
@@ -247,6 +248,7 @@ describe("Agar Computer process capability", () => {
           exitCode: 1,
           sync: "pending",
           endedAt: 1_750_000_000_200,
+          endedReason: null,
         },
         {
           port: null,
@@ -258,6 +260,7 @@ describe("Agar Computer process capability", () => {
           exitCode: null,
           sync: "synced",
           endedAt: null,
+          endedReason: null,
         },
       ],
     };
@@ -280,6 +283,7 @@ describe("Agar Computer process capability", () => {
       exitCode: 1,
       sync: "synced",
       endedAt: 1_750_000_000_200,
+      endedReason: null,
     };
     const capabilities = processesDirectory({ processes: [process] });
     await expect(
@@ -319,6 +323,7 @@ describe("Agar Computer process capability", () => {
             exitCode: null,
             sync: "synced",
             endedAt: null,
+            endedReason: null,
           },
         ],
       }),
@@ -339,6 +344,7 @@ describe("Agar Computer process capability", () => {
             exitCode: 0,
             sync: "stale",
             endedAt: 1_750_000_000_100,
+            endedReason: null,
           },
         ],
       }),
@@ -358,6 +364,7 @@ describe("Agar Computer process capability", () => {
           exitCode: 143,
           sync: "synced",
           endedAt: 1_750_000_000_500,
+          endedReason: null,
         },
       ],
     };
@@ -654,6 +661,7 @@ describe("Agar Computer process Start", () => {
       exitCode: null,
       sync: "synced",
       endedAt: null,
+      endedReason: null,
     };
     const owner = processesDirectory({ processes: [process] });
     const input = {

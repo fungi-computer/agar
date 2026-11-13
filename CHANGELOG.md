@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.11.0
+
+### Minor Changes
+
+- Changes since 0.10.1:
+
+  - feat(computer): say a command ended because the Computer went to sleep
+
 ## 0.10.1
 
 ### Patch Changes
