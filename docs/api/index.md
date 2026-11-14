@@ -1237,7 +1237,7 @@ reference identifies a replay; it grants no authority.
 ### MediaOutputFormat
 
 ```ts
-type MediaOutputFormat = "png" | "jpeg" | "gif" | "webp" | "mp4";
+type MediaOutputFormat = "png" | "jpeg" | "gif" | "webp" | "mp4" | "mp3";
 ```
 
 The encodings a completed generation can be saved as.
@@ -1255,14 +1255,14 @@ type MediaGenerationResult = Readonly<{
     path: string;
   }>;
   format: MediaOutputFormat;
-  height: number;
+  height?: number;
   model: string;
-  width: number;
+  width?: number;
 }>;
 ```
 
-Metadata for one completed generation: the saved destination, pixel dimensions,
-format, model used, and its cost.
+Metadata for one completed generation: the saved destination, pixel dimensions
+(none for audio), format, model used, and its cost.
 
 ---
 
@@ -1344,19 +1344,20 @@ Price one exact request without starting it; hosts that cannot omit it.
 
 ###### Parameters
 
-| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                          |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width`: `number`; `height`: `number`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} |
-| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.width`            | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.height`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                       |
-| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                 |
-| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                     |
-| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                           |
+| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                                                  | Description                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width?`: `number`; `height?`: `number`; `voiceId?`: `string`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} | -                                                                                  |
+| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                                              | Bounded by the host against the chosen model; speech models take the longest text. |
+| `settings.width?`           | `number`                                                                                                                                                                                                                                                                                                                                                                                              | Picture and video size; audio has none.                                            |
+| `settings.height?`          | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.voiceId?`         | `string`                                                                                                                                                                                                                                                                                                                                                                                              | Speech models only: a catalog voice; the model's default when omitted.             |
+| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                                               | -                                                                                  |
+| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                                         | -                                                                                  |
+| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                                             | -                                                                                  |
+| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                  |
 
 ###### Returns
 
@@ -1446,10 +1447,10 @@ generation against it until disposed.
 
 #### Type Declaration
 
-| Name         | Type                                                                                                                                                                                                                                                                                                  | Description                                                                                                                        |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `reference`  | [`MediaGenerationReference`](#mediagenerationreference)                                                                                                                                                                                                                                               | -                                                                                                                                  |
-| `generate()` | (`input`, `options?`) => `Promise`\<`Readonly`\<\{ `bytes`: `number`; `costMilliunits`: `number`; `destination`: `Readonly`\<\{ `computerId`: `string`; `path`: `string`; \}\>; `format`: [`MediaOutputFormat`](#mediaoutputformat); `height`: `number`; `model`: `string`; `width`: `number`; \}\>\> | Run generation for this attempt and return the saved result, or throw MediaGenerationError on failure; an abort signal cancels it. |
+| Name         | Type                                                                                                                                                                                                                                                                                                    | Description                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `reference`  | [`MediaGenerationReference`](#mediagenerationreference)                                                                                                                                                                                                                                                 | -                                                                                                                                  |
+| `generate()` | (`input`, `options?`) => `Promise`\<`Readonly`\<\{ `bytes`: `number`; `costMilliunits`: `number`; `destination`: `Readonly`\<\{ `computerId`: `string`; `path`: `string`; \}\>; `format`: [`MediaOutputFormat`](#mediaoutputformat); `height?`: `number`; `model`: `string`; `width?`: `number`; \}\>\> | Run generation for this attempt and return the saved result, or throw MediaGenerationError on failure; an abort signal cancels it. |
 
 ---
 
@@ -3164,7 +3165,7 @@ const mediaModelSchema: Struct<{
     steps: Literals<readonly ["steps", "num_steps", "fixed"]>;
     transport: Literals<readonly ["json", "multipart"]>;
   }>;
-  kind: Literals<readonly ["image", "video"]>;
+  kind: Literals<readonly ["image", "video", "audio"]>;
   label: String;
   maxPromptLength: Number;
   tier: Literals<readonly ["draft", "balanced", "premium", "max"]>;
@@ -3221,7 +3222,27 @@ const mediaModelSchema: Struct<{
       >;
     }>
   >;
-  audio: Null;
+  audio: NullOr<
+    Struct<{
+      provider: Literal<"elevenlabs">;
+      mode: Literals<readonly ["speech", "music"]>;
+      voices: $Array<
+        Struct<{
+          id: String;
+          label: String;
+        }>
+      >;
+      defaultVoiceId: NullOr<String>;
+      seconds: NullOr<
+        Struct<{
+          min: Number;
+          max: Number;
+          default: Number;
+        }>
+      >;
+      milliunitsPerUnit: Number;
+    }>
+  >;
 }>;
 ```
 
@@ -3235,8 +3256,9 @@ Validates one model row of the host's Media catalog.
 const mediaGenerationSelectionSchema: Struct<{
   model: String;
   prompt: String;
-  width: Number;
-  height: Number;
+  width: optional<Number>;
+  height: optional<Number>;
+  voiceId: optional<String>;
   steps: optional<Number>;
   durationSeconds: optional<Number>;
   resolution: optional<

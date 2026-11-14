@@ -40,18 +40,20 @@ export type MediaGenerationInput = Readonly<{
 }>;
 
 /** The encodings a completed generation can be saved as. */
-export type MediaOutputFormat = "png" | "jpeg" | "gif" | "webp" | "mp4";
+export type MediaOutputFormat = "png" | "jpeg" | "gif" | "webp" | "mp4" | "mp3";
 
 /** Metadata for one completed generation: the saved destination, pixel
- * dimensions, format, model used, and its cost. */
+ * dimensions (none for audio), format, model used, and its cost. */
 export type MediaGenerationResult = Readonly<{
   bytes: number;
   costMilliunits: number;
   destination: Readonly<{ computerId: string; path: string }>;
   format: MediaOutputFormat;
-  height: number;
+  /** Requested size; absent for audio. */
+  height?: number;
   model: string;
-  width: number;
+  /** Requested size; absent for audio. */
+  width?: number;
 }>;
 
 /** A host's price for one exact request. */
@@ -331,11 +333,35 @@ export const mediaVideoModelSchema = Schema.Struct({
 /** Immutable host-described video metadata. */
 export type MediaVideoModel = Schema.Schema.Type<typeof mediaVideoModelSchema>;
 
+/** Host-described speech or music capabilities and cost. */
+export const mediaAudioModelSchema = Schema.Struct({
+  /** Provider translation family. */
+  provider: Schema.Literal("elevenlabs"),
+  /** Speech reads the prompt aloud; music composes from it. */
+  mode: Schema.Literals(["speech", "music"]),
+  /** Premade voices; empty for music. */
+  voices: Schema.Array(Schema.Struct({ id: text(64), label: text(128) })),
+  /** Voice used when none is chosen; null for music. */
+  defaultVoiceId: Schema.NullOr(text(64)),
+  /** Music length bounds in whole seconds; null for speech. */
+  seconds: Schema.NullOr(
+    Schema.Struct({
+      min: positiveInteger,
+      max: positiveInteger,
+      default: positiveInteger,
+    }),
+  ),
+  /** Provider milliunits per billed unit; 1 USD is 100,000 milliunits. */
+  milliunitsPerUnit: positiveInteger,
+});
+/** Immutable host-described audio metadata. */
+export type MediaAudioModel = Schema.Schema.Type<typeof mediaAudioModelSchema>;
+
 /** Validates one model row of the host's Media catalog. */
 export const mediaModelSchema = Schema.Struct({
   id: text(256),
   input: modelInputSchema,
-  kind: Schema.Literals(["image", "video"]),
+  kind: Schema.Literals(["image", "video", "audio"]),
   label: text(512),
   /** Maximum prompt length in characters for this model. */
   maxPromptLength: positiveInteger,
@@ -349,8 +375,8 @@ export const mediaModelSchema = Schema.Struct({
     ),
   ),
   video: Schema.NullOr(mediaVideoModelSchema),
-  /** Always null here: the host lists picture and video models only. */
-  audio: Schema.Null,
+  /** Speech or music constraints, or null for a picture or video model. */
+  audio: Schema.NullOr(mediaAudioModelSchema),
 });
 
 /** One generation model as the host describes it: identity, tier, input
@@ -373,6 +399,9 @@ export const MAX_MEDIA_REFERENCES = 16;
 /** Video reference images: every verified video model's catalog value is 4. */
 export const MAX_VIDEO_REFERENCES = 4;
 
+/** Structural ceiling for a prompt; each model's own limit is the host's. */
+const MAX_SELECTION_PROMPT_LENGTH = 32_000;
+
 /**
  * Validates the shape of an App's generation settings. Model-specific limits
  * (sizes, steps, durations, reference counts) and defaults are the host's:
@@ -380,9 +409,17 @@ export const MAX_VIDEO_REFERENCES = 4;
  */
 export const mediaGenerationSelectionSchema = Schema.Struct({
   model: text(256),
-  prompt: text(2_048),
-  width: positiveInteger.pipe(Schema.check(Schema.isLessThanOrEqualTo(5_040))),
-  height: positiveInteger.pipe(Schema.check(Schema.isLessThanOrEqualTo(5_040))),
+  /** Bounded by the host against the chosen model; speech models take the longest text. */
+  prompt: text(MAX_SELECTION_PROMPT_LENGTH),
+  /** Picture and video size; audio has none. */
+  width: Schema.optional(
+    positiveInteger.pipe(Schema.check(Schema.isLessThanOrEqualTo(5_040))),
+  ),
+  height: Schema.optional(
+    positiveInteger.pipe(Schema.check(Schema.isLessThanOrEqualTo(5_040))),
+  ),
+  /** Speech models only: a catalog voice; the model's default when omitted. */
+  voiceId: Schema.optional(text(64)),
   steps: Schema.optional(positiveInteger),
   durationSeconds: Schema.optional(positiveInteger),
   resolution: Schema.optional(mediaVideoResolutionSchema),
@@ -459,10 +496,10 @@ export const mediaGenerationResultSchema = Schema.Struct({
   bytes: positiveInteger,
   costMilliunits: nonNegativeInteger,
   destination: resultReferenceSchema,
-  format: Schema.Literals(["png", "jpeg", "gif", "webp", "mp4"]),
-  height: positiveInteger,
+  format: Schema.Literals(["png", "jpeg", "gif", "webp", "mp4", "mp3"]),
+  height: Schema.optional(positiveInteger),
   model: text(256),
-  width: positiveInteger,
+  width: Schema.optional(positiveInteger),
 });
 /** Completed native MEDIA video result, with a host-admitted destination. */
 export const mediaVideoResultSchema = Schema.Struct({
@@ -538,9 +575,13 @@ const mediaAttemptHandleSchema = rpcHandleSchema({
                 costMilliunits: outcome.result.costMilliunits,
                 destination: outcome.result.destination,
                 format: outcome.result.format,
-                height: outcome.result.height,
+                ...(outcome.result.height !== undefined && {
+                  height: outcome.result.height,
+                }),
                 model: outcome.result.model,
-                width: outcome.result.width,
+                ...(outcome.result.width !== undefined && {
+                  width: outcome.result.width,
+                }),
               },
             }
           : { kind: outcome.kind, failure: outcome.failure };
@@ -750,9 +791,11 @@ function normalizeSelection(
   const normalized: SelectionDraft = {
     model: trimmed(selection.model, "model"),
     prompt: trimmed(selection.prompt, "prompt"),
-    width: selection.width,
-    height: selection.height,
   };
+  if (selection.width !== undefined) normalized.width = selection.width;
+  if (selection.height !== undefined) normalized.height = selection.height;
+  if (selection.voiceId !== undefined)
+    normalized.voiceId = trimmed(selection.voiceId, "voiceId");
   if (selection.steps !== undefined) normalized.steps = selection.steps;
   if (selection.durationSeconds !== undefined)
     normalized.durationSeconds = selection.durationSeconds;
@@ -800,7 +843,8 @@ function parseResult(
     result.destination.computerId !== computerId ||
     result.destination.path !== request.destination.path ||
     result.width !== request.settings.width ||
-    result.height !== request.settings.height
+    result.height !== request.settings.height ||
+    (request.settings.width === undefined) !== (result.format === "mp3")
   )
     throw new AppError("The Media capability returned an unrelated result", {
       code: "PROTOCOL",
@@ -811,9 +855,9 @@ function parseResult(
     costMilliunits: result.costMilliunits,
     destination: Object.freeze({ ...result.destination }),
     format: result.format,
-    height: result.height,
+    ...(result.height !== undefined && { height: result.height }),
     model: result.model,
-    width: result.width,
+    ...(result.width !== undefined && { width: result.width }),
   });
 }
 

@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.15.0
+
+### Minor Changes
+
+- Changes since 0.14.0:
+
+  - fix(prints): regenerate Agar docs and raise the Prints backend budget for
+    audio
+  - feat(agar,prints): carry audio models, voices and MP3 results through the
+    Media contract
+
 ## 0.14.0
 
 ### Minor Changes

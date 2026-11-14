@@ -5,6 +5,8 @@ import * as Schema from "effect/Schema";
 import { createCapabilityDirectory } from "./internal/capabilities.js";
 import {
   openMediaGeneration,
+  parseMediaGenerationInput,
+  mediaModelSchema,
   mediaLibraryPathSchema,
   mediaLibraryResponseSchema,
   mediaGeneration,
@@ -901,5 +903,46 @@ describe("Media library path contract", () => {
     expect(Schema.is(mediaLibraryPathSchema)(path)).toBe(true);
     expect(Schema.is(mediaLibraryResponseSchema)({ path })).toBe(true);
     expect(Schema.is(mediaLibraryResponseSchema)({ path: null })).toBe(true);
+  });
+});
+
+describe("audio in the Media contract", () => {
+  const audioModel = {
+    ...knownModel,
+    id: "elevenlabs/music-v2",
+    kind: "audio",
+    sizes: null,
+    audio: {
+      provider: "elevenlabs",
+      mode: "music",
+      voices: [],
+      defaultVoiceId: null,
+      seconds: { min: 3, max: 600, default: 30 },
+      milliunitsPerUnit: 250,
+    },
+  };
+  it("decodes an audio model row and refuses an unknown audio field", () => {
+    expect(Schema.is(mediaModelSchema)(audioModel)).toBe(true);
+    expect(
+      Schema.is(mediaModelSchema)({
+        ...audioModel,
+        audio: { ...audioModel.audio, mode: "dialogue" },
+      }),
+    ).toBe(false);
+  });
+  it("accepts a sound request without a size and keeps its voice", () => {
+    const parsed = parseMediaGenerationInput({
+      destination: { path: "/pics/story.mp3" },
+      settings: {
+        model: "elevenlabs/eleven-v3",
+        prompt: " Let the story begin. ",
+        voiceId: "JBFqnCBsd6RMkjVDRZzb",
+      },
+    });
+    expect(parsed.settings).toEqual({
+      model: "elevenlabs/eleven-v3",
+      prompt: "Let the story begin.",
+      voiceId: "JBFqnCBsd6RMkjVDRZzb",
+    });
   });
 });

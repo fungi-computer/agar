@@ -89,19 +89,20 @@ Ask the host what these exact settings would cost; nothing is started.
 
 ###### Parameters
 
-| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                          |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width`: `number`; `height`: `number`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} |
-| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.width`            | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.height`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                      |
-| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                       |
-| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                 |
-| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                     |
-| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                           |
+| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                                                  | Description                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width?`: `number`; `height?`: `number`; `voiceId?`: `string`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} | -                                                                                  |
+| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                                              | Bounded by the host against the chosen model; speech models take the longest text. |
+| `settings.width?`           | `number`                                                                                                                                                                                                                                                                                                                                                                                              | Picture and video size; audio has none.                                            |
+| `settings.height?`          | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.voiceId?`         | `string`                                                                                                                                                                                                                                                                                                                                                                                              | Speech models only: a catalog voice; the model's default when omitted.             |
+| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                                              | -                                                                                  |
+| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                                               | -                                                                                  |
+| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                                         | -                                                                                  |
+| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                                             | -                                                                                  |
+| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                  |
 
 ###### Returns
 
@@ -368,7 +369,7 @@ const mediaGenerationDescriptionSchema: Struct<{
         steps: Literals<readonly ["steps", "num_steps", "fixed"]>;
         transport: Literals<readonly ["json", "multipart"]>;
      }>;
-     kind: Literals<readonly ["image", "video"]>;
+     kind: Literals<readonly ["image", "video", "audio"]>;
      label: String;
      maxPromptLength: Number;
      tier: Literals<readonly ["draft", "balanced", "premium", "max"]>;
@@ -403,7 +404,21 @@ const mediaGenerationDescriptionSchema: Struct<{
            audioMilliunitsPerSecond: ...;
         }>>;
      }>>;
-     audio: Null;
+     audio: NullOr<Struct<{
+        provider: Literal<"elevenlabs">;
+        mode: Literals<readonly ["speech", "music"]>;
+        voices: $Array<Struct<{
+           id: ...;
+           label: ...;
+        }>>;
+        defaultVoiceId: NullOr<String>;
+        seconds: NullOr<Struct<{
+           min: ...;
+           max: ...;
+           default: ...;
+        }>>;
+        milliunitsPerUnit: Number;
+     }>>;
   }>>;
 }>;
 ```
@@ -431,8 +446,9 @@ const mediaGenerationQuoteRequestSchema: Struct<{
   settings: Struct<{
      model: String;
      prompt: String;
-     width: Number;
-     height: Number;
+     width: optional<Number>;
+     height: optional<Number>;
+     voiceId: optional<String>;
      steps: optional<Number>;
      durationSeconds: optional<Number>;
      resolution: optional<Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>>;
@@ -459,8 +475,9 @@ const mediaGenerationJsonRequestSchema: Struct<{
   settings: Struct<{
      model: String;
      prompt: String;
-     width: Number;
-     height: Number;
+     width: optional<Number>;
+     height: optional<Number>;
+     voiceId: optional<String>;
      steps: optional<Number>;
      durationSeconds: optional<Number>;
      resolution: optional<Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>>;
@@ -495,10 +512,10 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
         computerId: String;
         path: String;
      }>;
-     format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4"]>;
-     height: Number;
+     format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4", "mp3"]>;
+     height: optional<Number>;
      model: String;
-     width: Number;
+     width: optional<Number>;
   }>;
 }>, Struct<{
   kind: Literal<"failed">;
@@ -537,10 +554,10 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
         computerId: String;
         path: String;
      }>;
-     format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4"]>;
-     height: Number;
+     format: Literals<readonly ["png", "jpeg", "gif", "webp", "mp4", "mp3"]>;
+     height: optional<Number>;
      model: String;
-     width: Number;
+     width: optional<Number>;
   }>;
 }>, Struct<{
   kind: Literal<"failed">;
