@@ -357,6 +357,39 @@ export const mediaAudioModelSchema = Schema.Struct({
 /** Immutable host-described audio metadata. */
 export type MediaAudioModel = Schema.Schema.Type<typeof mediaAudioModelSchema>;
 
+/**
+ * Host-described facts of a model that edits one source image instead of
+ * generating from a prompt: remove a background, or upscale.
+ */
+export const mediaTransformSchema = Schema.Struct({
+  /** What the operation does to its source image. */
+  operation: Schema.Literals(["remove_background", "upscale"]),
+  /** The host's limits on the one source image, checked before any paid call. */
+  source: Schema.Struct({
+    /** Accepted source encodings. */
+    formats: Schema.Array(Schema.Literals(["png", "jpeg", "webp"])),
+    /** Largest source in bytes. */
+    maxBytes: positiveInteger,
+    /** Largest source in pixels. */
+    maxPixels: positiveInteger,
+  }),
+  /** Output size in megapixels chosen when none is given; null when the operation has no size. */
+  defaultMegapixels: Schema.NullOr(positiveInteger),
+  /** Provider milliunits per image when the price does not depend on size, else null; 1 USD is 100,000 milliunits. */
+  milliunits: Schema.NullOr(positiveInteger),
+  /** Output sizes offered with their provider milliunits; empty for a flat price. */
+  sizes: Schema.Array(
+    Schema.Struct({
+      /** Output size in megapixels. */
+      megapixels: positiveInteger,
+      /** Provider milliunits for one image at this size. */
+      milliunits: positiveInteger,
+    }),
+  ),
+});
+/** Immutable host-described source-image operation metadata. */
+export type MediaTransform = Schema.Schema.Type<typeof mediaTransformSchema>;
+
 /** Validates one model row of the host's Media catalog. */
 export const mediaModelSchema = Schema.Struct({
   id: text(256),
@@ -377,6 +410,15 @@ export const mediaModelSchema = Schema.Struct({
   video: Schema.NullOr(mediaVideoModelSchema),
   /** Speech or music constraints, or null for a picture or video model. */
   audio: Schema.NullOr(mediaAudioModelSchema),
+  /** Source-image operation facts, or null for a model that generates from a prompt. */
+  transform: Schema.NullOr(mediaTransformSchema),
+  /** The unit one generation bills in; cost per unit depends on the settings. */
+  billingUnit: Schema.Literals([
+    "image",
+    "video_second",
+    "audio_second",
+    "audio_character_block",
+  ]),
 });
 
 /** One generation model as the host describes it: identity, tier, input
@@ -422,6 +464,8 @@ export const mediaGenerationSelectionSchema = Schema.Struct({
   voiceId: Schema.optional(text(64)),
   steps: Schema.optional(positiveInteger),
   durationSeconds: Schema.optional(positiveInteger),
+  /** Upscale only: the output size in megapixels, one of the model's offered sizes. */
+  targetMegapixels: Schema.optional(positiveInteger),
   resolution: Schema.optional(mediaVideoResolutionSchema),
   aspectRatio: Schema.optional(mediaVideoAspectRatioSchema),
   generateAudio: Schema.optional(Schema.Boolean),
@@ -799,6 +843,8 @@ function normalizeSelection(
   if (selection.steps !== undefined) normalized.steps = selection.steps;
   if (selection.durationSeconds !== undefined)
     normalized.durationSeconds = selection.durationSeconds;
+  if (selection.targetMegapixels !== undefined)
+    normalized.targetMegapixels = selection.targetMegapixels;
   if (selection.resolution !== undefined)
     normalized.resolution = selection.resolution;
   if (selection.aspectRatio !== undefined)
@@ -836,6 +882,8 @@ function parseResult(
   value: MediaGenerationResult,
   request: MediaGenerationInput,
   computerId: string,
+  /** A source-image operation's output size is the provider's, so its result names none. */
+  sizeless: boolean,
 ): MediaGenerationResult {
   const result = decode(mediaGenerationResultSchema, value);
   if (
@@ -844,7 +892,8 @@ function parseResult(
     result.destination.path !== request.destination.path ||
     result.width !== request.settings.width ||
     result.height !== request.settings.height ||
-    (request.settings.width === undefined) !== (result.format === "mp3")
+    (!sizeless &&
+      (request.settings.width === undefined) !== (result.format === "mp3"))
   )
     throw new AppError("The Media capability returned an unrelated result", {
       code: "PROTOCOL",
@@ -959,7 +1008,13 @@ export async function openMediaGeneration(
                 const outcome = decode(outcomeSchema, owned.value);
                 if (outcome.kind === "failed")
                   throw new MediaGenerationError(outcome.failure);
-                return parseResult(outcome.result, request, computerId);
+                return parseResult(
+                  outcome.result,
+                  request,
+                  computerId,
+                  models.find((model) => model.id === request.settings.model)
+                    ?.transform != null,
+                );
               }
             } catch (cause) {
               if (signal?.aborted) {

@@ -24,6 +24,8 @@ const knownModel: MediaModel = {
   sizes: null,
   video: null,
   audio: null,
+  billingUnit: "image",
+  transform: null,
   outputFormats: [],
   id: model,
   tier: "balanced",
@@ -50,6 +52,8 @@ const gptModel: MediaModel = {
   sizes: ["1024x1024", "1024x1536", "1536x1024"],
   video: null,
   audio: null,
+  billingUnit: "image",
+  transform: null,
   outputFormats: ["png", "jpeg", "webp"],
   id: "openai/gpt-image-2",
   tier: "premium",
@@ -233,6 +237,8 @@ describe("Media Agar capability", () => {
             sizes: null,
             video: null,
             audio: null,
+            billingUnit: "image",
+            transform: null,
             input: {
               transport: "multipart",
               dimensions: "own",
@@ -746,6 +752,8 @@ describe("Media Agar capability", () => {
             sizes: null,
             video: null,
             audio: null,
+            billingUnit: "image",
+            transform: null,
             input: {
               transport: "json",
               dimensions: "none",
@@ -873,6 +881,81 @@ describe("Media Agar capability", () => {
       ).rejects.toMatchObject({ code: "PROTOCOL", retryable: false });
     } finally {
       granted.close();
+    }
+  });
+
+  it("accepts a source-image operation's result without a size and refuses one for a prompt model", async () => {
+    const operation: MediaModel = {
+      ...knownModel,
+      id: "pruna/p-image-upscale",
+      transform: {
+        operation: "upscale",
+        source: {
+          formats: ["png", "jpeg"],
+          maxBytes: 8_388_608,
+          maxPixels: 25_000_000,
+        },
+        defaultMegapixels: 4,
+        milliunits: null,
+        sizes: [{ megapixels: 4, milliunits: 500 }],
+      },
+    };
+    const sizeless = (modelId: string): MediaGenerationResult => ({
+      bytes: 3,
+      costMilliunits: 500,
+      destination: { computerId: "computer-a", path: "media/up.webp" },
+      format: "webp",
+      model: modelId,
+    });
+    const owner = (modelId: string) =>
+      new (class extends RpcTarget {
+        describe() {
+          return Promise.resolve({
+            computerId: "computer-a",
+            canGenerate: true,
+            models: [knownModel, operation],
+          });
+        }
+        reference() {
+          return Promise.resolve({
+            requestId: "request-a",
+            computerId: "computer-a",
+          });
+        }
+        createAttempt() {
+          return Promise.resolve(this);
+        }
+        generate(): Promise<MediaGenerationOutcome> {
+          return Promise.resolve(succeeded(sizeless(modelId)));
+        }
+      })();
+    const request = (modelId: string): MediaGenerationInput => ({
+      destination: { path: "media/up.webp" },
+      settings: {
+        model: modelId,
+        prompt: "Upscale",
+        targetMegapixels: 4,
+        references: [{ path: "media/source.png" }],
+      },
+    });
+    const granted = directory(owner(operation.id));
+    try {
+      await expect(
+        generateOnce(granted.directory, request(operation.id)),
+      ).resolves.toMatchObject({ format: "webp", costMilliunits: 500 });
+    } finally {
+      granted.close();
+    }
+    const refused = directory(owner(model));
+    try {
+      await expect(
+        generateOnce(refused.directory, {
+          destination: { path: "media/up.webp" },
+          settings: { ...input.settings, prompt: "x" },
+        }),
+      ).rejects.toMatchObject({ code: "PROTOCOL" });
+    } finally {
+      refused.close();
     }
   });
 

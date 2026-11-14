@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.17.0
+
+### Minor Changes
+
+- Changes since 0.16.0:
+
+  - feat(prints): remove background and upscale from Image info
+  - fix(prints): keep source-image operations out of the generator picker
+  - feat(darkroom): add background removal and upscale as catalog operations
+  - feat(darkroom): expose each model's billing unit in the public model list
+
 ## 0.16.0
 
 ### Minor Changes
