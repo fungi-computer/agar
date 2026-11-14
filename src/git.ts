@@ -1,3 +1,4 @@
+import type { TeamRole } from "@fungi.computer/cairn/team-role";
 import {
   gitRepositoryNameSchema,
   gitSha1Schema,
@@ -55,7 +56,7 @@ export type GitWriter =
   | Readonly<{
       kind: "actor";
       actor: HostActor;
-      role?: "owner" | "member";
+      role?: TeamRole;
       workflow?: WorkflowAttestation & { branches: readonly string[] };
     }>
   | Readonly<{

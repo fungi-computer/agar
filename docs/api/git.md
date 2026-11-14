@@ -37,7 +37,7 @@ type GitWriter =
   | Readonly<{
       kind: "actor";
       actor: HostActor;
-      role?: "owner" | "member";
+      role?: TeamRole;
       workflow?: WorkflowAttestation & object;
     }>
   | Readonly<{
@@ -334,10 +334,7 @@ const gitWriterSchema: ZodDiscriminatedUnion<[ZodObject<{
      kind: ZodMiniLiteral<"team-key">;
      keyId: ZodMiniString<string>;
   }, $strict>], "kind">;
-  role: ZodMiniOptional<ZodMiniEnum<{
-     member: "member";
-     owner: "owner";
-  }>>;
+  role: ZodMiniOptional<ZodType<"owner" | "admin" | "member", unknown, $ZodTypeInternals<"owner" | "admin" | "member", unknown>>>;
   workflow: ZodOptional<ZodObject<{
      armedBy: ZodDiscriminatedUnion<[ZodObject<{
         kind: ...;
@@ -391,10 +388,7 @@ const gitPushQuestionSchema: ZodLazy<ZodObject<{
         kind: ZodMiniLiteral<"team-key">;
         keyId: ZodMiniString<string>;
      }, $strict>], "kind">;
-     role: ZodMiniOptional<ZodMiniEnum<{
-        member: "member";
-        owner: "owner";
-     }>>;
+     role: ZodMiniOptional<ZodType<"owner" | "admin" | "member", unknown, $ZodTypeInternals<"owner" | "admin" | "member", unknown>>>;
      workflow: ZodOptional<ZodObject<{
         armedBy: ZodDiscriminatedUnion<[ZodObject<..., ...>, ZodObject<..., ...>, ZodObject<..., ...>], "kind">;
         branches: ZodArray<ZodString>;
@@ -469,10 +463,7 @@ const appGitPushFactSchema: ZodLazy<ZodObject<{
         kind: ...;
         keyId: ...;
      }, $strict>], "kind">;
-     role: ZodMiniOptional<ZodMiniEnum<{
-        member: "member";
-        owner: "owner";
-     }>>;
+     role: ZodMiniOptional<ZodType<"owner" | "admin" | "member", unknown, $ZodTypeInternals<... | ... | ..., unknown>>>;
      workflow: ZodOptional<ZodObject<{
         armedBy: ZodDiscriminatedUnion<..., ...>;
         branches: ZodArray<...>;

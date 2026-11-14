@@ -1,5 +1,19 @@
 # @fungi.computer/agar
 
+## 0.16.0
+
+### Minor Changes
+
+- Changes since 0.15.0:
+
+  - feat(oyster): app callers carry owner, admin or member from the shared role
+  - feat(oyster): carry the shared TeamRole through Apps and Oyster
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.9.0
+
 ## 0.15.0
 
 ### Minor Changes
