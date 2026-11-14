@@ -426,7 +426,7 @@ type AppAgentInstructions = Readonly<
 >;
 ```
 
-One Agent's standing instructions.
+One Agent's AGENTS.md.
 
 ---
 
@@ -438,7 +438,7 @@ type AppAgentInstructionsSetInput = Readonly<
 >;
 ```
 
-Input for changing one Agent's standing instructions.
+Input for replacing one Agent's AGENTS.md.
 
 ---
 
@@ -448,7 +448,7 @@ Input for changing one Agent's standing instructions.
 type AppAgentInstructionsHandle = object;
 ```
 
-Capability handle for reading and changing an Agent's standing instructions.
+Capability handle for reading and replacing an Agent's AGENTS.md.
 
 #### Methods
 
@@ -457,11 +457,17 @@ Capability handle for reading and changing an Agent's standing instructions.
 ```ts
 read(input): Promise<Readonly<{
   agentId: string;
-  instructions: string;
+  home:   | {
+     name: string;
+   }
+     | null;
+  content: string | null;
+  bytes: number;
+  limit: number;
 }>>;
 ```
 
-Read what the owner told this Agent to do on every turn.
+Read the AGENTS.md on this Agent's Home Computer.
 
 ###### Parameters
 
@@ -471,18 +477,27 @@ Read what the owner told this Agent to do on every turn.
 
 ###### Returns
 
-`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `home`: \| \{ `name`: `string`;
+\} \| `null`; `content`: `string` \| `null`; `bytes`: `number`; `limit`:
+`number`; \}\>\>
 
 ##### set()
 
 ```ts
 set(input): Promise<Readonly<{
   agentId: string;
-  instructions: string;
+  home:   | {
+     name: string;
+   }
+     | null;
+  content: string | null;
+  bytes: number;
+  limit: number;
 }>>;
 ```
 
-Replace them; the host appends them after its own fixed instructions.
+Replace it. The Agent reads the file on its next run, after the host's own
+instructions.
 
 ###### Parameters
 
@@ -492,7 +507,9 @@ Replace them; the host appends them after its own fixed instructions.
 
 ###### Returns
 
-`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `home`: \| \{ `name`: `string`;
+\} \| `null`; `content`: `string` \| `null`; `bytes`: `number`; `limit`:
+`number`; \}\>\>
 
 ---
 
@@ -1249,6 +1266,18 @@ format, model used, and its cost.
 
 ---
 
+### MediaGenerationQuote
+
+```ts
+type MediaGenerationQuote = Readonly<{
+  costMilliunits: number;
+}>;
+```
+
+A host's price for one exact request.
+
+---
+
 ### MediaGenerationFailure
 
 ```ts
@@ -1302,6 +1331,37 @@ allowed.
 ###### Returns
 
 `Promise`\<`Partial`\<`Disposable`\> & `object`\>
+
+##### quote()?
+
+```ts
+optional quote(settings): Promise<Partial<Disposable> & Readonly<{
+  costMilliunits: number;
+}>>;
+```
+
+Price one exact request without starting it; hosts that cannot omit it.
+
+###### Parameters
+
+| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width`: `number`; `height`: `number`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} |
+| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.width`            | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.height`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                       |
+| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                 |
+| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                     |
+| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                           |
+
+###### Returns
+
+`Promise`\<`Partial`\<`Disposable`\> & `Readonly`\<\{ `costMilliunits`:
+`number`; \}\>\>
 
 ##### createAttempt()
 
@@ -1400,6 +1460,7 @@ type MediaGenerationSession = Readonly<{
   computerId: string;
   canGenerate: boolean;
   models: readonly MediaModel[];
+  quote: (settings) => Promise<MediaGenerationQuote | null>;
   createAttempt: Promise<MediaGenerationAttempt>;
   restoreAttempt: Promise<MediaGenerationAttempt>;
 }>;
@@ -2809,16 +2870,6 @@ grants it.
 
 ---
 
-### appAgentInstructionsMaxLength
-
-```ts
-const appAgentInstructionsMaxLength: 4000 = 4_000;
-```
-
-The longest standing instructions an owner may give one Agent.
-
----
-
 ### appAgentInstructionsReadInputSchema
 
 ```ts
@@ -2827,7 +2878,7 @@ const appAgentInstructionsReadInputSchema: Struct<{
 }>;
 ```
 
-Validates a read of one Agent's standing instructions.
+Validates a read of one Agent's AGENTS.md.
 
 ---
 
@@ -2836,12 +2887,15 @@ Validates a read of one Agent's standing instructions.
 ```ts
 const appAgentInstructionsSetInputSchema: Struct<{
   agentId: String;
-  instructions: String;
+  expectedContent: NullOr<String>;
+  content: String;
 }>;
 ```
 
-Validates the owner's new standing instructions for one Agent; empty clears
-them.
+Validates the owner's replacement of one Agent's AGENTS.md. `expectedContent` is
+the text the owner last read; null creates the file only while it is still
+absent. A file that changed since then is a CONFLICT, so an edit the Agent made
+is never overwritten. The host states the size limit.
 
 ---
 
@@ -2850,11 +2904,20 @@ them.
 ```ts
 const appAgentInstructionsSchema: Struct<{
   agentId: String;
-  instructions: String;
+  home: NullOr<
+    Struct<{
+      name: String;
+    }>
+  >;
+  content: NullOr<String>;
+  bytes: Int;
+  limit: Int;
 }>;
 ```
 
-The standing instructions an owner gave one Agent, as the host stores them.
+The AGENTS.md on one Agent's Home Computer. `home` is null when the Agent has no
+Home, and then `content` is null and nothing can be saved. `limit` is the host's
+byte limit for the file.
 
 ---
 
@@ -2864,8 +2927,8 @@ The standing instructions an owner gave one Agent, as the host stores them.
 const agentInstructions: CapabilityContract<AppAgentInstructionsHandle>;
 ```
 
-Owner-only capability over an Agent's standing instructions; not every host
-grants it.
+Owner-only capability over an Agent's AGENTS.md on its Home Computer; not every
+host grants it.
 
 ---
 
@@ -3247,6 +3310,7 @@ const mediaGenerationFailureSchema: Struct<{
       "CANCELLED",
       "CAPABILITY_DENIED",
       "CAPABILITY_REVOKED",
+      "DAILY_LIMIT_REACHED",
       "DISCONNECTED",
       "HOST_FAILURE",
       "IDENTITY",
@@ -3794,12 +3858,17 @@ function readAppAgentInstructions(
 ): Promise<
   Readonly<{
     agentId: string;
-    instructions: string;
+    home: {
+      name: string;
+    } | null;
+    content: string | null;
+    bytes: number;
+    limit: number;
   }>
 >;
 ```
 
-Read an Agent's standing instructions through the owner-only capability.
+Read an Agent's AGENTS.md through the owner-only capability.
 
 #### Parameters
 
@@ -3810,7 +3879,9 @@ Read an Agent's standing instructions through the owner-only capability.
 
 #### Returns
 
-`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `home`: \| \{ `name`: `string`;
+\} \| `null`; `content`: `string` \| `null`; `bytes`: `number`; `limit`:
+`number`; \}\>\>
 
 ---
 
@@ -3823,12 +3894,17 @@ function setAppAgentInstructions(
 ): Promise<
   Readonly<{
     agentId: string;
-    instructions: string;
+    home: {
+      name: string;
+    } | null;
+    content: string | null;
+    bytes: number;
+    limit: number;
   }>
 >;
 ```
 
-Change an Agent's standing instructions through the owner-only capability.
+Replace an Agent's AGENTS.md through the owner-only capability.
 
 #### Parameters
 
@@ -3839,7 +3915,9 @@ Change an Agent's standing instructions through the owner-only capability.
 
 #### Returns
 
-`Promise`\<`Readonly`\<\{ `agentId`: `string`; `instructions`: `string`; \}\>\>
+`Promise`\<`Readonly`\<\{ `agentId`: `string`; `home`: \| \{ `name`: `string`;
+\} \| `null`; `content`: `string` \| `null`; `bytes`: `number`; `limit`:
+`number`; \}\>\>
 
 ---
 
@@ -4075,6 +4153,9 @@ function openMediaGeneration(capabilities): Promise<
     computerId: string;
     canGenerate: boolean;
     models: readonly object[];
+    quote: (settings) => Promise<Readonly<{
+      costMilliunits: number;
+    }> | null>;
     createAttempt: Promise<MediaGenerationAttempt>;
     restoreAttempt: Promise<MediaGenerationAttempt>;
   }>
@@ -4092,7 +4173,8 @@ Discover the exact retained model catalog surfaced by the owner.
 #### Returns
 
 `Promise`\<`Readonly`\<\{ `computerId`: `string`; `canGenerate`: `boolean`;
-`models`: readonly `object`[]; `createAttempt`:
+`models`: readonly `object`[]; `quote`: (`settings`) => `Promise`\< \|
+`Readonly`\<\{ `costMilliunits`: `number`; \}\> \| `null`\>; `createAttempt`:
 `Promise`\<[`MediaGenerationAttempt`](#mediagenerationattempt)\>;
 `restoreAttempt`:
 `Promise`\<[`MediaGenerationAttempt`](#mediagenerationattempt)\>; \}\>\>

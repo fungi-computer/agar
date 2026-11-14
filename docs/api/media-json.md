@@ -77,6 +77,42 @@ Describe this handle's fixed Computer through the admitted JSON method.
 MediaGenerationHandle.describe;
 ```
 
+##### quote()
+
+```ts
+quote(settings): Promise<{
+  costMilliunits: number;
+}>;
+```
+
+Ask the host what these exact settings would cost; nothing is started.
+
+###### Parameters
+
+| Parameter                   | Type                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings`                  | \{ `model`: `string`; `prompt`: `string`; `width`: `number`; `height`: `number`; `steps?`: `number`; `durationSeconds?`: `number`; `resolution?`: `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`; `aspectRatio?`: `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`; `generateAudio?`: `boolean`; `references?`: readonly `object`[]; \} |
+| `settings.model`            | `string`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.prompt`           | `string`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.width`            | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.height`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.steps?`           | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.durationSeconds?` | `number`                                                                                                                                                                                                                                                                                                                                                                      |
+| `settings.resolution?`      | `"480p"` \| `"720p"` \| `"768p"` \| `"1080p"` \| `"4k"`                                                                                                                                                                                                                                                                                                                       |
+| `settings.aspectRatio?`     | `"16:9"` \| `"4:3"` \| `"1:1"` \| `"3:4"` \| `"9:16"` \| `"21:9"` \| `"9:21"`                                                                                                                                                                                                                                                                                                 |
+| `settings.generateAudio?`   | `boolean`                                                                                                                                                                                                                                                                                                                                                                     |
+| `settings.references?`      | readonly `object`[]                                                                                                                                                                                                                                                                                                                                                           |
+
+###### Returns
+
+`Promise`\<\{ `costMilliunits`: `number`; \}\>
+
+###### Implementation of
+
+```ts
+MediaGenerationHandle.quote;
+```
+
 ##### createAttempt()
 
 ```ts
@@ -371,6 +407,45 @@ Plain JSON catalog reply, decoded with Agar's Media model grammar.
 
 ---
 
+### mediaGenerationQuoteSchema
+
+```ts
+const mediaGenerationQuoteSchema: Struct<{
+  costMilliunits: Int;
+}>;
+```
+
+The host's price for one exact request, in milliunits of a cent.
+
+---
+
+### mediaGenerationQuoteRequestSchema
+
+```ts
+const mediaGenerationQuoteRequestSchema: Struct<{
+  settings: Struct<{
+     model: String;
+     prompt: String;
+     width: Number;
+     height: Number;
+     steps: optional<Number>;
+     durationSeconds: optional<Number>;
+     resolution: optional<Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>>;
+     aspectRatio: optional<Literals<readonly ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]>>;
+     generateAudio: optional<Boolean>;
+     references: optional<$Array<Struct<{
+        computerId: optional<String>;
+        path: String;
+        role: optional<Literals<readonly [..., ..., ...]>>;
+     }>>>;
+  }>;
+}>;
+```
+
+A quote call carries the exact settings and no destination or replay id.
+
+---
+
 ### mediaGenerationJsonRequestSchema
 
 ```ts
@@ -433,7 +508,7 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
         category: ...;
         status: ...;
      }>]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DAILY_LIMIT_REACHED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
      need: optional<String>;
   }>;
@@ -468,7 +543,7 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
      message: String;
      stage: optional<Literals<readonly [..., ..., ..., ..., ..., ..., ..., ..., ..., ..., ...]>>;
      provider: optional<Union<readonly [..., ...]>>;
-     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
+     code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DAILY_LIMIT_REACHED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
      need: optional<String>;
   }>;

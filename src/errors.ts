@@ -72,6 +72,7 @@ export const appErrorCodes = [
   "CAPABILITY_REVOKED",
   "COMMAND_NOT_DECLARED",
   "CONFLICT",
+  "DAILY_LIMIT_REACHED",
   "DELIVERY_PENDING",
   "DISCONNECTED",
   "FILE_TOO_LARGE",
@@ -183,6 +184,11 @@ const errorCopy = {
   CONFLICT: {
     title: "File changed",
     message: "This file changed elsewhere. Review it before saving again.",
+  },
+  DAILY_LIMIT_REACHED: {
+    title: "Daily limit reached",
+    message:
+      "Today's spending limit for this Oyster is used up. It resets at 00:00 UTC.",
   },
   DELIVERY_PENDING: {
     title: "App delivery pending",

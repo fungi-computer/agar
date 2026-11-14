@@ -54,6 +54,12 @@ export type MediaGenerationResult = Readonly<{
   width: number;
 }>;
 
+/** A host's price for one exact request. */
+export type MediaGenerationQuote = Readonly<{
+  /** Milliunits of a cent the Team would be charged. */
+  costMilliunits: number;
+}>;
+
 /** The host's typed reason a generation failed: code, message, retry truth
  * and, when known, the stage that failed. */
 export type MediaGenerationFailure = Schema.Schema.Type<
@@ -93,6 +99,10 @@ export type MediaGenerationHandle = {
       readonly models: readonly MediaModel[];
     }
   >;
+  /** Price one exact request without starting it; hosts that cannot omit it. */
+  quote?(
+    settings: MediaGenerationSelection,
+  ): Promise<Partial<Disposable> & MediaGenerationQuote>;
   /** Begin a new generation attempt on the host and return its handle. */
   createAttempt(): Promise<MediaGenerationAttemptHandle>;
   /** Resume a previously started attempt identified by its reference. */
@@ -134,6 +144,14 @@ export type MediaGenerationSession = Readonly<{
   computerId: string;
   canGenerate: boolean;
   models: readonly MediaModel[];
+  /**
+   * What the host would charge for these exact settings, in milliunits of a
+   * cent, after its billing policy: the number metering will hold at
+   * admission. Null when the host cannot price; nothing is started or held.
+   */
+  quote: (
+    settings: MediaGenerationSelection,
+  ) => Promise<MediaGenerationQuote | null>;
   /** Start a fresh generation attempt scoped to this session's
    * Computer. */
   createAttempt(): Promise<MediaGenerationAttempt>;
@@ -455,6 +473,7 @@ export const mediaGenerationFailureSchema = Schema.Struct({
     "CANCELLED",
     "CAPABILITY_DENIED",
     "CAPABILITY_REVOKED",
+    "DAILY_LIMIT_REACHED",
     "DISCONNECTED",
     "HOST_FAILURE",
     "IDENTITY",
@@ -539,6 +558,17 @@ export const mediaGeneration: CapabilityContract<MediaGenerationHandle> =
             }),
           ),
         ),
+        quote: rpcMethod(
+          rpcDataSchema(
+            z.strictObject({
+              costMilliunits: z
+                .number()
+                .int()
+                .nonnegative()
+                .max(Number.MAX_SAFE_INTEGER),
+            }),
+          ),
+        ).optional(),
         createAttempt: rpcMethod(mediaAttemptHandleSchema),
         restoreAttempt: rpcMethod(mediaAttemptHandleSchema),
         cancelAttempt: rpcVoid,
@@ -673,6 +703,25 @@ export function parseMediaGenerationInput(
   });
 }
 
+/** The selection a quote carries, normalized like a generation's. */
+function parseQuoteSelection(
+  settings: MediaGenerationSelection,
+): MediaGenerationSelection {
+  try {
+    return normalizeSelection(
+      Schema.decodeUnknownSync(mediaGenerationSelectionSchema, {
+        onExcessProperty: "error",
+      })(settings),
+    );
+  } catch (cause) {
+    throw new AppError("Media generation settings are invalid", {
+      cause,
+      code: "INVALID_ARGUMENT",
+      retryable: false,
+    });
+  }
+}
+
 /** A selection being assembled before it is frozen. */
 type SelectionDraft = {
   -readonly [K in keyof MediaGenerationSelection]: MediaGenerationSelection[K];
@@ -773,6 +822,7 @@ export async function openMediaGeneration(
           retryable: false,
         });
       const models = parseModels(description.models);
+      const hostQuote = handle.quote?.bind(handle);
       const wrapAttempt = async (
         remote: MediaGenerationAttemptHandle,
       ): Promise<MediaGenerationAttempt> => {
@@ -878,6 +928,16 @@ export async function openMediaGeneration(
         computerId,
         canGenerate: description.canGenerate,
         models,
+        /** Price these exact settings; nothing is started or held. Null when
+         * the host cannot price. */
+        async quote(settings: MediaGenerationSelection) {
+          const selection = parseQuoteSelection(settings);
+          if (hostQuote === undefined) return null;
+          using response = ownedRpcValue(await hostQuote(selection));
+          return Object.freeze({
+            costMilliunits: response.value.costMilliunits,
+          });
+        },
         /** Start a fresh attempt scoped to this session's Computer. */
         async createAttempt() {
           return wrapAttempt(await handle.createAttempt());

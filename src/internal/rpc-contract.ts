@@ -18,11 +18,14 @@ export function rpcHandleSchema<S extends z.ZodRawShape>(methods: S) {
     // enumerating, copying or changing that stub. Methods retain its receiver.
     const view: unknown = Object.create(receiver);
     const received = receivedMethodsSchema.parse(view);
+    // A method the host did not provide stays absent, so a schema that
+    // marks it optional accepts the handle and a required one still refuses.
     const boundMethods = Object.fromEntries(
-      Object.entries(received).map(([name, method]) => [
-        name,
-        z.function().parse(method).bind(receiver),
-      ]),
+      Object.entries(received).flatMap(([name, method]) =>
+        method === undefined
+          ? []
+          : [[name, z.function().parse(method).bind(receiver)]],
+      ),
     );
     return {
       ...methodsSchema.parse(boundMethods),

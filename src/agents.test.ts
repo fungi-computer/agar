@@ -9,6 +9,7 @@ import {
   agentInstructions,
   readAppAgentInstructions,
   setAppAgentInstructions,
+  appAgentInstructionsSetInputSchema,
   agentList,
   agentManage,
   agentRename,
@@ -444,32 +445,67 @@ describe("Agent avatar capability", () => {
     expect(setAvatar).toHaveBeenCalledWith(request);
   });
 
-  it("reads and sets an Agent's standing instructions through the owner-only capability, within the bound", async () => {
+  it("reads and replaces an Agent's AGENTS.md through the owner-only capability", async () => {
     const registry = createCapabilityRegistry();
+    const file = (agentId: string, content: string | null) => ({
+      agentId,
+      home: { name: "garden" },
+      content,
+      bytes: content === null ? 0 : content.length,
+      limit: 32_000,
+    });
     const read = vi.fn((input: { agentId: string }) =>
-      Promise.resolve({ agentId: input.agentId, instructions: "Be brief." }),
+      Promise.resolve(file(input.agentId, "Be brief.")),
     );
-    const set = vi.fn((input: { agentId: string; instructions: string }) =>
-      Promise.resolve(input),
+    const set = vi.fn(
+      (input: {
+        agentId: string;
+        expectedContent: string | null;
+        content: string;
+      }) => Promise.resolve(file(input.agentId, input.content)),
     );
     registry.provide(agentInstructions, { read, set });
-    expect(await readAppAgentInstructions(registry, "agent-one")).toEqual({
-      agentId: "agent-one",
-      instructions: "Be brief.",
-    });
+    expect(await readAppAgentInstructions(registry, "agent-one")).toEqual(
+      file("agent-one", "Be brief."),
+    );
     expect(
       await setAppAgentInstructions(registry, {
         agentId: "agent-one",
-        instructions: "Be kind.",
+        expectedContent: "Be brief.",
+        content: "Be kind.",
       }),
-    ).toEqual({ agentId: "agent-one", instructions: "Be kind." });
-    await expect(
-      setAppAgentInstructions(registry, {
+    ).toEqual(file("agent-one", "Be kind."));
+    expect(
+      await setAppAgentInstructions(registry, {
         agentId: "agent-one",
-        instructions: "x".repeat(4_001),
+        expectedContent: null,
+        content: "First save.",
       }),
-    ).rejects.toThrow();
-    expect(set).toHaveBeenCalledTimes(1);
+    ).toEqual(file("agent-one", "First save."));
+    // A save without the baseline the owner read is not a valid request.
+    expect(() =>
+      Schema.decodeUnknownSync(appAgentInstructionsSetInputSchema)({
+        agentId: "agent-one",
+        content: "No baseline.",
+      }),
+    ).toThrow();
+    expect(set).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports an Agent with no Home as a null Home and no file", async () => {
+    const registry = createCapabilityRegistry();
+    const none = {
+      agentId: "agent-one",
+      home: null,
+      content: null,
+      bytes: 0,
+      limit: 32_000,
+    };
+    registry.provide(agentInstructions, {
+      read: () => Promise.resolve(none),
+      set: () => Promise.resolve(none),
+    });
+    expect(await readAppAgentInstructions(registry, "agent-one")).toEqual(none);
   });
 
   it("decodes only an Avatar v1 envelope, and only Agent records that carry one", () => {

@@ -266,3 +266,31 @@ describe("public Media browser handle", () => {
     expect(JSON.stringify(error)).not.toContain(marker);
   });
 });
+
+describe("MediaGeneration quote", () => {
+  it("sends exactly the settings and returns the host's charge", async () => {
+    const caller = vi.fn<MediaGenerationJsonCaller>(() =>
+      Promise.resolve({ costMilliunits: 86_250 }),
+    );
+    await expect(create(caller).quote(settings)).resolves.toEqual({
+      costMilliunits: 86_250,
+    });
+    expect(caller).toHaveBeenCalledWith(
+      "quote",
+      Schema.decodeUnknownSync(Schema.Json)({ settings }),
+      expect.anything(),
+    );
+  });
+
+  it("rejects a malformed price instead of showing one", async () => {
+    const replies: Schema.Json[] = [
+      { costMilliunits: -1 },
+      { costMilliunits: 1.5 },
+      { price: 1 },
+    ];
+    for (const reply of replies)
+      await expect(
+        create(() => Promise.resolve(reply)).quote(settings),
+      ).rejects.toThrow();
+  });
+});

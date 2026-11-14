@@ -295,49 +295,57 @@ export async function setAppAgentAvatar(
   return Schema.decodeUnknownSync(appAgentSchema)(agent);
 }
 
-/** The longest standing instructions an owner may give one Agent. */
-export const appAgentInstructionsMaxLength = 4_000;
-const appAgentInstructionsText = Schema.String.pipe(
-  Schema.check(Schema.isMaxLength(appAgentInstructionsMaxLength)),
-);
-/** Validates a read of one Agent's standing instructions. */
+/** Validates a read of one Agent's AGENTS.md. */
 export const appAgentInstructionsReadInputSchema = Schema.Struct({
   agentId: boundedIdentity,
 });
-/** Validates the owner's new standing instructions for one Agent; empty clears them. */
+/**
+ * Validates the owner's replacement of one Agent's AGENTS.md. `expectedContent`
+ * is the text the owner last read; null creates the file only while it is
+ * still absent. A file that changed since then is a CONFLICT, so an edit the
+ * Agent made is never overwritten. The host states the size limit.
+ */
 export const appAgentInstructionsSetInputSchema = Schema.Struct({
   agentId: boundedIdentity,
-  instructions: appAgentInstructionsText,
+  expectedContent: Schema.NullOr(Schema.String),
+  content: Schema.String,
 });
-/** The standing instructions an owner gave one Agent, as the host stores them. */
+/**
+ * The AGENTS.md on one Agent's Home Computer. `home` is null when the Agent has
+ * no Home, and then `content` is null and nothing can be saved. `limit` is the
+ * host's byte limit for the file.
+ */
 export const appAgentInstructionsSchema = Schema.Struct({
   agentId: boundedIdentity,
-  instructions: appAgentInstructionsText,
+  home: Schema.NullOr(Schema.Struct({ name: Schema.String })),
+  content: Schema.NullOr(Schema.String),
+  bytes: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
+  limit: Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0))),
 });
-/** One Agent's standing instructions. */
+/** One Agent's AGENTS.md. */
 export type AppAgentInstructions = Readonly<
   Schema.Schema.Type<typeof appAgentInstructionsSchema>
 >;
-/** Input for changing one Agent's standing instructions. */
+/** Input for replacing one Agent's AGENTS.md. */
 export type AppAgentInstructionsSetInput = Readonly<
   Schema.Schema.Type<typeof appAgentInstructionsSetInputSchema>
 >;
-/** Capability handle for reading and changing an Agent's standing instructions. */
+/** Capability handle for reading and replacing an Agent's AGENTS.md. */
 export type AppAgentInstructionsHandle = {
-  /** Read what the owner told this Agent to do on every turn. */
+  /** Read the AGENTS.md on this Agent's Home Computer. */
   read(
     input: Readonly<
       Schema.Schema.Type<typeof appAgentInstructionsReadInputSchema>
     >,
   ): Promise<AppAgentInstructions>;
-  /** Replace them; the host appends them after its own fixed instructions. */
+  /** Replace it. The Agent reads the file on its next run, after the host's own instructions. */
   set(input: AppAgentInstructionsSetInput): Promise<AppAgentInstructions>;
 };
-/** Owner-only capability over an Agent's standing instructions; not every host grants it. */
+/** Owner-only capability over an Agent's AGENTS.md on its Home Computer; not every host grants it. */
 export const agentInstructions: CapabilityContract<AppAgentInstructionsHandle> =
   defineCapability(
     "agent.instructions",
-    1,
+    2,
     z.lazy(() =>
       rpcHandleSchema({
         read: rpcMethod(
@@ -361,7 +369,7 @@ export const agentInstructions: CapabilityContract<AppAgentInstructionsHandle> =
       }),
     ),
   );
-/** Read an Agent's standing instructions through the owner-only capability. */
+/** Read an Agent's AGENTS.md through the owner-only capability. */
 export async function readAppAgentInstructions(
   capabilities: CapabilityDirectory,
   agentId: string,
@@ -375,7 +383,7 @@ export async function readAppAgentInstructions(
     await capabilities.require(agentInstructions).read(request),
   );
 }
-/** Change an Agent's standing instructions through the owner-only capability. */
+/** Replace an Agent's AGENTS.md through the owner-only capability. */
 export async function setAppAgentInstructions(
   capabilities: CapabilityDirectory,
   input: AppAgentInstructionsSetInput,

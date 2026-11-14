@@ -56,6 +56,7 @@ readonly code:
   | "CAPABILITY_REVOKED"
   | "COMMAND_NOT_DECLARED"
   | "CONFLICT"
+  | "DAILY_LIMIT_REACHED"
   | "DELIVERY_PENDING"
   | "DISCONNECTED"
   | "FILE_TOO_LARGE"
@@ -225,6 +226,7 @@ const appErrorCodes: readonly [
   "CAPABILITY_REVOKED",
   "COMMAND_NOT_DECLARED",
   "CONFLICT",
+  "DAILY_LIMIT_REACHED",
   "DELIVERY_PENDING",
   "DISCONNECTED",
   "FILE_TOO_LARGE",
@@ -308,10 +310,10 @@ prerequisites, so they can accompany a non-retryable operation.
 
 #### Parameters
 
-| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
+| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DAILY_LIMIT_REACHED"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
 
 #### Returns
 

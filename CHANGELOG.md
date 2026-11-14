@@ -1,5 +1,27 @@
 # @fungi.computer/agar
 
+## 0.13.0
+
+### Minor Changes
+
+- Changes since 0.12.1:
+
+  - fix(hub): fill the agents instructionsUrl in the quote test host; regenerate
+    API docs
+  - fix(media): split the quote request out of the Hub JSON caller
+  - feat(media): price one exact generation through the host
+  - fix(darkroom): document the daily meter and regenerate API docs
+  - feat(agents): an Agent's instructions are AGENTS.md on its Home Computer
+  - feat(prints): add the Library UI
+  - feat(prints): add the Library backend and share the Computer tree model
+  - feat(oyster): daily media hard stop with a plain spending-limit message
+  - feat(prints): add the Library backend and share the Computer tree model
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.8.0
+
 ## 0.12.1
 
 ### Patch Changes

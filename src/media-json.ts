@@ -13,6 +13,7 @@ import {
   type MediaGenerationReference,
   type MediaGenerationInput,
   type MediaGenerationOutcome,
+  type MediaGenerationSelection,
   type MediaModel,
 } from "./media.js";
 import * as Schema from "effect/Schema";
@@ -39,6 +40,18 @@ export const mediaGenerationDescriptionSchema = Schema.Struct({
   canGenerate: Schema.Boolean,
   /** Models supplied by the host catalog owner. */
   models: Schema.Array(mediaModelSchema),
+});
+
+/** The host's price for one exact request, in milliunits of a cent. */
+export const mediaGenerationQuoteSchema = Schema.Struct({
+  costMilliunits: Schema.Int.pipe(
+    Schema.check(Schema.isGreaterThanOrEqualTo(0)),
+  ),
+});
+
+/** A quote call carries the exact settings and no destination or replay id. */
+export const mediaGenerationQuoteRequestSchema = Schema.Struct({
+  settings: mediaGenerationSelectionSchema,
 });
 
 /** A generation call carries paths and a replay ID; the host supplies authority. */
@@ -134,6 +147,17 @@ export class MediaGeneration
         retryable: false,
       });
     return description;
+  }
+
+  /** Ask the host what these exact settings would cost; nothing is started. */
+  async quote(settings: MediaGenerationSelection) {
+    const request = Schema.decodeUnknownSync(Schema.Json)({ settings });
+    return decodeJson(
+      mediaGenerationQuoteSchema,
+      await this.#call("quote", request, {
+        signal: accessSignal(this.#signal),
+      }),
+    );
   }
 
   /** Issue a canonical replay identity for a new generation attempt. */

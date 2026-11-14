@@ -55,7 +55,7 @@ The native tuple and result grammar shared by the handle and frame entrypoint.
 | `readCommit.result`                           | `ZodNullable`\<`ZodLazy`\<`ZodObject`\<\{ `hash`: `ZodString`; `treeHash`: `ZodString`; `message`: `ZodString`; `author`: `ZodObject`\<\{ `name`: `ZodString`; `email`: `ZodString`; \}, `$strict`\>; `committer`: `ZodObject`\<\{ `name`: `ZodString`; `email`: `ZodString`; \}, `$strict`\>; `parents`: `ZodArray`\<`ZodString`\>; `authoredAt`: `ZodNumber`; `committedAt`: `ZodNumber`; \}, `$strict`\>\>\>                                | -             |
 | <a id="property-readtree"></a> `readTree`     | `object`                                                                                                                                                                                                                                                                                                                                                                                                                                       | -             |
 | `readTree.args`                               | `ZodTuple`\<\[`ZodString`, `ZodString`\], `null`\>                                                                                                                                                                                                                                                                                                                                                                                             | -             |
-| `readTree.result`                             | `ZodNullable`\<`ZodArray`\<`ZodLazy`\<`ZodObject`\<\{ `name`: `ZodString`; `mode`: `ZodString`; `hash`: `ZodString`; `type`: `ZodEnum`\<\{ `blob`: `"blob"`; `tree`: `"tree"`; `commit`: `"commit"`; \}\>; \}, `$strict`\>\>\>\>                                                                                                                                                                                                               | -             |
+| `readTree.result`                             | `ZodNullable`\<`ZodArray`\<`ZodLazy`\<`ZodObject`\<\{ `name`: `ZodString`; `mode`: `ZodString`; `hash`: `ZodString`; `type`: `ZodEnum`\<\{ `tree`: `"tree"`; `blob`: `"blob"`; `commit`: `"commit"`; \}\>; \}, `$strict`\>\>\>\>                                                                                                                                                                                                               | -             |
 | <a id="property-readblob"></a> `readBlob`     | `object`                                                                                                                                                                                                                                                                                                                                                                                                                                       | -             |
 | `readBlob.args`                               | `ZodTuple`\<\[`ZodString`, `ZodString`\], `null`\>                                                                                                                                                                                                                                                                                                                                                                                             | -             |
 | `readBlob.result`                             | `ZodNullable`\<`ZodLazy`\<`ZodCustom`\<`Uint8Array`\<`ArrayBuffer`\>, `Uint8Array`\<`ArrayBuffer`\>\>\>\>                                                                                                                                                                                                                                                                                                                                      | -             |
@@ -208,7 +208,7 @@ function invokeNativeGit(
       name: string;
       mode: string;
       hash: string;
-      type: "blob" | "tree" | "commit";
+      type: "tree" | "blob" | "commit";
     }>[]
   | null
 >;
@@ -239,5 +239,5 @@ conversion.
 `message`: `string`; `author`: \{ `name`: `string`; `email`: `string`; \};
 `committer`: \{ `name`: `string`; `email`: `string`; \}; `parents`: `string`[];
 `authoredAt`: `number`; `committedAt`: `number`; \}\>[] \| `Readonly`\<\{
-`name`: `string`; `mode`: `string`; `hash`: `string`; `type`: `"blob"` \|
-`"tree"` \| `"commit"`; \}\>[] \| `null`\>
+`name`: `string`; `mode`: `string`; `hash`: `string`; `type`: `"tree"` \|
+`"blob"` \| `"commit"`; \}\>[] \| `null`\>
