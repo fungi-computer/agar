@@ -305,6 +305,15 @@ export const mediaVideoModelSchema = Schema.Struct({
   referenceRoles: Schema.Array(mediaVideoReferenceRoleSchema),
   /** Maximum images in reference-image mode. */
   maxReferenceImages: nonNegativeInteger,
+  /** Audio clips accepted as references, or null when the model takes none. */
+  audioReferences: Schema.NullOr(
+    Schema.Struct({
+      /** Most clips in one request. */
+      max: positiveInteger,
+      /** Longest total duration of all clips, in seconds. */
+      totalSeconds: positiveInteger,
+    }),
+  ),
   /** Resolutions admitting reference-image mode. */
   referenceResolutions: Schema.Array(mediaVideoResolutionSchema),
   /** Host-described costs, where 1 USD is 100,000 milliunits. */
@@ -340,6 +349,8 @@ export const mediaModelSchema = Schema.Struct({
     ),
   ),
   video: Schema.NullOr(mediaVideoModelSchema),
+  /** Always null here: the host lists picture and video models only. */
+  audio: Schema.Null,
 });
 
 /** One generation model as the host describes it: identity, tier, input

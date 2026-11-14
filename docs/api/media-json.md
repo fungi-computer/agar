@@ -392,6 +392,10 @@ const mediaGenerationDescriptionSchema: Struct<{
         defaultGenerateAudio: NullOr<Boolean>;
         referenceRoles: $Array<Literals<readonly [..., ..., ...]>>;
         maxReferenceImages: Number;
+        audioReferences: NullOr<Struct<{
+           max: ...;
+           totalSeconds: ...;
+        }>>;
         referenceResolutions: $Array<Literals<readonly [..., ..., ..., ..., ...]>>;
         prices: $Array<Struct<{
            resolution: ...;
@@ -399,6 +403,7 @@ const mediaGenerationDescriptionSchema: Struct<{
            audioMilliunitsPerSecond: ...;
         }>>;
      }>>;
+     audio: Null;
   }>>;
 }>;
 ```

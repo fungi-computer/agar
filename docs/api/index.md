@@ -3201,6 +3201,12 @@ const mediaModelSchema: Struct<{
         Literals<readonly ["first-frame", "last-frame", "reference"]>
       >;
       maxReferenceImages: Number;
+      audioReferences: NullOr<
+        Struct<{
+          max: Number;
+          totalSeconds: Number;
+        }>
+      >;
       referenceResolutions: $Array<
         Literals<readonly ["480p", "720p", "768p", "1080p", "4k"]>
       >;
@@ -3215,6 +3221,7 @@ const mediaModelSchema: Struct<{
       >;
     }>
   >;
+  audio: Null;
 }>;
 ```
 

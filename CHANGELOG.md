@@ -1,5 +1,15 @@
 # @fungi.computer/agar
 
+## 0.14.0
+
+### Minor Changes
+
+- Changes since 0.13.0:
+
+  - fix(darkroom): repair the gate after merging integration
+  - feat(darkroom): generate speech and music through ElevenLabs on Unified
+    Billing
+
 ## 0.13.0
 
 ### Minor Changes

@@ -21,6 +21,7 @@ const knownModel: MediaModel = {
   kind: "image",
   sizes: null,
   video: null,
+  audio: null,
   outputFormats: [],
   id: model,
   tier: "balanced",
@@ -46,6 +47,7 @@ const gptModel: MediaModel = {
   kind: "image",
   sizes: ["1024x1024", "1024x1536", "1536x1024"],
   video: null,
+  audio: null,
   outputFormats: ["png", "jpeg", "webp"],
   id: "openai/gpt-image-2",
   tier: "premium",
@@ -228,6 +230,7 @@ describe("Media Agar capability", () => {
             outputFormats: [],
             sizes: null,
             video: null,
+            audio: null,
             input: {
               transport: "multipart",
               dimensions: "own",
@@ -740,6 +743,7 @@ describe("Media Agar capability", () => {
             outputFormats: [],
             sizes: null,
             video: null,
+            audio: null,
             input: {
               transport: "json",
               dimensions: "none",
