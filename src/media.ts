@@ -194,6 +194,14 @@ const positiveInteger = safeInteger.pipe(Schema.check(Schema.isGreaterThan(0)));
 const nonNegativeInteger = safeInteger.pipe(
   Schema.check(Schema.isGreaterThanOrEqualTo(0)),
 );
+const nonNegativeNumber = Schema.Number.pipe(
+  Schema.check(Schema.isFinite()),
+  Schema.check(Schema.isGreaterThanOrEqualTo(0)),
+);
+const positiveNumber = Schema.Number.pipe(
+  Schema.check(Schema.isFinite()),
+  Schema.check(Schema.isGreaterThan(0)),
+);
 
 /** Video frame/reference role, interpreted by the host's model catalog. */
 export const mediaVideoReferenceRoleSchema = Schema.Literals([
@@ -259,6 +267,14 @@ const modelInputSchema = Schema.Struct({
   defaultSteps: Schema.NullOr(nonNegativeInteger),
   defaultWidth: positiveInteger,
   dimensions: Schema.Literals(["none", "own"]),
+  // Absent means no guidance, exactly like null: a host's own catalogue may omit it.
+  guidance: Schema.NullOr(
+    Schema.Struct({
+      default: nonNegativeNumber,
+      max: positiveNumber,
+      min: nonNegativeNumber,
+    }),
+  ).pipe(Schema.optionalKey),
   maxDimension: Schema.NullOr(positiveInteger),
   maxDimensionDocumented: Schema.Boolean,
   maxReferences: nonNegativeInteger,

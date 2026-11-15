@@ -41,6 +41,7 @@ const knownModel: MediaModel = {
     steps: "fixed",
     maxSteps: null,
     defaultSteps: 4,
+    guidance: null,
     referenceField: "input_image_",
     maxReferences: 4,
     referenceDimension: 512,
@@ -69,6 +70,7 @@ const gptModel: MediaModel = {
     steps: "fixed",
     maxSteps: null,
     defaultSteps: null,
+    guidance: null,
     referenceField: null,
     maxReferences: 0,
     referenceDimension: 512,
@@ -128,6 +130,16 @@ async function generateOnce(
 }
 
 describe("Media Agar capability", () => {
+  it("accepts a model without a guidance key, meaning no guidance", () => {
+    const { guidance, ...input } = knownModel.input;
+    expect(guidance).toBeNull();
+    const decoded = Schema.decodeUnknownSync(mediaModelSchema)({
+      ...knownModel,
+      input,
+    });
+    expect(decoded.input.guidance ?? null).toBeNull();
+  });
+
   it("preserves the verified output formats through describe", async () => {
     class Owner extends RpcTarget {
       describe() {
@@ -249,6 +261,7 @@ describe("Media Agar capability", () => {
               steps: "fixed",
               maxSteps: null,
               defaultSteps: 4,
+              guidance: null,
               referenceField: "input_image_",
               maxReferences: 4,
               referenceDimension: 512,
@@ -764,6 +777,7 @@ describe("Media Agar capability", () => {
               steps: "fixed",
               maxSteps: null,
               defaultSteps: null,
+              guidance: null,
               referenceField: null,
               maxReferences: 0,
               referenceDimension: 512,

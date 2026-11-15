@@ -360,6 +360,11 @@ const mediaGenerationDescriptionSchema: Struct<{
         defaultSteps: NullOr<Number>;
         defaultWidth: Number;
         dimensions: Literals<readonly ["none", "own"]>;
+        guidance: optionalKey<NullOr<Struct<{
+           default: ...;
+           max: ...;
+           min: ...;
+        }>>>;
         maxDimension: NullOr<Number>;
         maxDimensionDocumented: Boolean;
         maxReferences: Number;

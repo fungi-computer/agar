@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.18.0
+
+### Minor Changes
+
+- Changes since 0.17.0:
+
+  - fix(darkroom): make erasure durable, scoped and safe for reused destination
+    paths
+  - fix(darkroom): regenerate agar docs and template pins for guidance
+  - feat(darkroom): carry per-model guidance for workers ai image models
+
 ## 0.17.0
 
 ### Minor Changes

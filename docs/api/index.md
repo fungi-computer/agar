@@ -3156,6 +3156,15 @@ const mediaModelSchema: Struct<{
     defaultSteps: NullOr<Number>;
     defaultWidth: Number;
     dimensions: Literals<readonly ["none", "own"]>;
+    guidance: optionalKey<
+      NullOr<
+        Struct<{
+          default: Number;
+          max: Number;
+          min: Number;
+        }>
+      >
+    >;
     maxDimension: NullOr<Number>;
     maxDimensionDocumented: Boolean;
     maxReferences: Number;
