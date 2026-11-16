@@ -3357,7 +3357,20 @@ const mediaGenerationFailureSchema: Struct<{
             ]
           >;
           code: NullOr<Int>;
-          reason: optionalKey<Literal<"credits_exhausted">>;
+          reason: optionalKey<
+            Literals<
+              readonly [
+                "credits_exhausted",
+                "content_refused",
+                "invalid_input",
+                "rate_limited",
+                "provider_unavailable",
+                "timeout",
+                "spending_limit",
+              ]
+            >
+          >;
+          detail: optionalKey<String>;
         }>,
         Struct<{
           category: Literal<"result_download">;

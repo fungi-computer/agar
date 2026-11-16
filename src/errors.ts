@@ -3,10 +3,23 @@ import * as Option from "effect/Option";
 import * as z from "zod";
 import { setupNeedSchema } from "./internal/setup-need.js";
 import {
+  mediaProviderDetailMax,
   mediaProviderDiagnosticSchema,
   mediaProviderDiagnosticZodSchema,
   mediaProviderErrorCategorySchema,
 } from "./internal/media-diagnostic.js";
+
+export { mediaProviderDetailMax };
+
+/** Why a provider call failed, in the closed set Prints can explain. */
+export type MediaProviderReason =
+  | "credits_exhausted"
+  | "content_refused"
+  | "invalid_input"
+  | "rate_limited"
+  | "provider_unavailable"
+  | "timeout"
+  | "spending_limit";
 
 /** Declaration-safe projection of the canonical Media diagnostic grammar. */
 export type MediaProviderDiagnostic =
@@ -21,8 +34,10 @@ export type MediaProviderDiagnostic =
         | "Error";
       /** Four- or five-digit provider prefix, or null when absent. */
       code: number | null;
-      /** Host-classified provider refusal, independent of public error prose. */
-      reason?: "credits_exhausted";
+      /** Host-classified failure class, independent of public error prose. */
+      reason?: MediaProviderReason;
+      /** The provider's short, host-sanitized sentence; never keys or JSON. */
+      detail?: string;
     }>
   | Readonly<{
       /** A completed video result could not be downloaded. */

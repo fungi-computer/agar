@@ -549,6 +549,7 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
         category: ...;
         code: ...;
         reason: ...;
+        detail: ...;
       }>, Struct<{
         category: ...;
         status: ...;

@@ -89,6 +89,23 @@ Set only on `SETUP_REQUIRED`: the missing thing, for the copy.
 
 ## Type Aliases
 
+### MediaProviderReason
+
+```ts
+type MediaProviderReason =
+  | "credits_exhausted"
+  | "content_refused"
+  | "invalid_input"
+  | "rate_limited"
+  | "provider_unavailable"
+  | "timeout"
+  | "spending_limit";
+```
+
+Why a provider call failed, in the closed set Prints can explain.
+
+---
+
 ### MediaProviderDiagnostic
 
 ```ts
@@ -102,7 +119,8 @@ type MediaProviderDiagnostic =
         | "TimeoutError"
         | "Error";
       code: number | null;
-      reason?: "credits_exhausted";
+      reason?: MediaProviderReason;
+      detail?: string;
     }>
   | Readonly<{
       category: "result_download";
@@ -246,6 +264,16 @@ const appErrorCodes: readonly [
 
 The closed set of reasons an AppError can state; every SDK and host-reported
 failure is tagged with exactly one of these codes.
+
+---
+
+### mediaProviderDetailMax
+
+```ts
+const mediaProviderDetailMax: 160 = 160;
+```
+
+Longest provider sentence kept; the host decodes it before it crosses.
 
 ## Functions
 

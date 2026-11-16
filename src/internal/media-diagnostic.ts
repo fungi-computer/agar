@@ -9,6 +9,18 @@ const categories = [
   "TimeoutError",
   "Error",
 ] as const;
+/** Why a provider call failed, in the closed set Prints can explain. */
+const mediaProviderReasons = [
+  "credits_exhausted",
+  "content_refused",
+  "invalid_input",
+  "rate_limited",
+  "provider_unavailable",
+  "timeout",
+  "spending_limit",
+] as const;
+/** Longest provider sentence kept; the host decodes it before it crosses. */
+export const mediaProviderDetailMax = 160;
 const providerCodeBounds = { minimum: 0, maximum: 99_999 };
 const responseStatusBounds = { minimum: 0, maximum: 599 };
 
@@ -20,7 +32,10 @@ export const mediaProviderDiagnosticSchema = Schema.Union([
   Schema.Struct({
     category: mediaProviderErrorCategorySchema,
     code: Schema.NullOr(Schema.Int.check(Schema.isBetween(providerCodeBounds))),
-    reason: Schema.optionalKey(Schema.Literal("credits_exhausted")),
+    reason: Schema.optionalKey(Schema.Literals(mediaProviderReasons)),
+    detail: Schema.optionalKey(
+      Schema.String.check(Schema.isMaxLength(mediaProviderDetailMax)),
+    ),
   }),
   Schema.Struct({
     category: Schema.Literal("result_download"),
@@ -38,7 +53,8 @@ export const mediaProviderDiagnosticZodSchema = z.union([
       .min(providerCodeBounds.minimum)
       .max(providerCodeBounds.maximum)
       .nullable(),
-    reason: z.literal("credits_exhausted").optional(),
+    reason: z.enum(mediaProviderReasons).optional(),
+    detail: z.string().max(mediaProviderDetailMax).optional(),
   }),
   z.strictObject({
     category: z.literal("result_download"),

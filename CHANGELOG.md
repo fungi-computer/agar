@@ -1,5 +1,15 @@
 # @fungi.computer/agar
 
+## 0.18.1
+
+### Patch Changes
+
+- Changes since 0.18.0:
+
+  - fix(darkroom): export the provider reason type from agar
+  - fix(agar): keep the provider reason list private to its schema
+  - fix(prints): say why a generation failed and keep the library order stable
+
 ## 0.18.0
 
 ### Minor Changes
