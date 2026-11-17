@@ -44,9 +44,8 @@ console.log(await hello.call("Fern", undefined, caller));
 ### Give your App a backend
 
 Group methods with `defineAppBackend` and point `fungi.backendDefinition` at
-that module. The [notes example](#notes-backend-example) defines a method,
-builds its API and calls it. [Backend methods](#backend-methods) covers the
-manifest.
+that module. The notes backend example further down defines a method, builds its
+API and calls it. [Backend methods](#backend-methods) covers the manifest.
 
 ### Connect your React interface
 
@@ -126,7 +125,11 @@ const result = await appBackend.call(
   "saveNote",
   { title: "hello", text: "from Agar" },
   undefined,
-  { computerId: null, actor: { kind: "member", memberId: "member_example" } },
+  {
+    scope: { kind: "standalone", tenant: "default" },
+    computerId: null,
+    actor: { kind: "member", memberId: "member_example" },
+  },
 );
 console.log(result); // { saved: true }
 ```

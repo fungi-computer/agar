@@ -1,5 +1,6 @@
 import { defineAppGill } from "./gills.js";
 const memberCaller = {
+  scope: { kind: "team" as const, teamId: "team_fixture" },
   computerId: null,
   actor: { kind: "member" as const, memberId: "member_fixture" },
 };
@@ -713,7 +714,11 @@ test("delivers the Hub caller separately from backend state and method input", a
       "caller",
       { actor: "spoofed" },
       { marker: "backend" },
-      { computerId: null, actor: { kind: "agent", agentId: "agent-a" } },
+      {
+        scope: { kind: "team" as const, teamId: "team_fixture" },
+        computerId: null,
+        actor: { kind: "agent", agentId: "agent-a" },
+      },
     ),
   ).resolves.toEqual({ actor: "agent", agentId: "agent-a", marker: "backend" });
 });
@@ -733,16 +738,23 @@ test("runtime calls refuse invalid caller identities before a handler runs", asy
     },
   });
   const callers: AppMethodCallContext[] = [
-    { computerId: null, actor: { kind: "member", memberId: "" } },
     {
+      scope: { kind: "team" as const, teamId: "team_fixture" },
+      computerId: null,
+      actor: { kind: "member", memberId: "" },
+    },
+    {
+      scope: { kind: "team" as const, teamId: "team_fixture" },
       computerId: null,
       actor: { kind: "member", memberId: "x".repeat(257) },
     },
     {
+      scope: { kind: "team" as const, teamId: "team_fixture" },
       computerId: null,
       actor: { kind: "team-key", keyId: "x".repeat(257) },
     },
     {
+      scope: { kind: "team" as const, teamId: "team_fixture" },
       computerId: "x".repeat(257),
       actor: { kind: "member", memberId: "member-a" },
     },

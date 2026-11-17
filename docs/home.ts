@@ -29,6 +29,10 @@ const result = await appBackend.call(
   "saveNote",
   { title: "hello", text: "from Agar" },
   undefined,
-  { computerId: null, actor: { kind: "member", memberId: "member_example" } },
+  {
+    scope: { kind: "standalone", tenant: "default" },
+    computerId: null,
+    actor: { kind: "member", memberId: "member_example" },
+  },
 );
 console.log(result); // { saved: true }

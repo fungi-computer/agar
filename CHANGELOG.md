@@ -1,5 +1,18 @@
 # @fungi.computer/agar
 
+## 0.20.0
+
+### Minor Changes
+
+- Changes since 0.19.0:
+
+  - feat(apps): require one host-derived caller scope
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.10.0
+
 ## 0.19.0
 
 ### Minor Changes
