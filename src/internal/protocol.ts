@@ -31,10 +31,16 @@ import type { AppErrorData } from "./app-error.js";
 import type { RpcResult } from "./result.js";
 import type { WhistleFailure } from "@fungi.computer/whistle";
 
-/** The iframe handshake version both App and host must speak. */
-export const APP_PROTOCOL_VERSION = 2 as const;
-/** Message type the App iframe posts to announce it is ready to connect. */
-export const APP_READY_TYPE = "fungi.app.ready" as const;
+/** Current App protocol. Version 3 adds computerName to the strict context wire. */
+export const APP_PROTOCOL_VERSION = 3 as const;
+/** Published Apps and self-hosted Oysters can independently remain on protocol 2. */
+export const APP_PROTOCOL_VERSIONS = [2, APP_PROTOCOL_VERSION] as const;
+/** A protocol version supported by both the App and host adapters. */
+export type AppProtocolVersion = (typeof APP_PROTOCOL_VERSIONS)[number];
+/** Old hosts ignore this tag rather than reject a v3 value in their strict v2 message. */
+export const APP_READY_TYPE = "fungi.app.ready.v3" as const;
+/** The exact readiness tag understood by published protocol-2 hosts. */
+export const APP_READY_V2_TYPE = "fungi.app.ready" as const;
 /** Message type the host posts to hand the App its RPC MessagePort. */
 export const APP_CONNECT_TYPE = "fungi.app.connect" as const;
 
@@ -65,7 +71,7 @@ export type AppClientRpc = {
 /** The host's handshake message that hands the App its RPC MessagePort. */
 export type AppConnectMessage = {
   readonly epoch: string;
-  readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
+  readonly protocolVersion: AppProtocolVersion;
   readonly type: typeof APP_CONNECT_TYPE;
 };
 
@@ -104,10 +110,15 @@ export type NavigationStateWire = Readonly<{
   AppNavigationState;
 
 /** The App iframe's handshake message announcing it is ready to connect. */
-export type AppReadyMessage = {
-  readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
-  readonly type: typeof APP_READY_TYPE;
-};
+export type AppReadyMessage =
+  | {
+      readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
+      readonly type: typeof APP_READY_TYPE;
+    }
+  | {
+      readonly protocolVersion: 2;
+      readonly type: typeof APP_READY_V2_TYPE;
+    };
 
 /** The handle is deliberately opaque: capability owners define its methods. */
 export type CapabilityGrantWire = {
@@ -143,7 +154,7 @@ export type CommandInvocationWire = {
 
 export type ConnectRequestWire = {
   readonly epoch: string;
-  readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
+  readonly protocolVersion: AppProtocolVersion;
 };
 
 export type HostBootstrapWire = {

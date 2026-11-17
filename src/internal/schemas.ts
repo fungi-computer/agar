@@ -74,7 +74,9 @@ import { parseFailure } from "@fungi.computer/whistle/wire";
 import {
   APP_CONNECT_TYPE,
   APP_PROTOCOL_VERSION,
+  APP_PROTOCOL_VERSIONS,
   APP_READY_TYPE,
+  APP_READY_V2_TYPE,
   type AppConnectMessage,
   type AppReadyMessage,
   type CommandInvocationWire,
@@ -157,6 +159,7 @@ const setupOpenSchema = Schema.Literals(["model", "media", "git", "computer"]);
 const setupOutcomeSchema = Schema.Literals(["opened", "unavailable"]);
 const contextSchema = Schema.Struct({
   computerId: Schema.Union([boundedText(256), Schema.Null]),
+  computerName: Schema.optional(Schema.NullOr(Schema.String)),
   teamHasComputers: Schema.optional(Schema.NullOr(Schema.Boolean)),
   computerAccessGranted: Schema.optional(Schema.Boolean),
   setup: Schema.optional(setupSchema),
@@ -501,18 +504,24 @@ const errorSchema = Schema.Struct({
   retryable: Schema.Boolean,
   need: Schema.optionalKey(setupNeedSchema),
 });
-const readySchema = Schema.Struct({
-  protocolVersion: Schema.Literal(APP_PROTOCOL_VERSION),
-  type: Schema.Literal(APP_READY_TYPE),
-});
+const readySchema = Schema.Union([
+  Schema.Struct({
+    protocolVersion: Schema.Literal(APP_PROTOCOL_VERSION),
+    type: Schema.Literal(APP_READY_TYPE),
+  }),
+  Schema.Struct({
+    protocolVersion: Schema.Literal(2),
+    type: Schema.Literal(APP_READY_V2_TYPE),
+  }),
+]);
 const connectSchema = Schema.Struct({
   epoch: boundedText(160),
-  protocolVersion: Schema.Literal(APP_PROTOCOL_VERSION),
+  protocolVersion: Schema.Literals(APP_PROTOCOL_VERSIONS),
   type: Schema.Literal(APP_CONNECT_TYPE),
 });
 const connectRequestSchema = Schema.Struct({
   epoch: boundedText(160),
-  protocolVersion: Schema.Literal(APP_PROTOCOL_VERSION),
+  protocolVersion: Schema.Literals(APP_PROTOCOL_VERSIONS),
 });
 // Native Cap’n Web decorates received object envelopes with this resource owner.
 // Schema owns strict key validation; the returned domain projection omits the symbol.
@@ -633,6 +642,8 @@ export const parseContext = decoder(
     };
     if (parsed.teamHasComputers !== undefined)
       context.teamHasComputers = parsed.teamHasComputers;
+    if (parsed.computerName !== undefined)
+      context.computerName = parsed.computerName;
     if (parsed.computerAccessGranted !== undefined)
       context.computerAccessGranted = parsed.computerAccessGranted;
     if (parsed.setup !== undefined) context.setup = frozen({ ...parsed.setup });

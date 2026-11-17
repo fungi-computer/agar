@@ -111,9 +111,12 @@ export type { ConnectAppOptions } from "./connect.js";
 export {
   APP_CONNECT_TYPE,
   APP_PROTOCOL_VERSION,
+  APP_PROTOCOL_VERSIONS,
   APP_READY_TYPE,
+  APP_READY_V2_TYPE,
 } from "./internal/protocol.js";
 export type {
+  AppProtocolVersion,
   AppConnectMessage,
   AppReadyMessage,
 } from "./internal/protocol.js";

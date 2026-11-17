@@ -1,5 +1,15 @@
 # @fungi.computer/agar
 
+## 0.19.0
+
+### Minor Changes
+
+- Changes since 0.18.2:
+
+  - fix(agar): negotiate new Apps down to published protocol-2 hosts
+  - fix(agar): serve published protocol-2 Apps without new context fields
+  - feat(agar): expose the host-selected Computer name in App context
+
 ## 0.18.2
 
 ### Patch Changes

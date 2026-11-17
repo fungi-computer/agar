@@ -9,13 +9,16 @@ import type {
   AppReadyMessage,
   AppConnectMessage,
 } from "./internal/protocol.js";
+import { APP_PROTOCOL_VERSION } from "./internal/protocol.js";
 // @vitest-environment jsdom
 import { newMessagePortRpcSession, RpcTarget } from "@fungi.computer/capnweb";
 import { describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { mountApp } from "./react-mount.js";
 
-import type { AppClientRpc } from "./internal/protocol.js";
+import type { AppClientRpc, AppHostRpc } from "./internal/protocol.js";
+import type { AppContext } from "./lifecycle.js";
+import type { AppHostFact, AppHostReconfiguration } from "./host.js";
 
 import { connectApp } from "./connect.js";
 import { AppError } from "./errors.js";
@@ -106,15 +109,129 @@ const handlers = (
   showToast: () => Promise.resolve(undefined),
 });
 
+it.each([2, 3] as const)(
+  "pins protocol %s for bootstrap, probe, update and reconfiguration",
+  async (protocolVersion) => {
+    const host = new FakeWindow("https://host.example");
+    const app = new FakeWindow("https://app.example");
+    const transfer = Promise.withResolvers<{
+      message: AppConnectMessage;
+      port: MessagePort;
+    }>();
+    vi.spyOn(app, "postMessage").mockImplementation((data, _origin, ports) => {
+      if (
+        data.type !== "fungi.app.connect" ||
+        !(ports?.[0] instanceof MessagePort)
+      )
+        throw new Error("Expected the host connection");
+      transfer.resolve({ message: data, port: ports[0] });
+    });
+    const selected = {
+      ...launch(),
+      context: {
+        version: 1,
+        value: {
+          ...launch().context.value,
+          computerId: "one",
+          computerName: "Workshop",
+        },
+      },
+    };
+    const pending = connectAppHost({
+      appWindow: asBrowserWindow(app),
+      hostWindow: asBrowserWindow(host),
+      expectedAppOrigin: app.origin,
+      handlers: handlers(),
+      launch: selected,
+    });
+    host.dispatchEvent(message(app, app.origin, [], protocolVersion));
+    const connection = await transfer.promise;
+    expect(connection.message.protocolVersion).toBe(protocolVersion);
+    const facts: AppHostFact<AppContext>[] = [];
+    class ContextPeer extends RpcTarget {
+      updateContext(fact: AppHostFact<AppContext>) {
+        facts.push(fact);
+        return Promise.resolve(rpcSuccess(undefined));
+      }
+      reconfigure(value: AppHostReconfiguration) {
+        return this.updateContext(value.context);
+      }
+    }
+    const peer = newMessagePortRpcSession<AppHostRpc>(
+      connection.port,
+      new ContextPeer(),
+    );
+    const mismatch = await peer.connect({
+      epoch: connection.message.epoch,
+      protocolVersion: protocolVersion === 2 ? 3 : 2,
+    });
+    expect(mismatch).toMatchObject({ ok: false, error: { code: "PROTOCOL" } });
+    const bootstrap = await peer.connect({
+      epoch: connection.message.epoch,
+      protocolVersion,
+    });
+    const mounted = await pending;
+    try {
+      if (!bootstrap.ok) throw new Error("Expected bootstrap");
+      facts.push(bootstrap.value.context);
+      await mounted.updateContext({
+        version: 2,
+        value: {
+          ...selected.context.value,
+          computerId: "two",
+          computerName: "Studio",
+        },
+      });
+      await mounted.reconfigure({
+        capabilities: [],
+        context: {
+          version: 3,
+          value: {
+            ...selected.context.value,
+            computerId: null,
+            computerName: null,
+          },
+        },
+      });
+      await eventually(() => facts.length === 4);
+      expect(facts.map((fact) => fact.version).sort()).toEqual([1, 1, 2, 3]);
+      for (const fact of facts) {
+        if (protocolVersion === 2)
+          expect(fact.value).not.toHaveProperty("computerName");
+        else
+          expect(fact.value.computerName).toBe(
+            fact.version === 3
+              ? null
+              : fact.version === 2
+                ? "Studio"
+                : "Workshop",
+          );
+      }
+      expect(selected.context.value.computerName).toBe("Workshop");
+    } finally {
+      mounted.dispose();
+      disposeRpcValue(bootstrap);
+      disposeRpcValue(mismatch);
+      disposeRpcValue(peer);
+      connection.port.close();
+    }
+  },
+);
+
 function message(
   source: FakeWindow,
   origin: string,
   ports: MessagePort[] = [],
-  protocolVersion = 2,
+  protocolVersion: number = APP_PROTOCOL_VERSION,
 ) {
   const event = new MessageEvent<unknown>("message");
   Object.defineProperties(event, {
-    data: { value: { protocolVersion, type: "fungi.app.ready" } },
+    data: {
+      value: {
+        protocolVersion,
+        type: protocolVersion === 2 ? "fungi.app.ready" : "fungi.app.ready.v3",
+      },
+    },
     origin: { value: origin },
     ports: { value: ports },
     source: { value: source },
@@ -356,6 +473,7 @@ async function reconfigurationPreservesRoot(): Promise<void> {
         version: 1,
         value: {
           computerId: "computer-a",
+          computerName: "Workshop",
           focus: { editing: false, surface: null },
           openRequest: null,
           visibility: "visible",
@@ -365,6 +483,7 @@ async function reconfigurationPreservesRoot(): Promise<void> {
     expect(mount.root.capabilities).toBe(directory);
     expect(versions).toEqual([1]);
     expect(mount.root.context.get().computerId).toBe("computer-a");
+    expect(mount.root.context.get()).toHaveProperty("computerName", "Workshop");
     await expect(
       mount.root.capabilities
         .require<{ name(): Promise<string> }>(contract)
@@ -376,6 +495,7 @@ async function reconfigurationPreservesRoot(): Promise<void> {
         version: 1,
         value: {
           computerId: "computer-b",
+          computerName: "Stale name",
           focus: { editing: false, surface: null },
           openRequest: null,
           visibility: "visible",
@@ -383,12 +503,41 @@ async function reconfigurationPreservesRoot(): Promise<void> {
       },
     });
     expect(mount.root.context.get().computerId).toBe("computer-a");
+    expect(mount.root.context.get()).toHaveProperty("computerName", "Workshop");
     await expect(
       mount.root.capabilities
         .require<{ name(): Promise<string> }>(contract)
         .name(),
     ).resolves.toBe("computer-a");
     expect(versions).toEqual([1]);
+    await mount.host.updateContext({
+      version: 2,
+      value: {
+        computerId: "computer-b",
+        computerName: "Studio",
+        focus: { editing: false, surface: null },
+        openRequest: null,
+        visibility: "visible",
+      },
+    });
+    expect(mount.root.context.get()).toMatchObject({
+      computerId: "computer-b",
+      computerName: "Studio",
+    });
+    await mount.host.updateContext({
+      version: 3,
+      value: {
+        computerId: null,
+        computerName: null,
+        focus: { editing: false, surface: null },
+        openRequest: null,
+        visibility: "visible",
+      },
+    });
+    expect(mount.root.context.get()).toMatchObject({
+      computerId: null,
+      computerName: null,
+    });
     mount.root.dispose();
     expect(versions).toEqual([1, 2]);
     unsubscribe();

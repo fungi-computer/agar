@@ -43,8 +43,9 @@ import { disposeRpcValue } from "./internal/capabilities.js";
 import { disconnectHost } from "./internal/disconnect-host.js";
 import {
   APP_CONNECT_TYPE,
-  APP_PROTOCOL_VERSION,
   APP_READY_TYPE,
+  APP_READY_V2_TYPE,
+  type AppProtocolVersion,
   type AppConnectMessage,
   type AppClientRpc,
   type AppHostRpc,
@@ -257,6 +258,7 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     launch: AppHostLaunch,
     handlers: AppHostHandlers,
     readonly epoch: string,
+    readonly protocolVersion: AppProtocolVersion,
   ) {
     super();
     this.#launch = parseLocalHostBootstrap(launch);
@@ -267,11 +269,20 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     try {
       this.#assertLive();
       const request = parseConnectRequest(value);
+      if (request.protocolVersion !== this.protocolVersion)
+        throw protocolError(
+          "The App changed protocol version during connection",
+        );
       if (this.#connected || request.epoch !== this.epoch)
         throw identityError();
       this.#connected = true;
       this.#onConnected?.();
-      return Promise.resolve(rpcSuccess(this.#launch));
+      return Promise.resolve(
+        rpcSuccess({
+          ...this.#launch,
+          context: contextForPeer(this.#launch.context, this.protocolVersion),
+        }),
+      );
     } catch (cause) {
       return Promise.resolve(rpcFailure<HostBootstrapWire>(cause));
     }
@@ -798,23 +809,28 @@ class PendingHostMount {
       return;
     }
     try {
-      parseReady(event.data);
+      const { protocolVersion } = parseReady(event.data);
       this.#stopReady();
       performance.mark("fungi.app-open.host-connect-sent");
-      const session = this.#openSession();
-      this.#postConnect(session.target.epoch, session.transfer);
-      this.#probe(session.client);
+      const session = this.#openSession(protocolVersion);
+      this.#postConnect(
+        session.target.epoch,
+        session.transfer,
+        protocolVersion,
+      );
+      this.#probe(session.client, session.target);
     } catch (cause) {
       this.#fail(toProtocolError(cause));
     }
   };
 
-  #openSession() {
+  #openSession(protocolVersion: AppProtocolVersion) {
     const channel = new MessageChannel();
     const target = new MountedHost(
       this.options.launch,
       this.options.handlers,
       newEpoch(),
+      protocolVersion,
     );
     const client = newMessagePortRpcSession<AppClientRpc>(
       channel.port1,
@@ -839,11 +855,15 @@ class PendingHostMount {
     return { client, port: channel.port1, target, transfer: channel.port2 };
   }
 
-  #postConnect(epoch: string, transfer: MessagePort): void {
+  #postConnect(
+    epoch: string,
+    transfer: MessagePort,
+    protocolVersion: AppProtocolVersion,
+  ): void {
     this.options.appWindow.postMessage(
       {
         epoch,
-        protocolVersion: APP_PROTOCOL_VERSION,
+        protocolVersion,
         type: APP_CONNECT_TYPE,
       },
       // Opaque sandbox origins cannot be named as a postMessage target. The
@@ -853,9 +873,14 @@ class PendingHostMount {
     );
   }
 
-  #probe(client: RpcStubType<AppClientRpc>): void {
+  #probe(client: RpcStubType<AppClientRpc>, target: MountedHost): void {
     void callRpc(
-      client.updateContext(this.options.launch.context),
+      client.updateContext(
+        contextForPeer(
+          parseContextFact(this.options.launch.context),
+          target.protocolVersion,
+        ),
+      ),
       parseVoidResult,
     ).catch((cause: unknown) => {
       if (this.#gate.isPublished()) this.#gate.unexpected();
@@ -934,6 +959,17 @@ function createFactUpdater(
   };
 }
 
+/** One projection for bootstrap, probe, updates and reconfiguration on both hosts. */
+function contextForPeer(
+  fact: AppHostFact<AppContext>,
+  protocolVersion: AppProtocolVersion,
+): VersionedFact<AppContext> {
+  if (protocolVersion === 3) return fact;
+  const value = { ...fact.value };
+  delete value.computerName;
+  return { version: fact.version, value };
+}
+
 function createHost(options: {
   readonly client: RpcStubType<AppClientRpc>;
   readonly onBroken: () => void;
@@ -1006,13 +1042,19 @@ function createHost(options: {
     },
     updateContext: (fact: AppHostFact<AppContext>) =>
       update(
-        (fact) => options.client.updateContext(fact),
+        (fact) =>
+          options.client.updateContext(
+            contextForPeer(fact, options.target.protocolVersion),
+          ),
         fact,
         parseContextFact,
       ),
     reconfigure: async (value: AppHostReconfiguration) => {
       assertLive();
-      const context = parseContextFact(value.context);
+      const context = contextForPeer(
+        parseContextFact(value.context),
+        options.target.protocolVersion,
+      );
       const capabilities: AppHostReconfigurationWire = {
         capabilities: value.capabilities,
         context,
@@ -1088,7 +1130,7 @@ function expectedOrigin(value: string): string | undefined {
 }
 
 const isReadyMessage = Schema.is(
-  Schema.Struct({ type: Schema.Literal(APP_READY_TYPE) }),
+  Schema.Struct({ type: Schema.Literals([APP_READY_TYPE, APP_READY_V2_TYPE]) }),
 );
 
 function identityError(): AppError {

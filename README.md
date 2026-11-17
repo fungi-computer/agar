@@ -1,5 +1,72 @@
 # Agar (`@fungi.computer/agar`)
 
+Agar lets app developers write one set of methods for both their interface and
+AI agents to call.
+
+```mermaid
+flowchart LR
+  UI[Your app's interface] --> Host[Fungi or Oyster]
+  Agent[AI agent] --> Host
+  Host --> Methods[Your Agar methods]
+  Methods --> Data[Your app's data]
+```
+
+## Quick start
+
+With Node 24 or newer, install `@fungi.computer/agar` and `zod`:
+
+```sh
+npm install @fungi.computer/agar zod
+```
+
+Save this as `hello.ts` and run `node hello.ts`. It prints `Hello, Fern`. This
+calls a real method in Node without a host.
+
+```ts
+import * as z from "zod";
+import { defineAppMethod } from "@fungi.computer/agar/backend-definition";
+
+const hello = defineAppMethod({
+  description: "Say hello",
+  effect: "read",
+  requires: [],
+  input: z.string(),
+  output: z.string(),
+  handler: (name) => `Hello, ${name}`,
+});
+const actor = { kind: "member" as const, memberId: "fern" };
+const caller = { computerId: null, actor };
+console.log(await hello.call("Fern", undefined, caller));
+```
+
+## Common tasks
+
+### Give your App a backend
+
+Group methods with `defineAppBackend` and point `fungi.backendDefinition` at
+that module. The [notes example](#notes-backend-example) defines a method,
+builds its API and calls it. [Backend methods](#backend-methods) covers the
+manifest.
+
+### Connect your React interface
+
+Use [`mountApp`](#connect-the-frontend) to connect to the host, apply its theme
+and clean up on unmount. An ordinary top-level page has no host to connect to.
+
+### Ask for access to files or tools
+
+[Request the permission first](#ask-for-a-capability), then use the granted
+handle. A refusal is an ordinary outcome, not an empty successful result.
+
+### Save settings
+
+Declare bounded storage keys, then use [`app.storage`](#store-an-apps-own-data).
+On a revision conflict, read again and let the member decide.
+
+## Reference
+
+### Overview
+
 Agar is the contract for building an App that runs on Fungi or on your own
 [Oyster](https://github.com/fungi-computer/oyster). You define the App's backend
 methods once with Zod; the same methods back the App's own UI and become the
@@ -21,7 +88,7 @@ Agar is ESM and needs Node 24 or newer to build an App. The React entrypoint
 takes `react`, `react-dom` and `@tanstack/react-query` as optional peers; the
 core SDK and backend entrypoints need none of them.
 
-## Quick start
+## Notes backend example
 
 Define an App backend once. Its Zod schemas give the handler its TypeScript
 contract and produce the JSON Schema API a host shows to Agents as tools. This
@@ -286,8 +353,8 @@ reference pages; treat them as unstable.
 
 ## Examples
 
-The quick start defines a backend, builds its App API and calls a method without
-a host. The
+The notes backend example defines a backend, builds its App API and calls a
+method without a host. The
 [Notes example App](https://github.com/fungi-computer/oyster/tree/main/examples/notes-app)
 is a complete App with a UI, backend methods and SQLite. In the repository, the
 connection and disposal suites exercise both sides of a real MessagePort.

@@ -13,6 +13,7 @@ import {
   APP_CONNECT_TYPE,
   APP_PROTOCOL_VERSION,
   APP_READY_TYPE,
+  APP_READY_V2_TYPE,
 } from "./internal/protocol.js";
 import { parseConnect } from "./internal/schemas.js";
 
@@ -65,6 +66,13 @@ class PendingAppConnection {
           performance.mark("fungi.app-open.agar-ready-sent");
           this.#appWindow.parent.postMessage(
             { protocolVersion: APP_PROTOCOL_VERSION, type: APP_READY_TYPE },
+            "*",
+          );
+          // Ordered offers share this pending handshake. New hosts accept v3
+          // first; strict published hosts ignore that tag and accept this v2
+          // envelope unchanged. Never retry a rejected mount or RPC operation.
+          this.#appWindow.parent.postMessage(
+            { protocolVersion: 2, type: APP_READY_V2_TYPE },
             "*",
           );
         } catch (cause) {
@@ -130,6 +138,7 @@ class PendingAppConnection {
     this.#appWindow.removeEventListener("message", onMessage);
     void connectAppPort({
       epoch: message.epoch,
+      protocolVersion: message.protocolVersion,
       isActive: () => !this.#settled,
       onDisposed: () => {
         liveConnection = false;

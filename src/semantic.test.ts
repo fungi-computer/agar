@@ -151,7 +151,7 @@ it.each(["https://app.example", "null"])(
       expect(messageTargets.get(app)).toEqual([
         origin === "null" ? "*" : origin,
       ]);
-      expect(messageTargets.get(host)).toEqual(["*"]);
+      expect(messageTargets.get(host)).toEqual(["*", "*"]);
       await expectDuplicateMountRejected(app, host);
       disposePair(root, mounted);
     } finally {
@@ -169,7 +169,7 @@ it("LAW: a page retries its handshake when the replacement host starts listening
   const originalWindow = replaceWindow(app);
   try {
     const appPromise = connectApp({ host: "parent" });
-    expect(messageTargets.get(host)).toEqual(["*"]);
+    expect(messageTargets.get(host)).toEqual(["*", "*"]);
     const hostPromise = connectAppHost({
       appWindow: asBrowserWindow(app),
       hostWindow: asBrowserWindow(host),
@@ -179,7 +179,7 @@ it("LAW: a page retries its handshake when the replacement host starts listening
     });
     const root = await appPromise;
     const mounted = await hostPromise;
-    expect(messageTargets.get(host)?.length).toBeGreaterThan(1);
+    expect(messageTargets.get(host)?.length).toBeGreaterThan(2);
     expect(root.identity.appId).toBe("app");
     disposePair(root, mounted);
   } finally {
@@ -1388,7 +1388,7 @@ it("LAW: a broken transferred port before RPC connect rejects instead of hanging
     launch: mountedLaunch(),
   });
   app.parent.postMessage(
-    { protocolVersion: APP_PROTOCOL_VERSION, type: "fungi.app.ready" },
+    { protocolVersion: APP_PROTOCOL_VERSION, type: "fungi.app.ready.v3" },
     host.origin,
   );
   await expect(pending).rejects.toMatchObject({ code: "DISCONNECTED" });

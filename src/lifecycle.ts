@@ -29,6 +29,9 @@ export type SetupOutcome = "opened" | "unavailable";
 export type AppContext = {
   /** Host-selected Computer backing this App's admitted resource capabilities. */
   readonly computerId: string | null;
+  /** Host-published name of that Computer; null when unavailable. Replaced
+   * with the ID on selection changes. Absence does not imply an ID-based name. */
+  readonly computerName?: string | null | undefined;
   /** Whether the Team has Computers, when this host owns its Team directory. */
   readonly teamHasComputers?: boolean | null | undefined;
   /** Whether this App has execute access across the Team, when known. */

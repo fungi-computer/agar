@@ -8,7 +8,59 @@ import {
   parseNavigationState,
   parseNavigationStateInput,
   parseStatusItems,
+  parseReady,
+  parseConnect,
+  parseConnectRequest,
 } from "./schemas.js";
+
+it("negotiates only published 2 and current 3, with version-specific ready tags", () => {
+  for (const protocolVersion of [2, 3]) {
+    expect(
+      parseReady({
+        type: protocolVersion === 2 ? "fungi.app.ready" : "fungi.app.ready.v3",
+        protocolVersion,
+      }).protocolVersion,
+    ).toBe(protocolVersion);
+    expect(
+      parseConnectRequest({ epoch: "epoch", protocolVersion }).protocolVersion,
+    ).toBe(protocolVersion);
+    expect(
+      parseConnect({
+        type: "fungi.app.connect",
+        epoch: "epoch",
+        protocolVersion,
+      }).protocolVersion,
+    ).toBe(protocolVersion);
+  }
+  for (const protocolVersion of [1, 4, 2.5, "3", null]) {
+    expect(() =>
+      parseReady({ type: "fungi.app.ready", protocolVersion }),
+    ).toThrow(AppError);
+    expect(() =>
+      parseConnectRequest({ epoch: "epoch", protocolVersion }),
+    ).toThrow(AppError);
+    expect(() =>
+      parseConnect({
+        type: "fungi.app.connect",
+        epoch: "epoch",
+        protocolVersion,
+      }),
+    ).toThrow(AppError);
+  }
+  expect(() =>
+    parseReady({ type: "fungi.app.ready", protocolVersion: 3 }),
+  ).toThrow(AppError);
+  expect(() =>
+    parseReady({ type: "fungi.app.ready.v3", protocolVersion: 2 }),
+  ).toThrow(AppError);
+  expect(() =>
+    parseReady({
+      type: "fungi.app.ready.v3",
+      protocolVersion: 3,
+      inventedSupport: true,
+    }),
+  ).toThrow(AppError);
+});
 
 const context = {
   computerId: null,
@@ -38,6 +90,28 @@ it("preserves the non-retryable safety-filter verdict through the RPC failure co
 });
 
 describe("AppContext open request", () => {
+  it("preserves the optional host-selected Computer name without inventing one from its ID", () => {
+    const selected = {
+      ...context,
+      computerId: "computer-one",
+      openRequest: null,
+    };
+    expect(
+      parseContext({ ...selected, computerName: "Workshop" }),
+    ).toMatchObject({
+      computerId: "computer-one",
+      computerName: "Workshop",
+    });
+    expect(parseContext({ ...selected, computerName: null })).toHaveProperty(
+      "computerName",
+      null,
+    );
+    expect(parseContext(selected)).not.toHaveProperty("computerName");
+    expect(() => parseContext({ ...selected, computerName: 42 })).toThrow(
+      AppError,
+    );
+  });
+
   it("preserves host-owned Team Computer facts", () => {
     const parsed = parseContext({
       ...context,

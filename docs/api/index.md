@@ -938,6 +938,16 @@ Hub tab, so an App that has no router of its own keeps this.
 
 ---
 
+### AppProtocolVersion
+
+```ts
+type AppProtocolVersion = (typeof APP_PROTOCOL_VERSIONS)[number];
+```
+
+A protocol version supported by both the App and host adapters.
+
+---
+
 ### AppConnectMessage
 
 ```ts
@@ -957,7 +967,7 @@ readonly epoch: string;
 ##### protocolVersion
 
 ```ts
-readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
+readonly protocolVersion: AppProtocolVersion;
 ```
 
 ##### type
@@ -971,24 +981,18 @@ readonly type: typeof APP_CONNECT_TYPE;
 ### AppReadyMessage
 
 ```ts
-type AppReadyMessage = object;
+type AppReadyMessage =
+  | {
+      protocolVersion: typeof APP_PROTOCOL_VERSION;
+      type: typeof APP_READY_TYPE;
+    }
+  | {
+      protocolVersion: 2;
+      type: typeof APP_READY_V2_TYPE;
+    };
 ```
 
 The App iframe's handshake message announcing it is ready to connect.
-
-#### Properties
-
-##### protocolVersion
-
-```ts
-readonly protocolVersion: typeof APP_PROTOCOL_VERSION;
-```
-
-##### type
-
-```ts
-readonly type: typeof APP_READY_TYPE;
-```
 
 ---
 
@@ -1058,6 +1062,15 @@ readonly computerId: string | null;
 ```
 
 Host-selected Computer backing this App's admitted resource capabilities.
+
+##### computerName?
+
+```ts
+readonly optional computerName?: string | null;
+```
+
+Host-published name of that Computer; null when unavailable. Replaced with the
+ID on selection changes. Absence does not imply an ID-based name.
 
 ##### teamHasComputers?
 
@@ -3054,20 +3067,41 @@ host.
 ### APP\_PROTOCOL\_VERSION
 
 ```ts
-const APP_PROTOCOL_VERSION: 2;
+const APP_PROTOCOL_VERSION: 3;
 ```
 
-The iframe handshake version both App and host must speak.
+Current App protocol. Version 3 adds computerName to the strict context wire.
+
+---
+
+### APP\_PROTOCOL\_VERSIONS
+
+```ts
+const APP_PROTOCOL_VERSIONS: readonly [2, 3];
+```
+
+Published Apps and self-hosted Oysters can independently remain on protocol 2.
 
 ---
 
 ### APP\_READY\_TYPE
 
 ```ts
-const APP_READY_TYPE: "fungi.app.ready";
+const APP_READY_TYPE: "fungi.app.ready.v3";
 ```
 
-Message type the App iframe posts to announce it is ready to connect.
+Old hosts ignore this tag rather than reject a v3 value in their strict v2
+message.
+
+---
+
+### APP\_READY\_V2\_TYPE
+
+```ts
+const APP_READY_V2_TYPE: "fungi.app.ready";
+```
+
+The exact readiness tag understood by published protocol-2 hosts.
 
 ---
 

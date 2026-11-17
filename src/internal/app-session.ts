@@ -44,14 +44,14 @@ import {
   type CapabilityDirectoryController,
 } from "./capabilities.js";
 import { createAppCommands } from "./commands.js";
-import {
-  APP_PROTOCOL_VERSION,
-  type AppClientRpc,
-  type AppHostRpc,
-  type HostBootstrapWire,
-  type CapabilityGrantWire,
-  type ReservedChord,
-  type VersionedFact,
+import type {
+  AppProtocolVersion,
+  AppClientRpc,
+  AppHostRpc,
+  HostBootstrapWire,
+  CapabilityGrantWire,
+  ReservedChord,
+  VersionedFact,
 } from "./protocol.js";
 import { callRpc, rpcFailure, rpcSuccess, unwrapRpcResult } from "./result.js";
 import {
@@ -288,6 +288,7 @@ class AppClientTarget extends RpcTarget implements AppClientRpc {
 
 export async function connectAppPort(options: {
   readonly epoch: string;
+  readonly protocolVersion: AppProtocolVersion;
   readonly isActive: () => boolean;
   readonly onDisposed: () => void;
   readonly port: MessagePort;
@@ -304,7 +305,7 @@ export async function connectAppPort(options: {
     const result = await Promise.race([
       remote.connect({
         epoch: options.epoch,
-        protocolVersion: APP_PROTOCOL_VERSION,
+        protocolVersion: options.protocolVersion,
       }),
       brokenPromise,
     ]);
