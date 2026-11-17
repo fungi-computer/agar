@@ -222,10 +222,6 @@ export const computerPortsSchema = Schema.Struct({
       previewUrl: Schema.NonEmptyString,
       /** Host-selected display mode; this metadata does not grant preview access. */
       openMode: Schema.Literals(["inline", "external-only"]),
-      expiresAt: Schema.Number.pipe(
-        Schema.check(Schema.isInt()),
-        Schema.check(Schema.isGreaterThan(0)),
-      ),
     }),
   ).pipe(Schema.check(Schema.isMaxLength(64))),
 });
@@ -314,14 +310,9 @@ export async function listComputerPorts(
     await capabilities.require(computerPorts).list(),
   );
   if ("error" in result) return result;
-  for (const { previewUrl, expiresAt } of result.ports) {
+  for (const { previewUrl } of result.ports) {
     const url = new URL(previewUrl);
-    if (
-      url.protocol !== "https:" ||
-      url.username ||
-      url.password ||
-      expiresAt <= Date.now()
-    )
+    if (url.protocol !== "https:" || url.username || url.password)
       throw new Error("Computer preview URL is invalid");
   }
   return result;

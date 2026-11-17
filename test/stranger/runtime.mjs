@@ -12,7 +12,6 @@ import * as Schema from "effect/Schema";
 const previewPort = {
   port: 3000,
   previewUrl: "https://preview.example.test/",
-  expiresAt: 1_800_000_000_000,
 };
 assert.throws(() =>
   Schema.decodeUnknownSync(computerPortsSchema)({ ports: [previewPort] }),

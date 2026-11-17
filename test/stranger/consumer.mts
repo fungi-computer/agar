@@ -44,7 +44,6 @@ export const externalPreviewPorts: ComputerPorts = Schema.decodeUnknownSync(
     {
       port: 3000,
       previewUrl: "https://preview.example.test/",
-      expiresAt: 1_800_000_000_000,
       openMode: "external-only",
     },
   ],

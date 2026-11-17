@@ -136,19 +136,17 @@ describe("Agar Computer ports capability", () => {
           {
             port: 3000,
             previewUrl: "https://preview.example.test/",
-            expiresAt: Date.now() + 300_000,
           },
         ],
       }),
     ).toThrow();
   });
-  it("decodes signed member-scoped previews from the admitted Computer", async () => {
+  it("decodes reusable preview links without credential expiry", async () => {
     const ports = [
       {
         port: 5173,
         previewUrl: "https://member-preview.example.test/",
         openMode: "inline" as const,
-        expiresAt: 1_800_000_000_000,
       },
     ];
     const capabilities = portsDirectory({ ports });
@@ -177,7 +175,6 @@ describe("Agar Computer ports capability", () => {
           port: 70_000,
           previewUrl: "javascript:alert(1)",
           openMode: "inline",
-          expiresAt: 0,
         },
       ],
     });
@@ -186,14 +183,13 @@ describe("Agar Computer ports capability", () => {
     capabilities.close();
   });
 
-  it("rejects expired previews at the SDK boundary", async () => {
+  it("rejects non-HTTPS previews at the SDK boundary", async () => {
     const capabilities = portsDirectory({
       ports: [
         {
           port: 5173,
-          previewUrl: "https://expired.example.test/",
+          previewUrl: "http://preview.example.test/",
           openMode: "inline",
-          expiresAt: 1,
         },
       ],
     });

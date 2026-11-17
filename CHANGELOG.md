@@ -1,5 +1,17 @@
 # @fungi.computer/agar
 
+## 0.18.2
+
+### Patch Changes
+
+- Changes since 0.18.1:
+
+  - fix(oyster): open reusable preview links through owner admission
+
+- Updated dependencies
+  - @fungi.computer/approvals@0.2.4
+  - @fungi.computer/puffball@0.9.1
+
 ## 0.18.1
 
 ### Patch Changes
