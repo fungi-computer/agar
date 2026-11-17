@@ -1,6 +1,6 @@
 import * as z from "zod";
 import type { GillCall, GillReply, ResultRow } from "@fungi.computer/gills";
-import type { AppBackendGill } from "./gills.js";
+import type { AppBackendGill, AppSurfaceGill } from "./gills.js";
 export type { AppBackendGill } from "./gills.js";
 import {
   backgroundSyncAllowed,
@@ -181,7 +181,7 @@ export type AppBackendDefinition<Context = void> = Readonly<{
   /** Declared ordinary write method re-admitted for member background work. */
   sync?: Readonly<{ method: string }>;
   /** Generated, digest-covered views of declared read methods. */
-  gills?: readonly AppBackendGill[];
+  gills?: readonly (AppBackendGill | AppSurfaceGill)[];
   /** Run a declared projection through its source method. */
   gill: (
     input: GillCall,
@@ -285,7 +285,7 @@ export function defineAppBackend<Context = void>(
   options: Readonly<{
     methods: Readonly<Record<string, AppBackendMethod<Context>>>;
     events?: AppBackendDefinition<Context>["events"];
-    gills?: readonly AppBackendGill[];
+    gills?: readonly (AppBackendGill | AppSurfaceGill)[];
     sync?: AppBackendDefinition<Context>["sync"];
     toolFamily?: AppBackendDefinition<Context>["toolFamily"];
   }>,
@@ -319,21 +319,23 @@ export function defineAppBackend<Context = void>(
     return method.call(input, context, caller);
   };
   const gills = new Map<string, AppBackendGill>();
+  const gillIds = new Set<string>();
   for (const view of options.gills ?? []) {
-    if (gills.has(view.declaration.id))
+    if (gillIds.has(view.declaration.id))
       throw new Error(`Duplicate App Gill: ${view.declaration.id}`);
-    gills.set(view.declaration.id, view);
+    gillIds.add(view.declaration.id);
+    if ("call" in view) gills.set(view.declaration.id, view);
   }
   const gill = async (
     raw: GillCall,
     context: Context,
     caller: AppMethodCallContext,
   ): Promise<GillReply> => {
-    const first = options.gills?.[0];
-    if (first === undefined) throw new Error("Undeclared App Gill");
+    const first = gills.values().next().value;
+    if (first === undefined) throw new Error("Undeclared App Gill row read");
     const selection = first.parseCall(raw);
     const view = gills.get(selection.id);
-    if (!view) throw new Error(`Undeclared App Gill: ${selection.id}`);
+    if (!view) throw new Error(`Undeclared App Gill row read: ${selection.id}`);
     const method = methods.get(view.declaration.source);
     if (method?.policy.effect !== "read")
       throw new Error(

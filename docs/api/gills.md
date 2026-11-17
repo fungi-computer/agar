@@ -14,7 +14,7 @@
 
 ```ts
 type AppBackendGill = Readonly<{
-  declaration: AppDeclaredGill;
+  declaration: AppDeclaredRowGill;
   limit: number;
   input: (selection) => Readonly<{
     [key: string]: WhistleJsonValue;
@@ -27,6 +27,18 @@ type AppBackendGill = Readonly<{
 ```
 
 App-owned projection; methods keep their ordinary domain-shaped output.
+
+---
+
+### AppSurfaceGill
+
+```ts
+type AppSurfaceGill = Readonly<{
+  declaration: AppDeclaredSurfaceGill;
+}>;
+```
+
+An App frame declaration has no row execution entry.
 
 ## Functions
 
@@ -174,10 +186,30 @@ Define a compact view of one of this App's declared read methods.
 
 #### Parameters
 
-| Parameter | Type                                                                                                                                                                                                                                                                                                                         |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options` | `Readonly`\<\{ `id`: `string`; `title`: `string`; `source`: `string`; `limit`: `number`; `sizes?`: readonly `AppGillDesktopSize`[]; `params?`: readonly `AppGillParam`[]; `watch?`: `AppGillWatch`; `input`: [`AppBackendGill`](#appbackendgill)\[`"input"`\]; `rows`: [`AppBackendGill`](#appbackendgill)\[`"rows"`\]; \}\> |
+| Parameter | Type                                                                                                                                                                                                                                                                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options` | `Readonly`\<\{ `view`: `"rows"`; `id`: `string`; `title`: `string`; `source`: `string`; `limit`: `number`; `sizes?`: readonly `AppGillDesktopSize`[]; `params?`: readonly `AppGillParam`[]; `watch?`: `AppGillWatch`; `input`: [`AppBackendGill`](#appbackendgill)\[`"input"`\]; `rows`: [`AppBackendGill`](#appbackendgill)\[`"rows"`\]; \}\> |
 
 #### Returns
 
 [`AppBackendGill`](#appbackendgill)
+
+---
+
+### defineAppSurfaceGill()
+
+```ts
+function defineAppSurfaceGill(options): AppSurfaceGill;
+```
+
+Declare an interactive desktop view rendered by this App's ordinary frame.
+
+#### Parameters
+
+| Parameter | Type                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| `options` | `Readonly`\<\{ `id`: `string`; `title`: `string`; `sizes`: readonly `AppGillDesktopSize`[]; \}\> |
+
+#### Returns
+
+[`AppSurfaceGill`](#appsurfacegill)

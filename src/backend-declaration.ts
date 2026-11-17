@@ -58,6 +58,7 @@ export function buildAppDeclaration<Context>(
     throw new Error("App sync continuation must be generated from the backend");
   const methods = new Map(Object.entries(backend.methods));
   for (const view of backend.gills ?? []) {
+    if (view.declaration.view === "surface") continue;
     const method = methods.get(view.declaration.source);
     if (method?.policy.effect !== "read")
       throw new Error(

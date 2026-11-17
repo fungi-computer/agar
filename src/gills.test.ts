@@ -5,6 +5,7 @@ import { decodeGillRefusal, defineAppGill } from "./gills.js";
 it("offers the declared placement picker without reading when a required parameter is missing", async () => {
   const read = vi.fn(() => Promise.resolve(null));
   const view = defineAppGill({
+    view: "rows",
     id: "files",
     title: "Recent Files",
     source: "documents.recent",
@@ -37,6 +38,7 @@ it("shortens status text to the reply budget while retaining every row, navigati
     open: { params: [{ key: "path", value: `/file-${String(index)}` }] },
   }));
   const view = defineAppGill({
+    view: "rows",
     id: "files",
     title: "Files",
     source: "readFiles",

@@ -142,7 +142,7 @@ type AppBackendDefinition<Context> = Readonly<{
   sync?: Readonly<{
     method: string;
   }>;
-  gills?: readonly AppBackendGill[];
+  gills?: readonly (AppBackendGill | AppSurfaceGill)[];
   gill: (input, context, caller) => Promise<GillReply>;
   toolFamily?: AppApi["toolFamily"];
   events?: Readonly<
@@ -255,9 +255,9 @@ catalog.
 
 #### Parameters
 
-| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options` | `Readonly`\<\{ `methods`: `Readonly`\<`Record`\<`string`, [`AppBackendMethod`](#appbackendmethod)\<`Context`\>\>\>; `events?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"events"`\]; `gills?`: readonly [`AppBackendGill`](gills.md#appbackendgill)[]; `sync?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"sync"`\]; `toolFamily?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"toolFamily"`\]; \}\> |
+| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `options` | `Readonly`\<\{ `methods`: `Readonly`\<`Record`\<`string`, [`AppBackendMethod`](#appbackendmethod)\<`Context`\>\>\>; `events?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"events"`\]; `gills?`: readonly ( \| [`AppBackendGill`](gills.md#appbackendgill) \| [`AppSurfaceGill`](gills.md#appsurfacegill))[]; `sync?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"sync"`\]; `toolFamily?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"toolFamily"`\]; \}\> |
 
 #### Returns
 

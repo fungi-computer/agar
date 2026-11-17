@@ -1,4 +1,5 @@
 import { defineAppGill } from "./gills.js";
+import * as gillDefinitions from "./gills.js";
 const memberCaller = {
   scope: { kind: "team" as const, teamId: "team_fixture" },
   computerId: null,
@@ -780,6 +781,33 @@ test.each(["then", "ctx", "fetch", "constructor"])(
   },
 );
 
+test("surface Gills build without a read method and cannot execute as rows", async () => {
+  expect(gillDefinitions).toHaveProperty("defineAppSurfaceGill");
+  const surface = gillDefinitions.defineAppSurfaceGill({
+    id: "canvas",
+    title: "Canvas",
+    sizes: ["M", "L"],
+  });
+  const backend = defineAppBackend({ methods: {}, gills: [surface] });
+  expect(
+    buildAppDeclaration(backend, {
+      capabilities: [],
+      handlers: [],
+      roles: [],
+    }).gills,
+  ).toEqual([
+    {
+      id: "canvas",
+      title: "Canvas",
+      view: "surface",
+      desktop: { sizes: ["M", "L"] },
+    },
+  ]);
+  await expect(
+    backend.gill({ id: "canvas" }, undefined, memberCaller),
+  ).rejects.toThrow(/row|read/i);
+});
+
 test("a Gill generates its source declaration and calls the same parsed method", async () => {
   const backend = defineAppBackend({
     methods: {
@@ -799,6 +827,7 @@ test("a Gill generates its source declaration and calls the same parsed method",
     },
     gills: [
       defineAppGill({
+        view: "rows",
         limit: 20,
         id: "entries",
         title: "Entries",
@@ -836,6 +865,7 @@ test("a Gill generates its source declaration and calls the same parsed method",
       .gills,
   ).toEqual([
     {
+      view: "rows",
       id: "entries",
       title: "Entries",
       source: "list",
@@ -872,6 +902,7 @@ test("a Gill generates its source declaration and calls the same parsed method",
 
 test("Gill builds refuse write and missing sources and a second manifest catalog", () => {
   const view = defineAppGill({
+    view: "rows",
     limit: 20,
     id: "status",
     title: "Status",
@@ -928,6 +959,7 @@ test("a Gill reports missing declared context and refuses unknown placement keys
     },
     gills: [
       defineAppGill({
+        view: "rows",
         limit: 20,
         id: "entries",
         title: "Entries",
@@ -983,6 +1015,7 @@ test("a generated facet Gill preserves caller context and rejects malformed sour
     },
     gills: [
       defineAppGill({
+        view: "rows",
         limit: 20,
         id: "count",
         title: "Count",
@@ -1050,6 +1083,7 @@ test("Gill page size reaches the source and long text never removes a row or cha
     },
     gills: [
       defineAppGill({
+        view: "rows",
         id: "page",
         title: "Page",
         source: "list",
@@ -1104,6 +1138,7 @@ test("a Gill refuses an oversized source page or navigation without silently dro
       methods: { list: method },
       gills: [
         defineAppGill({
+          view: "rows",
           id: "records",
           title: "Records",
           source: "list",
@@ -1150,6 +1185,7 @@ test("a required placement key must be supplied even when its name exists on Obj
     },
     gills: [
       defineAppGill({
+        view: "rows",
         id: "entries",
         title: "Entries",
         source: "list",
@@ -1229,6 +1265,7 @@ test("a picker reads its declared options method with partial placement context 
     },
     gills: [
       defineAppGill({
+        view: "rows",
         id: "entries",
         title: "Entries",
         source: "list",
@@ -1258,13 +1295,14 @@ test("a picker reads its declared options method with partial placement context 
       }),
     ],
   });
-  expect(
-    buildAppDeclaration(backend, {
-      capabilities: ["git.repository"],
-      handlers: [],
-      roles: [],
-    }).gills?.[0]?.params?.[1]?.options,
-  ).toBe("branches.options");
+  const declared = buildAppDeclaration(backend, {
+    capabilities: ["git.repository"],
+    handlers: [],
+    roles: [],
+  }).gills?.[0];
+  expect(declared?.view === "rows" && declared.params?.[1]?.options).toBe(
+    "branches.options",
+  );
   await expect(
     backend.gill(
       {
@@ -1293,6 +1331,7 @@ test("a picker cannot declare a write or undeclared options source", () => {
       handler: () => null,
     });
   const view = defineAppGill({
+    view: "rows",
     id: "entries",
     title: "Entries",
     source: "list",
@@ -1366,6 +1405,7 @@ test("a Gill projection retains its placement repository when the read result om
     },
     gills: [
       defineAppGill({
+        view: "rows",
         id: "commits",
         title: "Commits",
         source: "commits",

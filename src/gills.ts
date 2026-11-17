@@ -1,11 +1,13 @@
 import * as z from "zod";
 import * as Schema from "effect/Schema";
 import {
-  appDeclaredGillSchema,
+  appDeclaredRowGillSchema,
+  appDeclaredSurfaceGillSchema,
   decodeDeclaredGillResponse,
   decodeGillOptionsResponse,
   gillCallSchema,
-  type AppDeclaredGill,
+  type AppDeclaredRowGill,
+  type AppDeclaredSurfaceGill,
   type AppGillDesktopSize,
   type AppGillParam,
   type AppGillWatch,
@@ -44,7 +46,7 @@ export function decodeGillRefusal(
 
 /** App-owned projection; methods keep their ordinary domain-shaped output. */
 export type AppBackendGill = Readonly<{
-  declaration: AppDeclaredGill;
+  declaration: AppDeclaredRowGill;
   /** Page size passed to the source; projection never discards rows. */
   limit: number;
   /** Map placement and continuation to the source method, forwarding its limit. */
@@ -75,6 +77,7 @@ export type AppBackendGill = Readonly<{
 /** Define a compact view of one of this App's declared read methods. */
 export function defineAppGill(
   options: Readonly<{
+    view: "rows";
     id: string;
     title: string;
     source: string;
@@ -86,7 +89,8 @@ export function defineAppGill(
     rows: AppBackendGill["rows"];
   }>,
 ): AppBackendGill {
-  let declaration: AppDeclaredGill = {
+  let declaration: AppDeclaredRowGill = {
+    view: options.view,
     id: options.id,
     title: options.title,
     source: options.source,
@@ -97,7 +101,7 @@ export function defineAppGill(
     declaration = { ...declaration, params: options.params };
   if (options.watch !== undefined)
     declaration = { ...declaration, watch: options.watch };
-  declaration = Schema.decodeUnknownSync(appDeclaredGillSchema, {
+  declaration = Schema.decodeUnknownSync(appDeclaredRowGillSchema, {
     onExcessProperty: "error",
   })(declaration);
   return Object.freeze({
@@ -160,6 +164,31 @@ export function defineAppGill(
         declaration,
       );
     },
+  });
+}
+
+/** An App frame declaration has no row execution entry. */
+export type AppSurfaceGill = Readonly<{
+  declaration: AppDeclaredSurfaceGill;
+}>;
+
+/** Declare an interactive desktop view rendered by this App's ordinary frame. */
+export function defineAppSurfaceGill(
+  options: Readonly<{
+    id: string;
+    title: string;
+    sizes: readonly AppGillDesktopSize[];
+  }>,
+): AppSurfaceGill {
+  return Object.freeze({
+    declaration: Schema.decodeUnknownSync(appDeclaredSurfaceGillSchema, {
+      onExcessProperty: "error",
+    })({
+      id: options.id,
+      title: options.title,
+      view: "surface",
+      desktop: { sizes: options.sizes },
+    }),
   });
 }
 
