@@ -89,17 +89,6 @@ export const appRegion: CapabilityContract<{
   ),
 );
 
-/** The admitting host overwrites this header from its authenticated principal.
- * App request bodies and incoming browser headers never supply this identity. */
-export const appBackendActorHeader = "X-Agar-Actor-Id";
-
-/** The admitting host overwrites this header with the Computer it has
- * verified the caller is admitted to use for this invocation, or omits it
- * when no Computer is bound to the call. App request bodies and incoming
- * browser headers never supply this identity: a backend that needs a
- * Computer scope must read it from here, never from its own request body. */
-export const appBackendComputerHeader = "X-Agar-Computer-Id";
-
 export { appBackendRefusalSchema } from "./backend-refusal.js";
 export {
   AppMethodRefusal,

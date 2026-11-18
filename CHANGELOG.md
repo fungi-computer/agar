@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.22.1
+
+### Patch Changes
+
+- Changes since 0.22.0:
+
+  - fix(agar): stop minting host-set X-Agar identity headers
+
 ## 0.22.0
 
 ### Minor Changes
