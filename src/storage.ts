@@ -16,12 +16,16 @@ import {
   appStorageKeyNameSchema,
   appStorageWriteSchema,
   appStorageResetSchema,
+  appStorageClaimSchema,
   appStorageReadResultSchema,
   appStorageMutationResultSchema,
+  appStorageClaimResultSchema,
   appStorageEventSchema,
   type AppStorageResult,
   type AppStorageWrite,
   type AppStorageReset,
+  type AppStorageClaim,
+  type AppStorageClaimed,
   type ResolvedAppStorage,
 } from "./storage-wire.js";
 export * from "./storage-wire.js";
@@ -49,6 +53,13 @@ export type AppStorage = Readonly<{
    * `basedOn` revision; resolves with the resulting revision.
    */
   reset(input: AppStorageReset): Promise<{ revision: number }>;
+  /**
+   * Store `value` in a key's layer only if that layer is absent; otherwise
+   * keep the value already there. Resolves with the layer either way, so
+   * concurrent first writers all settle on the winner's value without a
+   * `conflict`.
+   */
+  claim(input: AppStorageClaim): Promise<AppStorageClaimed>;
   /** Resolves after the first admitted snapshot; close when the consumer leaves. */
   watch(key: string): Promise<AppStorageWatch>;
 }>;
@@ -94,6 +105,11 @@ export type AppStorageWire = {
   reset(
     input: AppStorageReset,
   ): Promise<AppStorageResult<{ revision: number }>>;
+  /**
+   * Claim a key's absent layer over the wire; resolves with the settled
+   * layer or a rejection code.
+   */
+  claim(input: AppStorageClaim): Promise<AppStorageResult<AppStorageClaimed>>;
   /** Open the change-event stream for a key, as a Fetch-adapted handle. */
   openEvents(key: string): Promise<AppStorageEventHandle>;
 };
@@ -101,6 +117,7 @@ const rawSchema: z.ZodType<AppStorageWire> = rpcHandleSchema({
   read: rpcMethod(data(appStorageReadResultSchema)),
   write: rpcMethod(data(appStorageMutationResultSchema)),
   reset: rpcMethod(data(appStorageMutationResultSchema)),
+  claim: rpcMethod(data(appStorageClaimResultSchema)),
   openEvents: rpcMethod(rpcFetchHandleSchema),
 });
 const unwrap = <A>(result: AppStorageResult<A>): A => {
@@ -124,6 +141,8 @@ function client(raw: AppStorageWire): AppStorage {
       unwrap(await raw.write(parseInput(appStorageWriteSchema, input))),
     reset: async (input) =>
       unwrap(await raw.reset(parseInput(appStorageResetSchema, input))),
+    claim: async (input) =>
+      unwrap(await raw.claim(parseInput(appStorageClaimSchema, input))),
     async watch(input) {
       const key = parseKey(input);
       const handle = await raw.openEvents(key);

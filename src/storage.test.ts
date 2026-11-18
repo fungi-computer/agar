@@ -35,6 +35,11 @@ it("awaits an armed stream and real snapshot, then follows live invalidations", 
       }),
     reset: () =>
       Promise.resolve({ kind: "accepted" as const, value: { revision: 3 } }),
+    claim: () =>
+      Promise.resolve({
+        kind: "accepted" as const,
+        value: { value: "seeded", revision: 1, claimed: false },
+      }),
     openEvents: () =>
       Promise.resolve({
         fetch: () => {
@@ -88,6 +93,19 @@ it("awaits an armed stream and real snapshot, then follows live invalidations", 
     await expect(
       storage.write({ key: "desktop", scope: "team", value: 0, basedOn: 1 }),
     ).rejects.toMatchObject({ code: "owner_required" });
+    expect(
+      await storage.claim({ key: "desktop", scope: "team", value: 0 }),
+    ).toEqual({ value: "seeded", revision: 1, claimed: false });
+    // A caller passing a write request to claim still meets the exact claim decoder.
+    const staleWrite = {
+      key: "desktop",
+      scope: "team" as const,
+      value: 0,
+      basedOn: null,
+    };
+    await expect(storage.claim(staleWrite)).rejects.toMatchObject({
+      code: "invalid",
+    });
   } finally {
     watch.close();
     watch[Symbol.dispose]();
@@ -102,6 +120,7 @@ it("preserves an undeclared-key refusal before opening a watch snapshot", async 
     read: () => Promise.resolve({ kind: "rejected", code: "undeclared_key" }),
     write: () => Promise.resolve({ kind: "rejected", code: "owner_required" }),
     reset: () => Promise.resolve({ kind: "rejected", code: "owner_required" }),
+    claim: () => Promise.resolve({ kind: "rejected", code: "owner_required" }),
     openEvents: () =>
       Promise.resolve({
         fetch: () =>

@@ -1,5 +1,14 @@
 # @fungi.computer/agar
 
+## 0.23.0
+
+### Minor Changes
+
+- Changes since 0.22.1:
+
+  - fix(test): keep agar and Oyster source out of foreign type programs
+  - feat(agar): claim an absent App storage layer in every host
+
 ## 0.22.1
 
 ### Patch Changes

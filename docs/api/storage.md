@@ -94,6 +94,26 @@ A validated reset request for one storage key.
 
 ---
 
+### AppStorageClaim
+
+```ts
+type AppStorageClaim = typeof appStorageClaimSchema.Type;
+```
+
+A validated claim request for one storage key.
+
+---
+
+### AppStorageClaimed
+
+```ts
+type AppStorageClaimed = typeof appStorageClaimedSchema.Type;
+```
+
+The layer a claim settled on, and whether this call stored it.
+
+---
+
 ### AppStorageEvent
 
 ```ts
@@ -169,6 +189,11 @@ type AppStorage = Readonly<{
   }>;
   reset: Promise<{
     revision: number;
+  }>;
+  claim: Promise<{
+    value: Json;
+    revision: number;
+    claimed: boolean;
   }>;
   watch: Promise<AppStorageWatch>;
 }>;
@@ -294,6 +319,33 @@ rejection code.
 `Promise`\<[`AppStorageResult`](#appstorageresult)\<\{ `revision`: `number`;
 \}\>\>
 
+##### claim()
+
+```ts
+claim(input): Promise<AppStorageResult<{
+  value: Json;
+  revision: number;
+  claimed: boolean;
+}>>;
+```
+
+Claim a key's absent layer over the wire; resolves with the settled layer or a
+rejection code.
+
+###### Parameters
+
+| Parameter     | Type                                                                     |
+| ------------- | ------------------------------------------------------------------------ |
+| `input`       | \{ `key`: `string`; `scope`: `"member"` \| `"team"`; `value`: `Json`; \} |
+| `input.key`   | `string`                                                                 |
+| `input.scope` | `"member"` \| `"team"`                                                   |
+| `input.value` | `Json`                                                                   |
+
+###### Returns
+
+`Promise`\<[`AppStorageResult`](#appstorageresult)\<\{ `value`: `Json`;
+`revision`: `number`; `claimed`: `boolean`; \}\>\>
+
 ##### openEvents()
 
 ```ts
@@ -416,6 +468,37 @@ Validates a reset request: the key, scope, and the revision it's conditioned on
 
 ---
 
+### appStorageClaimSchema
+
+```ts
+const appStorageClaimSchema: Struct<{
+  key: String;
+  scope: Literals<readonly ["team", "member"]>;
+  value: Codec<Json, Json, never, never>;
+}>;
+```
+
+Validates a claim request: the key, scope and the value to store only if that
+layer is still absent.
+
+---
+
+### appStorageClaimedSchema
+
+```ts
+const appStorageClaimedSchema: Struct<{
+  value: Codec<Json, Json, never, never>;
+  revision: Int;
+  claimed: Boolean;
+}>;
+```
+
+Validates a claim's outcome: the layer's value and revision after the claim, and
+whether this call's value was the one stored (`claimed`) or an earlier writer's
+value was already there.
+
+---
+
 ### appStorageRevisionSchema
 
 ```ts
@@ -525,6 +608,43 @@ const appStorageMutationResultSchema: Union<
 
 Validates the wire result of a write or reset: either an accepted revision or a
 rejection code.
+
+---
+
+### appStorageClaimResultSchema
+
+```ts
+const appStorageClaimResultSchema: Union<
+  readonly [
+    Struct<{
+      kind: Literal<"accepted">;
+      value: Struct<{
+        value: Codec<Json, Json, never, never>;
+        revision: Int;
+        claimed: Boolean;
+      }>;
+    }>,
+    Struct<{
+      kind: Literal<"rejected">;
+      code: Literals<
+        readonly [
+          "invalid",
+          "undeclared_key",
+          "scope_not_declared",
+          "owner_required",
+          "too_large",
+          "quota_exceeded",
+          "conflict",
+          "unavailable",
+        ]
+      >;
+    }>,
+  ]
+>;
+```
+
+Validates the wire result of a claim: either the accepted settled layer or a
+rejection code. A layer that already exists is accepted, never a `conflict`.
 
 ---
 

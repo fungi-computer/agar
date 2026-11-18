@@ -76,6 +76,29 @@ export const appStorageResetSchema = Schema.Struct(mutation);
 export type AppStorageWrite = typeof appStorageWriteSchema.Type;
 /** A validated reset request for one storage key. */
 export type AppStorageReset = typeof appStorageResetSchema.Type;
+/**
+ * Validates a claim request: the key, scope and the value to store only if
+ * that layer is still absent.
+ */
+export const appStorageClaimSchema = Schema.Struct({
+  key: appStorageKeyNameSchema,
+  scope: Schema.Literals(appStorageScopes),
+  value: Schema.Json,
+});
+/** A validated claim request for one storage key. */
+export type AppStorageClaim = typeof appStorageClaimSchema.Type;
+/**
+ * Validates a claim's outcome: the layer's value and revision after the
+ * claim, and whether this call's value was the one stored (`claimed`) or an
+ * earlier writer's value was already there.
+ */
+export const appStorageClaimedSchema = Schema.Struct({
+  value: Schema.Json,
+  revision,
+  claimed: Schema.Boolean,
+});
+/** The layer a claim settled on, and whether this call stored it. */
+export type AppStorageClaimed = typeof appStorageClaimedSchema.Type;
 
 /** Validates a bare revision number returned after a write or reset. */
 export const appStorageRevisionSchema = Schema.Struct({ revision });
@@ -123,6 +146,21 @@ export const appStorageMutationResultSchema = Schema.Union([
   Schema.Struct({
     kind: Schema.Literal("accepted"),
     value: appStorageRevisionSchema,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("rejected"),
+    code: appStorageErrorCodeSchema,
+  }),
+]);
+/**
+ * Validates the wire result of a claim: either the accepted settled layer
+ * or a rejection code. A layer that already exists is accepted, never a
+ * `conflict`.
+ */
+export const appStorageClaimResultSchema = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("accepted"),
+    value: appStorageClaimedSchema,
   }),
   Schema.Struct({
     kind: Schema.Literal("rejected"),
