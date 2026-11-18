@@ -23,7 +23,8 @@
     "src/git-wire.ts",
     "src/git-rpc.ts",
     "src/read-copy.ts",
-    "src/app-build-contract.ts"
+    "src/app-build-contract.ts",
+    "src/run-observation.ts"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs/api",

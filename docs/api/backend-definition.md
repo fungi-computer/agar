@@ -10,6 +10,34 @@
 
 ## Type Aliases
 
+### AppRegionHandler
+
+```ts
+type AppRegionHandler<Context> = (event, context) => Promise<AppRegionReply>;
+```
+
+A `region` backend's one event handler. A connect carries the host-stamped
+caller; messages, closes and alarms carry none. The reply is bounded.
+
+#### Type Parameters
+
+| Type Parameter | Default type |
+| -------------- | ------------ |
+| `Context`      | `void`       |
+
+#### Parameters
+
+| Parameter | Type                                |
+| --------- | ----------------------------------- |
+| `event`   | [`AppRegionEvent`](#appregionevent) |
+| `context` | `Context`                           |
+
+#### Returns
+
+`Promise`\<[`AppRegionReply`](#appregionreply)\>
+
+---
+
 ### AppSendBudgetRefusal
 
 ```ts
@@ -155,6 +183,7 @@ type AppBackendDefinition<Context> = Readonly<{
     >
   >;
   implement: <C>(implementation) => C;
+  region?: AppRegionHandler<Context>;
   call: (method, input, context, caller) => Promise<WhistleJsonValue>;
 }>;
 ```
@@ -167,6 +196,26 @@ runtime dispatch by method name.
 | Type Parameter | Default type |
 | -------------- | ------------ |
 | `Context`      | `void`       |
+
+---
+
+### AppRegionEvent
+
+```ts
+type AppRegionEvent = z.output<typeof appRegionEventSchema>;
+```
+
+One decoded supervisor event for a region backend.
+
+---
+
+### AppRegionReply
+
+```ts
+type AppRegionReply = z.output<typeof appRegionReplySchema>;
+```
+
+One decoded, bounded region backend reply.
 
 ## Variables
 
@@ -255,9 +304,9 @@ catalog.
 
 #### Parameters
 
-| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `options` | `Readonly`\<\{ `methods`: `Readonly`\<`Record`\<`string`, [`AppBackendMethod`](#appbackendmethod)\<`Context`\>\>\>; `events?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"events"`\]; `gills?`: readonly ( \| [`AppBackendGill`](gills.md#appbackendgill) \| [`AppSurfaceGill`](gills.md#appsurfacegill))[]; `sync?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"sync"`\]; `toolFamily?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"toolFamily"`\]; \}\> |
+| Parameter | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options` | `Readonly`\<\{ `methods`: `Readonly`\<`Record`\<`string`, [`AppBackendMethod`](#appbackendmethod)\<`Context`\>\>\>; `events?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"events"`\]; `gills?`: readonly ( \| [`AppBackendGill`](gills.md#appbackendgill) \| [`AppSurfaceGill`](gills.md#appsurfacegill))[]; `sync?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"sync"`\]; `toolFamily?`: [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>\[`"toolFamily"`\]; `region?`: [`AppRegionHandler`](#appregionhandler)\<`Context`\>; \}\> |
 
 #### Returns
 

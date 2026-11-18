@@ -5,6 +5,7 @@ import {
   rpcDataSchema,
   rpcHandleSchema,
   rpcMethod,
+  rpcVoid,
 } from "./internal/rpc-contract.js";
 import type { CapabilityContract } from "./capabilities.js";
 import type { WhistleJsonValue } from "@fungi.computer/whistle";
@@ -42,6 +43,47 @@ export const appMethods: CapabilityContract<{
     rpcHandleSchema({
       call: rpcMethod(
         rpcDataSchema(z.unknown().transform((value) => parseJsonValue(value))),
+      ),
+    }),
+  ),
+);
+
+/** One host-held socket to this App's Region. The host keeps the socket and
+ * its credentials; the App sees bounded text frames only. */
+export type AppRegionConnection = Disposable & {
+  /** The Region's frames to this connection; ends when either side closes. */
+  messages(): Promise<ReadableStream<string>>;
+  /** Send one bounded text frame to the Region. */
+  send(data: string): Promise<void>;
+  /** Close this connection; the host closes its socket. */
+  close(): Promise<void>;
+};
+
+/** Connect to this App's Region through the admitting host. */
+export const appRegion: CapabilityContract<{
+  /** Open one admitted connection; every call is a fresh host admission. */
+  connect(): Promise<AppRegionConnection>;
+}> = defineCapability(
+  "app.region",
+  1,
+  z.lazy(() =>
+    rpcHandleSchema({
+      connect: rpcMethod(
+        rpcHandleSchema({
+          messages: rpcMethod(
+            z.instanceof(ReadableStream).transform((stream) =>
+              stream.pipeThrough(
+                new TransformStream<unknown, string>({
+                  transform(chunk, controller) {
+                    controller.enqueue(z.string().parse(chunk));
+                  },
+                }),
+              ),
+            ),
+          ),
+          send: rpcVoid,
+          close: rpcVoid,
+        }),
       ),
     }),
   ),

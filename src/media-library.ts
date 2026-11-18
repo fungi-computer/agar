@@ -1,8 +1,12 @@
 import * as Schema from "effect/Schema";
 
-/** A Media-role App exposes the selected library for one Computer to other granted Apps. */
-export const mediaLibraryRequestSchema = Schema.Struct({
-  operation: Schema.Literal("read-library"),
+/**
+ * A Media-role App exposes the selected library for one Computer to other
+ * granted Apps through this hidden declared method. The Hub calls it for a
+ * member on the Computer it admitted; the input only repeats that Computer.
+ */
+export const mediaLibraryMethod = "library.read";
+export const mediaLibraryInputSchema = Schema.Struct({
   computerId: Schema.NonEmptyString,
 });
 /** A bounded Computer directory shared by folder selection and library reads. */

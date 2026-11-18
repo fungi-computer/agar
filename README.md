@@ -167,6 +167,14 @@ Hand-written or undeclared methods are refused. Keep `cloudflare:workers`, Node
 built-ins and network calls at evaluation time out of the definition module;
 network work belongs inside handlers.
 
+## Observe a run
+
+`@fungi.computer/agar/run-observation` exports `runObservationSchema`, the one
+shape an owner reports a run in: a `state` (`completed` is not `verified`), a
+`reason`, times, a log position `{ cursor, size, eof }`, `outputs` and a `cost`
+that is `null` until the owner meters it. The owner maps its own records into it
+and keeps no copy, so a caller re-reads a run by id after a lost connection.
+
 ## Connect the frontend
 
 `connectApp({ host: "parent", signal })` from `@fungi.computer/agar` connects an

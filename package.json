@@ -1,6 +1,6 @@
 {
   "name": "@fungi.computer/agar",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "author": "Levi <levi@technomancy.dev>",
   "description": "App contract for fungi.computer: typed backend methods, host capabilities and the App frontend connection",
   "type": "module",
@@ -162,6 +162,10 @@
       "types": "./dist/app-build-contract.d.ts",
       "import": "./dist/app-build-contract.js"
     },
+    "./run-observation": {
+      "types": "./dist/run-observation.d.ts",
+      "import": "./dist/run-observation.js"
+    },
     "./test-kit/git": {
       "types": "./dist/test-kit/git.d.ts",
       "import": "./dist/test-kit/git.js"
@@ -179,7 +183,7 @@
     "prepack": "node scripts/prepare-package.mjs"
   },
   "dependencies": {
-    "@fungi.computer/puffball": "0.11.0",
+    "@fungi.computer/puffball": "0.12.0",
     "@fungi.computer/whistle": "0.3.0",
     "@opentui/keymap": "0.5.10",
     "@fungi.computer/capnweb": "0.12.0-fungi.0",

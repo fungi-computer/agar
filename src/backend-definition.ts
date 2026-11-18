@@ -13,12 +13,34 @@ import type { AppApi, AppCapabilityId } from "@fungi.computer/puffball";
 import type { WhistleJsonValue } from "@fungi.computer/whistle";
 import { pendingSchema, type Pending } from "./pending.js";
 import {
+  appRegionEventSchema,
+  appRegionReplySchema,
+  type AppRegionEvent,
+  type AppRegionReply,
+} from "@fungi.computer/puffball/app-method-runtime";
+import {
   AppMethodRefusal,
   appMethodRefusedReplySchema,
   type AppMethodReply,
 } from "./method-refusal.js";
 
 export { pending, pendingSchema, type Pending } from "./pending.js";
+export type {
+  AppRegionEvent,
+  AppRegionReply,
+} from "@fungi.computer/puffball/app-method-runtime";
+
+/** The supervisor-only entry a `region` backend's events arrive through. */
+const regionEntry = "onRegion";
+
+/**
+ * A `region` backend's one event handler. A connect carries the host-stamped
+ * caller; messages, closes and alarms carry none. The reply is bounded.
+ */
+export type AppRegionHandler<Context = void> = (
+  event: AppRegionEvent,
+  context: Context,
+) => Promise<AppRegionReply>;
 
 /** EVENTS.emit acknowledges delivery with native void, not a JSON value. */
 export const appEventEmitResultSchema = z.undefined();
@@ -197,6 +219,8 @@ export type AppBackendDefinition<Context = void> = Readonly<{
   /** Install declared methods on the facet, retaining its exact constructor
    * type. Each installed method answers with an {@link AppMethodReply}. */
   implement: <C extends AppBackendClass>(implementation: C) => C;
+  /** A `region` backend's one handler for supervisor-delivered events. */
+  region?: AppRegionHandler<Context>;
   /** Look up a declared method by name and run its `call`, rejecting any
    * name that was not declared. A handler's {@link AppMethodRefusal} is
    * thrown to the caller unchanged. */
@@ -288,6 +312,7 @@ export function defineAppBackend<Context = void>(
     gills?: readonly (AppBackendGill | AppSurfaceGill)[];
     sync?: AppBackendDefinition<Context>["sync"];
     toolFamily?: AppBackendDefinition<Context>["toolFamily"];
+    region?: AppRegionHandler<Context>;
   }>,
 ): AppBackendDefinition<Context> {
   const declared = withPresentation(options.methods);
@@ -404,6 +429,14 @@ export function defineAppBackend<Context = void>(
             return definition.gill(input, this, caller);
           },
         });
+      const region = options.region;
+      if (region !== undefined)
+        Object.defineProperty(implementation.prototype, regionEntry, {
+          value: async function (this: Context, raw: unknown) {
+            const event = appRegionEventSchema.parse(raw);
+            return appRegionReplySchema.parse(await region(event, this));
+          },
+        });
       return implementation;
     },
     call,
@@ -423,5 +456,7 @@ export function defineAppBackend<Context = void>(
       ...definition,
       toolFamily: Object.freeze({ ...options.toolFamily }),
     };
+  if (options.region !== undefined)
+    definition = { ...definition, region: options.region };
   return Object.freeze(definition);
 }

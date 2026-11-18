@@ -12,7 +12,8 @@ import { setupNeedSchema } from "./internal/setup-need.js";
 import type { MediaProviderDiagnostic } from "./errors.js";
 
 export {
-  mediaLibraryRequestSchema,
+  mediaLibraryMethod,
+  mediaLibraryInputSchema,
   mediaLibraryPathSchema,
   mediaLibraryResponseSchema,
 } from "./media-library.js";

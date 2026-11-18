@@ -1,5 +1,26 @@
 # @fungi.computer/agar
 
+## 0.22.0
+
+### Minor Changes
+
+- Changes since 0.21.0:
+
+  - fix(apps): keep the Region grammar and host off App backend bundles
+  - fix(apps): satisfy lint and type surfaces for the Region profile
+  - fix(agents): own the Agent name shape in Agar, where Oyster core can reach
+    it
+  - feat(shed): observe and listProcesses report processes as RunObservation
+  - fix(prints): serve every operation through declared App methods
+  - feat(agar): connect an App to its Region through the host page
+  - feat(puffball): reserve the onRegion entry on every host
+  - feat(agar): let a region backend handle its supervisor events
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.12.0
+
 ## 0.21.0
 
 ### Minor Changes

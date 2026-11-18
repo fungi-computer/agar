@@ -56,6 +56,25 @@ readonly code: "unavailable" | "invalid" | "conflict" | "forbidden" | "not_found
 
 ## Type Aliases
 
+### AppRegionConnection
+
+```ts
+type AppRegionConnection = Disposable & object;
+```
+
+One host-held socket to this App's Region. The host keeps the socket and its
+credentials; the App sees bounded text frames only.
+
+#### Type Declaration
+
+| Name         | Type                                            | Description                                                           |
+| ------------ | ----------------------------------------------- | --------------------------------------------------------------------- |
+| `messages()` | () => `Promise`\<`ReadableStream`\<`string`\>\> | The Region's frames to this connection; ends when either side closes. |
+| `send()`     | (`data`) => `Promise`\<`void`\>                 | Send one bounded text frame to the Region.                            |
+| `close()`    | () => `Promise`\<`void`\>                       | Close this connection; the host closes its socket.                    |
+
+---
+
 ### AppMethodRefusalCode
 
 ```ts
@@ -136,6 +155,18 @@ const appMethods: CapabilityContract<{
 Call one of this App's declared, typed methods through its host. Unlike
 `appBackend`, the host knows which method is called, so it can apply the
 method's declared effect.
+
+---
+
+### appRegion
+
+```ts
+const appRegion: CapabilityContract<{
+  connect: Promise<AppRegionConnection>;
+}>;
+```
+
+Connect to this App's Region through the admitting host.
 
 ---
 

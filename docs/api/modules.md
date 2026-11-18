@@ -30,4 +30,5 @@
 | [react](react.md)                             | -           |
 | [read-copy](read-copy.md)                     | -           |
 | [rpc](rpc.md)                                 | -           |
+| [run-observation](run-observation.md)         | -           |
 | [storage](storage.md)                         | -           |

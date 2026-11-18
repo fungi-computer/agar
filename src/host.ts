@@ -1,3 +1,5 @@
+import type { AppRegionConnection } from "./backend.js";
+import { maxAppRegionMessageBytes } from "@fungi.computer/puffball/app-method-runtime";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 /**
@@ -1171,4 +1173,100 @@ function toProtocolError(cause: unknown): AppError {
   return cause instanceof AppError
     ? cause
     : protocolError("Unable to establish the app host");
+}
+
+/** The WebSocket surface a host page opens for the App. */
+export type AppRegionSocket = Pick<
+  WebSocket,
+  "send" | "close" | "addEventListener" | "readyState"
+>;
+
+const regionFrameSchema = Schema.String.pipe(
+  Schema.check(
+    Schema.makeFilter(
+      (data) =>
+        new TextEncoder().encode(data).byteLength <= maxAppRegionMessageBytes,
+    ),
+  ),
+);
+const decodeRegionFrame = Schema.decodeUnknownOption(regionFrameSchema);
+
+// Live RPC targets remain opaque in public declarations, as Agar host grants do.
+const RegionTarget: new () => object = RpcTarget;
+
+/**
+ * Host side of {@link appRegion}: the host page opens each socket itself with
+ * its own admission, so no credential or URL ever reaches the App.
+ */
+export class AppRegionHost extends RegionTarget {
+  readonly #open: () => AppRegionSocket | Promise<AppRegionSocket>;
+  constructor(open: () => AppRegionSocket | Promise<AppRegionSocket>) {
+    super();
+    this.#open = open;
+  }
+  /** Open one socket with the host's current admission; resolves once it is open. */
+  async connect(): Promise<AppRegionConnection> {
+    // The host re-reads its current admission for every connection.
+    const socket = await this.#open();
+    if (socket.readyState === 1) return new AppRegionSocketHost(socket);
+    if (socket.readyState > 1) throw new Error("App Region connection refused");
+    return new Promise((resolve, reject) => {
+      socket.addEventListener(
+        "open",
+        () => {
+          resolve(new AppRegionSocketHost(socket));
+        },
+        {
+          once: true,
+        },
+      );
+      socket.addEventListener(
+        "close",
+        () => {
+          reject(new Error("App Region connection refused"));
+        },
+        { once: true },
+      );
+    });
+  }
+}
+
+/** One open Region socket, held by the host page. */
+class AppRegionSocketHost extends RegionTarget implements AppRegionConnection {
+  readonly #socket: AppRegionSocket;
+  readonly #messages: ReadableStream<string>;
+  constructor(socket: AppRegionSocket) {
+    super();
+    this.#socket = socket;
+    this.#messages = new ReadableStream<string>({
+      start(controller) {
+        socket.addEventListener("message", (event) => {
+          // Only bounded text frames reach the App; others are dropped.
+          const frame = decodeRegionFrame(event.data);
+          if (frame._tag === "Some") controller.enqueue(frame.value);
+        });
+        socket.addEventListener(
+          "close",
+          () => {
+            controller.close();
+          },
+          { once: true },
+        );
+      },
+    });
+  }
+  messages(): Promise<ReadableStream<string>> {
+    return Promise.resolve(this.#messages);
+  }
+  send(data: string): Promise<void> {
+    this.#socket.send(Schema.decodeUnknownSync(regionFrameSchema)(data));
+    return Promise.resolve();
+  }
+  close(): Promise<void> {
+    this.#socket.close(1000, "Closed by App");
+    return Promise.resolve();
+  }
+  [Symbol.dispose](): void {
+    this.#socket.close(1000, "Released by App");
+  }
 }

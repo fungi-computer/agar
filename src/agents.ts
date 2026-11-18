@@ -34,6 +34,21 @@ import type {
 import { AppError } from "./errors.js";
 import { reportCatchFailure } from "./failure.js";
 
+/**
+ * An Agent's display name, the one shape every host accepts from a person or
+ * from the Agent itself: trimmed, 1 to 256 characters, with no Unicode control
+ * or format characters (Cc and Cf), which covers newlines, bidirectional
+ * overrides and zero-width characters that would spoof or hide a name.
+ */
+export const agentNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(256)
+  .refine((name) => !/[\p{Cc}\p{Cf}]/u.test(name), {
+    message: "An Agent name cannot contain control or invisible characters",
+  });
+
 const boundedIdentity = Schema.String.pipe(
   Schema.check(Schema.isMinLength(1)),
   Schema.check(Schema.isMaxLength(256)),

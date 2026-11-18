@@ -4,14 +4,16 @@ import { build } from "esbuild";
 import * as Schema from "effect/Schema";
 import {
   mediaLibraryPathSchema,
-  mediaLibraryRequestSchema,
+  mediaLibraryInputSchema,
+  mediaLibraryMethod,
   mediaLibraryResponseSchema,
 } from "./media-library.js";
 import * as media from "./media.js";
 
 it("keeps the library contracts identical for browser and backend consumers", () => {
   expect(media.mediaLibraryPathSchema).toBe(mediaLibraryPathSchema);
-  expect(media.mediaLibraryRequestSchema).toBe(mediaLibraryRequestSchema);
+  expect(media.mediaLibraryInputSchema).toBe(mediaLibraryInputSchema);
+  expect(media.mediaLibraryMethod).toBe(mediaLibraryMethod);
   expect(media.mediaLibraryResponseSchema).toBe(mediaLibraryResponseSchema);
   expect(
     Schema.decodeUnknownSync(mediaLibraryResponseSchema)({ path: "/images" }),

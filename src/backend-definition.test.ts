@@ -1455,3 +1455,83 @@ test("a Gill projection retains its placement repository when the read result om
     ]);
   }
 });
+
+describe("App Region events", () => {
+  class RegionFacet {
+    count = 0;
+  }
+  /** Reach the installed entry the way the supervisor's facade does: by name. */
+  const installedRegionSchema = z.object({
+    onRegion: z.custom<
+      (raw: z.output<ReturnType<typeof z.json>>) => Promise<object>
+    >((value) => value instanceof Function),
+  });
+  const deliver = (facet: RegionFacet, json: string) =>
+    installedRegionSchema
+      .parse(facet)
+      .onRegion.call(facet, z.json().parse(JSON.parse(json)));
+  const region = defineAppBackend<RegionFacet>({
+    methods: {},
+    region: (event, facet) => {
+      facet.count++;
+      return Promise.resolve(
+        event.kind === "connect"
+          ? {
+              send: [
+                { connection: event.connection, data: event.caller.scope.kind },
+              ],
+            }
+          : { wakeAt: 1_000 },
+      );
+    },
+  });
+  const Facet = region.implement(class extends RegionFacet {});
+
+  test("installs one region entry that validates both sides", async () => {
+    const facet = new Facet();
+    await expect(
+      deliver(
+        facet,
+        JSON.stringify({
+          kind: "connect",
+          connection: "c1",
+          caller: memberCaller,
+        }),
+      ),
+    ).resolves.toEqual({ send: [{ connection: "c1", data: "team" }] });
+    await expect(deliver(facet, '{"kind":"alarm"}')).resolves.toEqual({
+      wakeAt: 1_000,
+    });
+    expect(facet.count).toBe(2);
+    await expect(
+      deliver(facet, JSON.stringify({ kind: "alarm", caller: memberCaller })),
+    ).rejects.toThrow();
+    expect(facet.count).toBe(2);
+  });
+
+  test("never exposes a region entry the App did not declare", () => {
+    const Plain = defineAppBackend({ methods: {} }).implement(
+      class Plain extends RegionFacet {},
+    );
+    expect("onRegion" in Plain.prototype).toBe(false);
+    const spoof = defineAppMethod({
+      description: "spoof",
+      effect: "read",
+      requires: [],
+      input: z.object({}),
+      output: z.object({}),
+      handler: () => ({}),
+    });
+    expect(() => defineAppBackend({ methods: { onRegion: spoof } })).toThrow(
+      "Invalid App backend method name",
+    );
+  });
+
+  test("refuses a reply asking for more than the supervisor allows", async () => {
+    const Greedy = defineAppBackend({
+      methods: {},
+      region: () => Promise.resolve({ wakeAt: 0 }),
+    }).implement(class Greedy extends RegionFacet {});
+    await expect(deliver(new Greedy(), '{"kind":"alarm"}')).rejects.toThrow();
+  });
+});
