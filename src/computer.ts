@@ -61,8 +61,18 @@ export const computerList: CapabilityContract<{
 
 export const computerRuntimeStateSchema = Schema.Union([
   Schema.Struct({
-    // start_failed: a queued start ended without running; start again.
-    state: Schema.Literals(["running", "sleeping", "starting", "start_failed"]),
+    state: Schema.Literals(["running", "sleeping", "starting"]),
+  }),
+  // An owed start ended without running; start again. `reason` says why;
+  // a Hub from before it sends `start_failed` alone.
+  Schema.Struct({
+    state: Schema.Literal("start_failed"),
+    reason: Schema.optionalKey(
+      Schema.String.pipe(
+        Schema.check(Schema.isMinLength(1)),
+        Schema.check(Schema.isMaxLength(1_024)),
+      ),
+    ),
   }),
   Schema.Struct({
     state: Schema.Literal("queued"),

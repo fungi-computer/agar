@@ -1,5 +1,14 @@
 # @fungi.computer/agar
 
+## 0.23.2
+
+### Patch Changes
+
+- Changes since 0.23.1:
+
+  - fix(hub): send a failed start's reason only to readers that decode it
+  - fix(hub): keep the reason a start failed on the alarm path
+
 ## 0.23.1
 
 ### Patch Changes
