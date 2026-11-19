@@ -31,7 +31,7 @@ new AppStorageError(code, options?): AppStorageError;
 
 | Parameter  | Type                                                                                                                                                           |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `code`     | \| `"unavailable"` \| `"invalid"` \| `"conflict"` \| `"too_large"` \| `"undeclared_key"` \| `"scope_not_declared"` \| `"owner_required"` \| `"quota_exceeded"` |
+| `code`     | \| `"unavailable"` \| `"too_large"` \| `"invalid"` \| `"conflict"` \| `"undeclared_key"` \| `"scope_not_declared"` \| `"owner_required"` \| `"quota_exceeded"` |
 | `options?` | `ErrorOptions`                                                                                                                                                 |
 
 ###### Returns
@@ -51,9 +51,9 @@ Error.constructor;
 ```ts
 readonly code:
   | "unavailable"
+  | "too_large"
   | "invalid"
   | "conflict"
-  | "too_large"
   | "undeclared_key"
   | "scope_not_declared"
   | "owner_required"

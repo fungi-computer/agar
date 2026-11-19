@@ -125,10 +125,31 @@ type MediaProviderDiagnostic =
   | Readonly<{
       category: "result_download";
       status: number;
+    }>
+  | Readonly<{
+      category: "media_service";
+      failure: MediaServiceFailure;
     }>;
 ```
 
 Declaration-safe projection of the canonical Media diagnostic grammar.
+
+---
+
+### MediaServiceFailure
+
+```ts
+type MediaServiceFailure =
+  | "invalid_request"
+  | "unauthorized"
+  | "unavailable"
+  | "rate_limited"
+  | "too_large"
+  | "unreachable"
+  | "invalid_response";
+```
+
+Why the host's own media service failed, in the closed set Prints can explain.
 
 ---
 

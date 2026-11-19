@@ -553,6 +553,9 @@ const mediaGenerationJsonOutcomeSchema: Union<readonly [Struct<{
       }>, Struct<{
         category: ...;
         status: ...;
+      }>, Struct<{
+        category: ...;
+        failure: ...;
      }>]>>;
      code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DAILY_LIMIT_REACHED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
@@ -588,7 +591,7 @@ const mediaGenerationJsonReplySchema: Union<readonly [Union<readonly [Struct<{
   failure: Struct<{
      message: String;
      stage: optional<Literals<readonly [..., ..., ..., ..., ..., ..., ..., ..., ..., ..., ...]>>;
-     provider: optional<Union<readonly [..., ...]>>;
+     provider: optional<Union<readonly [..., ..., ...]>>;
      code: Literals<readonly ["CANCELLED", "CAPABILITY_DENIED", "CAPABILITY_REVOKED", "DAILY_LIMIT_REACHED", "DISCONNECTED", "HOST_FAILURE", "IDENTITY", "INSUFFICIENT_CREDIT", "INVALID_ARGUMENT", "MEDIA_PROVIDER_FAILURE", "MEDIA_PROVIDER_FAILURE_UNCHARGED", "PROTOCOL", "SAFETY_FILTER_REFUSED", "SETUP_REQUIRED", "TIMEOUT"]>;
      retryable: Boolean;
      need: optional<String>;

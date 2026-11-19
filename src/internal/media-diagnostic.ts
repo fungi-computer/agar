@@ -19,6 +19,16 @@ const mediaProviderReasons = [
   "timeout",
   "spending_limit",
 ] as const;
+/** Why the host's own media service failed before or around the provider. */
+const mediaServiceFailures = [
+  "invalid_request",
+  "unauthorized",
+  "unavailable",
+  "rate_limited",
+  "too_large",
+  "unreachable",
+  "invalid_response",
+] as const;
 /** Longest provider sentence kept; the host decodes it before it crosses. */
 export const mediaProviderDetailMax = 160;
 const providerCodeBounds = { minimum: 0, maximum: 99_999 };
@@ -40,6 +50,10 @@ export const mediaProviderDiagnosticSchema = Schema.Union([
   Schema.Struct({
     category: Schema.Literal("result_download"),
     status: Schema.Int.check(Schema.isBetween(responseStatusBounds)),
+  }),
+  Schema.Struct({
+    category: Schema.Literal("media_service"),
+    failure: Schema.Literals(mediaServiceFailures),
   }),
 ]);
 
@@ -63,5 +77,9 @@ export const mediaProviderDiagnosticZodSchema = z.union([
       .int()
       .min(responseStatusBounds.minimum)
       .max(responseStatusBounds.maximum),
+  }),
+  z.strictObject({
+    category: z.literal("media_service"),
+    failure: z.enum(mediaServiceFailures),
   }),
 ]);

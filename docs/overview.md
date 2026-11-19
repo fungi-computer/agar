@@ -331,11 +331,12 @@ The exported `mediaGenerationDescriptionSchema`,
 these boundaries with the existing Agar Media grammar.
 
 Failures may include safe `provider` facts: an allowlisted category and bounded
-code, or `result_download` and an HTTP status. JSON, RPC and
-`MediaGenerationError.provider` preserve the same facts and retry truth.
-`./errors` exposes declaration-safe diagnostic types and decoder helpers; one
-internal Effect schema owns validation. Private provider messages, bodies, URLs
-and causes are not diagnostic fields and are rejected at this boundary.
+code, `result_download` and an HTTP status, or `media_service` and the host
+media service's closed failure. JSON, RPC and `MediaGenerationError.provider`
+preserve the same facts and retry truth. `./errors` exposes declaration-safe
+diagnostic types and decoder helpers; one internal Effect schema owns
+validation. Private provider messages, bodies, URLs and causes are not
+diagnostic fields and are rejected at this boundary.
 
 Attempts retain their canonical request ID when restored or when polling
 Pending. The shared Agar Pending validator requires an integer `retryAfterMs`

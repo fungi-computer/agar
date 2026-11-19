@@ -3410,6 +3410,20 @@ const mediaGenerationFailureSchema: Struct<{
           category: Literal<"result_download">;
           status: Int;
         }>,
+        Struct<{
+          category: Literal<"media_service">;
+          failure: Literals<
+            readonly [
+              "invalid_request",
+              "unauthorized",
+              "unavailable",
+              "rate_limited",
+              "too_large",
+              "unreachable",
+              "invalid_response",
+            ]
+          >;
+        }>,
       ]
     >
   >;

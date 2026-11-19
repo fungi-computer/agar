@@ -1,5 +1,14 @@
 # @fungi.computer/agar
 
+## 0.23.1
+
+### Patch Changes
+
+- Changes since 0.23.0:
+
+  - fix(prints): name media service failures and say what the share prompt
+    switch does
+
 ## 0.23.0
 
 ### Minor Changes

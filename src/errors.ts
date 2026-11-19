@@ -44,7 +44,23 @@ export type MediaProviderDiagnostic =
       category: "result_download";
       /** Native Response status, including zero. */
       status: number;
+    }>
+  | Readonly<{
+      /** The host's own media service failed, such as a celld Hub's edge port. */
+      category: "media_service";
+      /** The service's closed failure, never its message. */
+      failure: MediaServiceFailure;
     }>;
+
+/** Why the host's own media service failed, in the closed set Prints can explain. */
+export type MediaServiceFailure =
+  | "invalid_request"
+  | "unauthorized"
+  | "unavailable"
+  | "rate_limited"
+  | "too_large"
+  | "unreachable"
+  | "invalid_response";
 
 /** Decode only safe provider facts, rejecting unmodeled private fields. */
 export function decodeMediaProviderDiagnostic(
@@ -71,7 +87,10 @@ export const mediaProviderDiagnosticWireSchema: z.ZodType<MediaProviderDiagnosti
 /** Decode an ordinary Error name without retaining arbitrary upstream text. */
 export function decodeMediaProviderErrorCategory(
   input: string | undefined,
-): Exclude<MediaProviderDiagnostic["category"], "result_download"> {
+): Exclude<
+  MediaProviderDiagnostic["category"],
+  "result_download" | "media_service"
+> {
   return (
     Option.getOrUndefined(
       Schema.decodeUnknownOption(mediaProviderErrorCategorySchema)(input),
