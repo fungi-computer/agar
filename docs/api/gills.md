@@ -65,7 +65,7 @@ function decodeGillRefusal(
       title: string;
       state: "error";
       rows: readonly [];
-      reason?: "disabled" | "exec_isolation_required" | "params_required";
+      reason?: "exec_isolation_required" | "disabled" | "params_required";
       error: string;
       recovery?:
         | {
@@ -134,7 +134,7 @@ Decode the App host's isolation or disabled refusal into a typed Gill state.
   title: string;
   state: "error";
   rows: readonly [];
-  reason?: "disabled" | "exec_isolation_required" | "params_required";
+  reason?: "exec_isolation_required" | "disabled" | "params_required";
   error: string;
   recovery?:   | {
      kind: "configure";
@@ -152,7 +152,7 @@ Decode the App host's isolation or disabled refusal into a typed Gill state.
 | `title`     | `string`                                                                      | -                                                                                 |
 | `state`     | `"error"`                                                                     | -                                                                                 |
 | `rows`      | readonly \[\]                                                                 | -                                                                                 |
-| `reason?`   | `"disabled"` \| `"exec_isolation_required"` \| `"params_required"`            | Host-owned permanent execution refusal; an ordinary error may still be refreshed. |
+| `reason?`   | `"exec_isolation_required"` \| `"disabled"` \| `"params_required"`            | Host-owned permanent execution refusal; an ordinary error may still be refreshed. |
 | `error`     | `string`                                                                      | -                                                                                 |
 | `recovery?` | \| \{ `kind`: `"configure"`; `param`: `string`; \} \| \{ `kind`: `"open"`; \} | The host supplies the same-placement picker and this App's launch.                |
 

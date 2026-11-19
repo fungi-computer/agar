@@ -87,6 +87,49 @@ readonly need: string | undefined;
 
 Set only on `SETUP_REQUIRED`: the missing thing, for the copy.
 
+##### reason
+
+```ts
+readonly reason:
+  | "cancelled"
+  | "exec_isolation_required"
+  | "execution_not_admitted"
+  | "artifact_unavailable"
+  | "disabled"
+  | "timed_out"
+  | "permission_changed"
+  | "binding_reply_invalid"
+  | "backend_error"
+  | "request_too_large"
+  | "not_offered"
+  | "internal"
+  | undefined;
+```
+
+The host's stated cause, when it supplied one.
+
+##### ref
+
+```ts
+readonly ref: string | undefined;
+```
+
+The log reference for this failure, when the host supplied one.
+
+##### where
+
+```ts
+readonly where:
+  | {
+  binding: string;
+  method: string;
+  path: string;
+}
+  | undefined;
+```
+
+Which connection's reply was unreadable, when the host said.
+
 ## Type Aliases
 
 ### MediaProviderReason
@@ -212,6 +255,31 @@ readonly optional need?: string;
 ```
 
 What a `SETUP_REQUIRED` failure needs, in plain words such as "a model".
+
+##### reason?
+
+```ts
+readonly optional reason?: AppFailureReason;
+```
+
+The host's stated cause; `describeAppError` words it in place of the code's
+copy.
+
+##### ref?
+
+```ts
+readonly optional ref?: string;
+```
+
+Names this failure in the host's logs, shown with causes that are our bug.
+
+##### where?
+
+```ts
+readonly optional where?: AppFailureWhere;
+```
+
+For `binding_reply_invalid`: which connection, method and field.
 
 ---
 
@@ -367,3 +435,27 @@ prerequisites, so they can accompany a non-retryable operation.
 #### Returns
 
 [`ErrorDescription`](#errordescription)
+
+---
+
+### readAppFailure()
+
+```ts
+function readAppFailure(response): Promise<AppError>;
+```
+
+The failure a non-ok App backend response states. A host body naming a closed
+reason (and its log ref) becomes an `AppError` carrying both, so
+`describeAppError` words the real cause; a body that names none still says which
+status the backend answered. The one place a response turns into an App failure:
+callers do not word it themselves.
+
+#### Parameters
+
+| Parameter  | Type       |
+| ---------- | ---------- |
+| `response` | `Response` |
+
+#### Returns
+
+`Promise`\<[`AppError`](#apperror)\>

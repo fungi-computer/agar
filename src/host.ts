@@ -1270,3 +1270,63 @@ class AppRegionSocketHost extends RegionTarget implements AppRegionConnection {
     this.#socket.close(1000, "Released by App");
   }
 }
+
+/** The host window facts a focus check reads. */
+export type FocusWindow = {
+  readonly document: {
+    readonly activeElement: Element | null;
+    hasFocus(): boolean;
+  };
+  requestAnimationFrame(callback: () => void): number;
+};
+
+/**
+ * Whether the host itself sees `frame` hold keyboard focus. An App's focus
+ * report is only a hint: any guest can send one with no user gesture, so a host
+ * raises a window only for focus it can observe. The page must hold focus too,
+ * so a window raised another way (a keyboard switcher, a reserved chord) is not
+ * pulled back by its guest. The browser moves the parent's `activeElement` a
+ * little after the child's own focus event, so this looks now and then on each
+ * of the next few animation frames.
+ */
+export function frameHoldsFocus(
+  frame: Element,
+  hostWindow: FocusWindow,
+  frames = 8,
+): Promise<boolean> {
+  const held = () =>
+    hostWindow.document.activeElement === frame &&
+    hostWindow.document.hasFocus();
+  if (held()) return Promise.resolve(true);
+  return new Promise((answer) => {
+    let remaining = frames;
+    const look = () => {
+      if (held()) answer(true);
+      else if (--remaining <= 0) answer(false);
+      else hostWindow.requestAnimationFrame(look);
+    };
+    hostWindow.requestAnimationFrame(look);
+  });
+}
+
+/**
+ * One App mount's focus raiser. Each report asks to raise, but only one check
+ * is ever pending: a report that arrives meanwhile joins it, so a guest sending
+ * reports while the page is hidden cannot pile up animation-frame loops.
+ */
+export function frameFocusRaiser(
+  frame: Element,
+  hostWindow: FocusWindow,
+  raise: () => void,
+  frames = 8,
+): () => void {
+  let pending = false;
+  return () => {
+    if (pending) return;
+    pending = true;
+    void frameHoldsFocus(frame, hostWindow, frames).then((held) => {
+      pending = false;
+      if (held) raise();
+    });
+  };
+}

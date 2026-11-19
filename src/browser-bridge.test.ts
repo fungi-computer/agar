@@ -167,6 +167,59 @@ describe("App SDK browser bridge", () => {
     expect(remote.reportFocus).toHaveBeenCalledTimes(3);
   });
 
+  it("LAW: a blur read while hasFocus is still stale does not hide the next focus", async () => {
+    const settle = () =>
+      new Promise<void>((resolve) => {
+        queueMicrotask(resolve);
+      });
+    // Inside a blur event the document can still answer hasFocus() as true.
+    vi.spyOn(document, "hasFocus").mockImplementation(() => true);
+    const { dispose, remote } = createBridgeHarness();
+    await settle();
+    expect(remote.reportFocus).toHaveBeenLastCalledWith({
+      editing: false,
+      surface: "surface",
+    });
+    window.dispatchEvent(new FocusEvent("blur"));
+    await settle();
+    expect(remote.reportFocus).toHaveBeenLastCalledWith({
+      editing: false,
+      surface: null,
+    });
+    // The next click focuses the App again, and the host must hear it.
+    window.dispatchEvent(new FocusEvent("focus"));
+    await settle();
+    expect(remote.reportFocus).toHaveBeenLastCalledWith({
+      editing: false,
+      surface: "surface",
+    });
+    expect(remote.reportFocus).toHaveBeenCalledTimes(3);
+    dispose();
+  });
+
+  it.each(["iframe", "object", "embed", "frame"])(
+    "LAW: a blur into the App's own %s does not report the App as unfocused",
+    async (tag) => {
+      const settle = () =>
+        new Promise<void>((resolve) => {
+          queueMicrotask(resolve);
+        });
+      vi.spyOn(document, "hasFocus").mockImplementation(() => true);
+      const { dispose, remote } = createBridgeHarness();
+      await settle();
+      const child = document.createElement(tag);
+      child.setAttribute("tabindex", "0");
+      document.body.append(child);
+      child.focus();
+      const reports = remote.reportFocus.mock.calls.length;
+      window.dispatchEvent(new FocusEvent("blur"));
+      await settle();
+      expect(remote.reportFocus.mock.calls.length).toBe(reports);
+      child.remove();
+      dispose();
+    },
+  );
+
   it("LAW: synchronous initial focus failure is queued after bridge construction", async () => {
     const failure = new Error("private focus data");
     const failureLog = vi

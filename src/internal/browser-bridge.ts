@@ -128,11 +128,31 @@ export function installBrowserBridge(options: {
   // A click on non-focusable App content focuses this document without a
   // focusin, and the host cannot see a pointer inside the App's frame. The
   // document's own focus changes are what tell the host the App is in use.
-  const reportDocumentFocus = () => {
-    queueMicrotask(report);
+  // The window's own events say whether the document is focused: reading
+  // hasFocus() inside them can still return the old answer, which left the
+  // last report stale and made the next real focus look unchanged.
+  const reportWindowFocus = (focused: boolean) => () => {
+    queueMicrotask(() => {
+      report(focused);
+    });
   };
-  options.window.addEventListener("focus", reportDocumentFocus);
-  options.window.addEventListener("blur", reportDocumentFocus);
+  const onWindowFocus = reportWindowFocus(true);
+  const reportBlur = reportWindowFocus(false);
+  // Focus moving into one of the App's own child frames blurs this window but
+  // keeps the App in use, so only a blur that leaves the App is reported.
+  const onWindowBlur = () => {
+    const held = options.window.document.activeElement?.tagName;
+    if (
+      held === "IFRAME" ||
+      held === "FRAME" ||
+      held === "OBJECT" ||
+      held === "EMBED"
+    )
+      return;
+    reportBlur();
+  };
+  options.window.addEventListener("focus", onWindowFocus);
+  options.window.addEventListener("blur", onWindowBlur);
   const bindings = options.bindings;
   const editing = () =>
     currentFocus(options.window.document, options.identity.surfaceId).editing;
@@ -161,8 +181,8 @@ export function installBrowserBridge(options: {
     if (!active) return;
     active = false;
     offFocus();
-    options.window.removeEventListener("focus", reportDocumentFocus);
-    options.window.removeEventListener("blur", reportDocumentFocus);
+    options.window.removeEventListener("focus", onWindowFocus);
+    options.window.removeEventListener("blur", onWindowBlur);
     offChordSubscription();
     offReserved();
     offBindingSubscription();
@@ -180,15 +200,25 @@ function createFocusReporter(
   isActive: () => boolean,
   setPrevious: (focus: Readonly<FocusState>) => void,
   getPrevious: () => Readonly<FocusState> | undefined,
-): () => void {
-  return () => {
+): (windowFocused?: boolean) => void {
+  return (windowFocused) => {
     if (!isActive()) return;
-    const focus = currentFocus(
+    const read = currentFocus(
       options.window.document,
       options.identity.surfaceId,
     );
+    const focus =
+      windowFocused === undefined
+        ? read
+        : parseFocus({
+            editing: read.editing,
+            surface: windowFocused ? options.identity.surfaceId : null,
+          });
     const previous = getPrevious();
+    // A window focus is always news to the host: the last report may have been
+    // a stale read, or a claim the host never confirmed.
     if (
+      windowFocused !== true &&
       focus.editing === previous?.editing &&
       focus.surface === previous.surface
     )

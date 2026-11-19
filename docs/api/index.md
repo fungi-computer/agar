@@ -4397,6 +4397,12 @@ Re-exports [AppError](errors.md#apperror)
 
 ---
 
+### readAppFailure
+
+Re-exports [readAppFailure](errors.md#readappfailure)
+
+---
+
 ### AppDeliveryPending
 
 Re-exports [AppDeliveryPending](errors.md#appdeliverypending)

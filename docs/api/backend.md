@@ -56,6 +56,26 @@ readonly code: "unavailable" | "invalid" | "conflict" | "forbidden" | "not_found
 
 ## Type Aliases
 
+### AppFailureReason
+
+```ts
+type AppFailureReason = (typeof appFailureReasons)[number];
+```
+
+One of [appFailureReasons](#appfailurereasons).
+
+---
+
+### AppFailureWhere
+
+```ts
+type AppFailureWhere = z.output<typeof appFailureWhereSchema>;
+```
+
+A decoded [appFailureWhereSchema](#appfailurewhereschema) value.
+
+---
+
 ### AppRegionConnection
 
 ```ts
@@ -111,6 +131,49 @@ read-only JSON.
 
 ## Variables
 
+### appFailureReasons
+
+```ts
+const appFailureReasons: readonly [
+  "exec_isolation_required",
+  "execution_not_admitted",
+  "artifact_unavailable",
+  "disabled",
+  "timed_out",
+  "permission_changed",
+  "binding_reply_invalid",
+  "backend_error",
+  "cancelled",
+  "request_too_large",
+  "not_offered",
+  "internal",
+];
+```
+
+The closed set of reasons a host states when an App could not run a request.
+Each names one cause a person can act on or report; private backend messages and
+guest-authored text never appear here.
+
+---
+
+### appFailureWhereSchema
+
+```ts
+const appFailureWhereSchema: ZodObject<
+  {
+    binding: ZodString;
+    method: ZodString;
+    path: ZodString;
+  },
+  $strict
+>;
+```
+
+Where a connection's reply was unreadable: host-known names and a field path,
+never values.
+
+---
+
 ### appBackendRefusalSchema
 
 ```ts
@@ -118,11 +181,30 @@ const appBackendRefusalSchema: ZodObject<
   {
     error: ZodLiteral<"App execution unavailable">;
     reason: ZodEnum<{
-      disabled: "disabled";
+      cancelled: "cancelled";
       exec_isolation_required: "exec_isolation_required";
       execution_not_admitted: "execution_not_admitted";
       artifact_unavailable: "artifact_unavailable";
+      disabled: "disabled";
+      timed_out: "timed_out";
+      permission_changed: "permission_changed";
+      binding_reply_invalid: "binding_reply_invalid";
+      backend_error: "backend_error";
+      request_too_large: "request_too_large";
+      not_offered: "not_offered";
+      internal: "internal";
     }>;
+    ref: ZodOptional<ZodString>;
+    where: ZodOptional<
+      ZodObject<
+        {
+          binding: ZodString;
+          method: ZodString;
+          path: ZodString;
+        },
+        $strict
+      >
+    >;
   },
   $strict
 >;

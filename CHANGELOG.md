@@ -1,5 +1,27 @@
 # @fungi.computer/agar
 
+## 0.24.0
+
+### Minor Changes
+
+- Changes since 0.23.2:
+
+  - fix(agar): export the focus window type
+  - fix(agar,hub,oyster): keep one pending focus check per mount and require
+    page focus
+  - fix(hub): keep released computer refusal shapes on the wire
+  - fix(apps): send named Computer refusals only to Apps that opt in
+  - fix(agar): accept any host window for the frame focus check
+  - fix(agar,hub,oyster): do not hold an App's focus call and wire its browser
+    proof
+  - fix(agar,hub,oyster): raise an App window only for focus the host sees
+  - feat(agar): name the connection and field of an unreadable reply
+  - fix(apps): name each Computer refusal in plain words
+  - fix(agar): keep an App focused while focus is in its child frame
+  - feat(agar): say when an App request was cancelled, too large or not offered
+  - fix(agar): report an App window gaining focus after a stale blur
+  - feat(agar): word a failed App request by the cause its host states
+
 ## 0.23.2
 
 ### Patch Changes

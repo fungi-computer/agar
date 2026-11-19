@@ -6,6 +6,7 @@ import {
   rpcVoid,
 } from "./internal/rpc-contract.js";
 import * as z from "zod";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import type {
   CapabilityContract,
@@ -19,6 +20,10 @@ import {
 } from "./files.js";
 import { reportCatchFailure } from "./failure.js";
 import { AppError, describeAppError } from "./errors.js";
+import {
+  appComputerRefusalCodeSchema,
+  computerRefusalMessage,
+} from "./computer-contracts.js";
 
 export const computerListingSchema = Schema.Struct({
   path: Schema.String,
@@ -490,10 +495,10 @@ export async function listComputerProcesses(
 }
 
 /**
- * Why a Computer readout (processes, ports) is unavailable, with the cause and
- * the fix the window can offer. `no-runtime`: nothing is running to answer, so
- * the fix is setup. `not-granted`: the App lacks the right, so the fix is a
- * grant. `failed`: the request itself failed; retry.
+ * Why a Computer request or readout (processes, ports) did not succeed, with
+ * the cause and the fix the window can offer. `no-runtime`: nothing is
+ * running to answer, so the fix is setup. `not-granted`: the App lacks the
+ * right, so the fix is a grant. `failed`: the request itself failed; retry.
  */
 export type ComputerRefusal = Readonly<{
   reason: "no-runtime" | "not-granted" | "failed";
@@ -502,8 +507,28 @@ export type ComputerRefusal = Readonly<{
   action: "setup" | "grant" | "retry";
 }>;
 
-/** Classify a failed Computer readout from its SDK-decoded error. */
+/** A Computer refusal an App method returned as its value. */
+const computerRefusalValue = Schema.Struct({
+  error: Schema.Literals(appComputerRefusalCodeSchema.options),
+  ref: Schema.optional(Schema.String),
+});
+
+/**
+ * Classify a Computer refusal: a refusal value an App method returned
+ * (`{ error: "capacity" }`), or a thrown SDK-decoded error. The words for a
+ * refusal value come from {@link computerRefusalMessage}, their one table.
+ */
 export function describeComputerRefusal(cause: unknown): ComputerRefusal {
+  const refused = Schema.decodeUnknownOption(computerRefusalValue)(cause);
+  if (Option.isSome(refused)) {
+    const { error, ref } = refused.value;
+    const message = computerRefusalMessage(error, ref);
+    return error === "not_granted" ||
+      error === "revoked" ||
+      error === "grantor_lost_authority"
+      ? { reason: "not-granted", message, action: "grant" }
+      : { reason: "failed", message, action: "retry" };
+  }
   const described = describeAppError(cause);
   if (described.action === "setup")
     return {

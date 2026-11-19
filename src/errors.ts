@@ -3,6 +3,12 @@ import * as Option from "effect/Option";
 import * as z from "zod";
 import { setupNeedSchema } from "./internal/setup-need.js";
 import {
+  appBackendRefusalSchema,
+  appFailureReasons,
+  type AppFailureReason,
+  type AppFailureWhere,
+} from "./backend-refusal.js";
+import {
   mediaProviderDetailMax,
   mediaProviderDiagnosticSchema,
   mediaProviderDiagnosticZodSchema,
@@ -138,6 +144,17 @@ const describedAppErrorSchema = Schema.Struct({
   code: Schema.Literals(appErrorCodes),
   retryable: Schema.Boolean,
   need: Schema.optional(Schema.String),
+  // Decoded leniently below: a newer host's reason must not fail the description.
+  reason: Schema.optional(Schema.String),
+  ref: Schema.optional(Schema.String),
+  where: Schema.optional(Schema.Unknown),
+});
+
+const appFailureReasonSchema = Schema.Literals(appFailureReasons);
+const failureWhereSchema = Schema.Struct({
+  binding: Schema.String,
+  method: Schema.String,
+  path: Schema.String,
 });
 
 /** Required construction options for an AppError. */
@@ -148,6 +165,12 @@ export type AppErrorOptions = {
   readonly retryable: boolean;
   /** What a `SETUP_REQUIRED` failure needs, in plain words such as "a model". */
   readonly need?: string;
+  /** The host's stated cause; `describeAppError` words it in place of the code's copy. */
+  readonly reason?: AppFailureReason;
+  /** Names this failure in the host's logs, shown with causes that are our bug. */
+  readonly ref?: string;
+  /** For `binding_reply_invalid`: which connection, method and field. */
+  readonly where?: AppFailureWhere;
 };
 
 /** The SDK's one typed failure. Carries a closed `code` naming the failure
@@ -158,6 +181,12 @@ export class AppError extends Error {
   readonly retryable: boolean;
   /** Set only on `SETUP_REQUIRED`: the missing thing, for the copy. */
   readonly need: string | undefined;
+  /** The host's stated cause, when it supplied one. */
+  readonly reason: AppFailureReason | undefined;
+  /** The log reference for this failure, when the host supplied one. */
+  readonly ref: string | undefined;
+  /** Which connection's reply was unreadable, when the host said. */
+  readonly where: AppFailureWhere | undefined;
 
   constructor(message: string, options: AppErrorOptions) {
     super(message, { cause: options.cause });
@@ -165,6 +194,9 @@ export class AppError extends Error {
     this.code = options.code;
     this.retryable = options.retryable;
     this.need = options.need;
+    this.reason = options.reason;
+    this.ref = options.ref;
+    this.where = options.where;
   }
 }
 
@@ -297,6 +329,78 @@ const errorCopy = {
   },
 } satisfies Readonly<Record<AppErrorCode | "UNKNOWN", CopyEntry>>;
 
+/** " (ref abc)" for causes that are ours, so a report maps to a log line. */
+function refSuffix(ref: string | undefined): string {
+  return ref === undefined || ref === "" ? "" : ` (ref ${ref})`;
+}
+
+// What the host said went wrong, in plain words. Each entry names the cause;
+// none carries exception text. Reviewed in this table with `errorCopy`.
+const reasonCopy = {
+  exec_isolation_required: () => ({
+    title: "App can't run here",
+    message: "This App needs a runtime this host doesn't have.",
+  }),
+  execution_not_admitted: () => ({
+    title: "App not allowed to run",
+    message:
+      "This App isn't allowed to run right now. A Team owner can check its access.",
+  }),
+  artifact_unavailable: () => ({
+    title: "App files missing",
+    message: "This App's files couldn't be loaded. Update or reinstall it.",
+  }),
+  disabled: () => ({
+    title: "App turned off",
+    message: "This App is turned off.",
+  }),
+  timed_out: () => ({
+    title: "Still waiting",
+    message:
+      "The App took too long to answer. Its result isn't known; check before you retry.",
+  }),
+  permission_changed: () => ({
+    title: "Access changed",
+    message:
+      "This App's access changed while it was working. Review its permissions.",
+    action: "grant",
+  }),
+  binding_reply_invalid: (ref, where) => ({
+    title: "Internal error",
+    message:
+      where === undefined
+        ? `One of the App's connections returned an answer we couldn't read. That's our bug${refSuffix(ref)}.`
+        : `The App's ${where.binding.toLowerCase()} connection answered ${where.method} with something we couldn't read${where.path === "" ? "" : ` (${where.path})`}. That's our bug${refSuffix(ref)}.`,
+  }),
+  cancelled: () => ({
+    title: "Request cancelled",
+    message:
+      "This request was cancelled before it finished. Start it again if you still want it.",
+  }),
+  request_too_large: () => ({
+    title: "Request too large",
+    message:
+      "This request is too large for the App to accept. Try something smaller.",
+  }),
+  not_offered: () => ({
+    title: "App can't do that",
+    message: "This App doesn't offer that.",
+  }),
+  backend_error: (ref) => ({
+    title: "The App failed",
+    message: `The App's own code failed on this request${refSuffix(ref)}.`,
+  }),
+  internal: (ref) => ({
+    title: "Internal error",
+    message: `An internal error stopped the App from running this request${refSuffix(ref)}.`,
+  }),
+} satisfies Readonly<
+  Record<
+    AppFailureReason,
+    (ref: string | undefined, where: AppFailureWhere | undefined) => CopyEntry
+  >
+>;
+
 /**
  * Describe an SDK-decoded failure without exposing exception or request data.
  * The error owner retains retry truth. Grant and reconnect hints describe
@@ -311,6 +415,25 @@ export function describeAppError(
   if (Option.isNone(decoded)) return { ...errorCopy.UNKNOWN, retryable: false };
   const error = decoded.value;
   const entry: CopyEntry = errorCopy[error.code];
+  const reason = Option.getOrUndefined(
+    Schema.decodeUnknownOption(appFailureReasonSchema)(error.reason),
+  );
+  if (reason !== undefined) {
+    const where = Option.getOrUndefined(
+      Schema.decodeUnknownOption(failureWhereSchema)(error.where),
+    );
+    const stated: CopyEntry = reasonCopy[reason](error.ref, where);
+    const statedAction =
+      stated.action ?? (error.retryable ? "retry" : undefined);
+    const description = {
+      title: stated.title,
+      message: stated.message,
+      retryable: error.retryable,
+    };
+    return statedAction
+      ? { ...description, action: statedAction }
+      : description;
+  }
   const copy =
     overrides?.[error.code] ??
     (error.code === "SETUP_REQUIRED"
@@ -324,4 +447,60 @@ export function describeAppError(
   };
   if (action) return { ...description, action };
   return description;
+}
+
+/** The closed code each stated reason travels under; the reason words the copy. */
+const reasonCode = {
+  exec_isolation_required: "HOST_FAILURE",
+  execution_not_admitted: "HOST_FAILURE",
+  artifact_unavailable: "HOST_FAILURE",
+  disabled: "HOST_FAILURE",
+  timed_out: "TIMEOUT",
+  permission_changed: "CAPABILITY_REVOKED",
+  binding_reply_invalid: "HOST_FAILURE",
+  backend_error: "HOST_FAILURE",
+  cancelled: "CANCELLED",
+  request_too_large: "HOST_FAILURE",
+  not_offered: "HOST_FAILURE",
+  internal: "HOST_FAILURE",
+} as const satisfies Readonly<Record<AppFailureReason, AppErrorCode>>;
+
+/**
+ * The failure a non-ok App backend response states. A host body naming a closed
+ * reason (and its log ref) becomes an `AppError` carrying both, so
+ * `describeAppError` words the real cause; a body that names none still says
+ * which status the backend answered. The one place a response turns into an
+ * App failure: callers do not word it themselves.
+ */
+export async function readAppFailure(response: Response): Promise<AppError> {
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (cause) {
+    // A body that is not JSON states no reason.
+    if (!(cause instanceof SyntaxError)) throw cause;
+  }
+  const retryable = response.status >= 500;
+  const stated = appBackendRefusalSchema.safeParse(body);
+  if (!stated.success)
+    return new AppError(
+      `The App backend answered HTTP ${String(response.status)}`,
+      {
+        code: "HOST_FAILURE",
+        retryable,
+      },
+    );
+  const { reason, ref, where } = stated.data;
+  const options: AppErrorOptions = {
+    code: reasonCode[reason],
+    // A timeout's outcome is unknown, so never invite a blind retry.
+    retryable: reason === "timed_out" ? false : retryable,
+    reason,
+  };
+  const detailed: AppErrorOptions =
+    ref === undefined ? options : { ...options, ref };
+  return new AppError(
+    `The App backend failed: ${reason}`,
+    where === undefined ? detailed : { ...detailed, where },
+  );
 }

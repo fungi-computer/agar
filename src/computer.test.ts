@@ -707,4 +707,25 @@ describe("Computer refusal", () => {
   it("treats a non-AppError as a plain failure", () => {
     expect(describeComputerRefusal(new Error("boom")).reason).toBe("failed");
   });
+
+  it("words a refusal value an App method returned, with its fix", () => {
+    expect(describeComputerRefusal({ error: "capacity" })).toEqual({
+      reason: "failed",
+      message: "The Computer's host is full right now. Try again in a minute.",
+      action: "retry",
+    });
+    expect(describeComputerRefusal({ error: "revoked" })).toMatchObject({
+      reason: "not-granted",
+      action: "grant",
+    });
+    expect(
+      describeComputerRefusal({ error: "unavailable", ref: "req_1" }).message,
+    ).toBe(
+      "The Computer didn't answer, and we don't know why yet (ref req_1).",
+    );
+    // A code outside the Computer's vocabulary is not a refusal value.
+    expect(describeComputerRefusal({ error: "future_code" }).message).toBe(
+      "The App couldn't complete this request.",
+    );
+  });
 });

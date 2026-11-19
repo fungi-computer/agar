@@ -89,7 +89,13 @@ export const appRegion: CapabilityContract<{
   ),
 );
 
-export { appBackendRefusalSchema } from "./backend-refusal.js";
+export {
+  appBackendRefusalSchema,
+  appFailureReasons,
+  appFailureWhereSchema,
+  type AppFailureReason,
+  type AppFailureWhere,
+} from "./backend-refusal.js";
 export {
   AppMethodRefusal,
   appMethodRefusalCodes,

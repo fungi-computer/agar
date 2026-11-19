@@ -5,9 +5,11 @@ import { MediaGenerationError, mediaGenerationFailureSchema } from "./media.js";
 import {
   AppError,
   describeAppError,
+  readAppFailure,
   type AppErrorCode,
   type ErrorDescription,
 } from "./errors.js";
+import { appFailureReasons } from "./backend-refusal.js";
 
 describe("describeAppError", () => {
   it("round-trips pending delivery through the SDK's ordinary error decoder", () => {
@@ -268,5 +270,135 @@ describe("describeAppError", () => {
     );
     expect(result.message).toContain("outcome isn't known");
     expect(result.action).toBeUndefined();
+  });
+});
+
+describe("a host's stated failure reason", () => {
+  const stated = (body: Readonly<Record<string, string>>, status = 503) =>
+    readAppFailure(Response.json(body, { status }));
+
+  it("words every reason with its own plain cause, never the code's generic line", () => {
+    const generic = describeAppError(
+      new AppError("x", { code: "HOST_FAILURE", retryable: true }),
+    ).message;
+    const seen = new Set<string>();
+    for (const reason of appFailureReasons) {
+      const described = describeAppError(
+        new AppError("x", {
+          code: "HOST_FAILURE",
+          retryable: false,
+          reason,
+          ref: "ab12cd34",
+        }),
+      );
+      expect(described.message).not.toBe(generic);
+      expect(described.message).not.toContain("stopped answering");
+      seen.add(described.message);
+    }
+    expect(seen.size).toBe(appFailureReasons.length);
+  });
+
+  it("shows the ref only for causes that are ours, once", () => {
+    const worded = (reason: (typeof appFailureReasons)[number]) =>
+      describeAppError(
+        new AppError("x", {
+          code: "HOST_FAILURE",
+          retryable: false,
+          reason,
+          ref: "ab12cd34",
+        }),
+      ).message;
+    expect(worded("binding_reply_invalid")).toBe(
+      "One of the App's connections returned an answer we couldn't read. That's our bug (ref ab12cd34).",
+    );
+    expect(worded("backend_error")).toBe(
+      "The App's own code failed on this request (ref ab12cd34).",
+    );
+    expect(worded("internal")).toBe(
+      "An internal error stopped the App from running this request (ref ab12cd34).",
+    );
+    expect(worded("timed_out")).toBe(
+      "The App took too long to answer. Its result isn't known; check before you retry.",
+    );
+  });
+
+  it("falls back to the code's copy for a reason this SDK does not know", () => {
+    const fromNewerHost = Object.assign(new Error("private"), {
+      name: "AppError",
+      code: "HOST_FAILURE",
+      retryable: true,
+      reason: "something_a_newer_host_invented",
+      ref: "ab12cd34",
+    });
+    expect(describeAppError(fromNewerHost).message).toBe(
+      describeAppError(
+        new AppError("x", { code: "HOST_FAILURE", retryable: true }),
+      ).message,
+    );
+  });
+
+  it("reads a timed out refusal as a non-retryable timeout with its words", async () => {
+    const error = await stated({
+      error: "App execution unavailable",
+      reason: "timed_out",
+      ref: "ab12cd34",
+    });
+    expect(error).toMatchObject({
+      code: "TIMEOUT",
+      retryable: false,
+      reason: "timed_out",
+      ref: "ab12cd34",
+    });
+    expect(describeAppError(error).message).toBe(
+      "The App took too long to answer. Its result isn't known; check before you retry.",
+    );
+  });
+
+  it("reads a cancelled request as a cancellation, not a failure", async () => {
+    const error = await stated(
+      { error: "App execution unavailable", reason: "cancelled" },
+      499,
+    );
+    expect(error).toMatchObject({ code: "CANCELLED", retryable: false });
+    expect(describeAppError(error).message).toBe(
+      "This request was cancelled before it finished. Start it again if you still want it.",
+    );
+  });
+
+  it("reads permission and internal causes", async () => {
+    expect(
+      await stated({
+        error: "App execution unavailable",
+        reason: "permission_changed",
+      }),
+    ).toMatchObject({
+      code: "CAPABILITY_REVOKED",
+      reason: "permission_changed",
+    });
+    const internal = await stated({
+      error: "App execution unavailable",
+      reason: "internal",
+      ref: "zz99",
+    });
+    expect(internal).toMatchObject({ code: "HOST_FAILURE", retryable: true });
+    expect(describeAppError(internal).message).toBe(
+      "An internal error stopped the App from running this request (ref zz99).",
+    );
+  });
+
+  it("names the status when the body states no reason, and survives non-JSON", async () => {
+    for (const response of [
+      Response.json({ error: "nope" }, { status: 502 }),
+      Response.json(
+        { error: "App execution unavailable", reason: "made_up" },
+        { status: 502 },
+      ),
+      new Response("<html>private upstream</html>", { status: 502 }),
+    ]) {
+      const error = await readAppFailure(response);
+      expect(error.message).toBe("The App backend answered HTTP 502");
+      expect(error.reason).toBeUndefined();
+      expect(error.message).not.toContain("private");
+    }
   });
 });
