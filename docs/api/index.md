@@ -72,6 +72,16 @@ The metadata the host attaches for one authenticated author, as JSON.
 
 ---
 
+### AgentStopAllResult
+
+```ts
+type AgentStopAllResult = z.infer<typeof agentStopAllResultSchema>;
+```
+
+The confirmed outcome of one Stop all.
+
+---
+
 ### AppAgent
 
 ```ts
@@ -341,6 +351,67 @@ Rename an existing Agent and return its updated record.
 `riso`: `"riso"`; `halftone`: `"halftone"`; `blueprint`: `"blueprint"`; `crt`:
 `"crt"`; `watercolor`: `"watercolor"`; \}\>; \}; `sessionOperations`: readonly
 (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+
+---
+
+### AppAgentStopInput
+
+```ts
+type AppAgentStopInput = Readonly<
+  Schema.Schema.Type<typeof appAgentStopInputSchema>
+>;
+```
+
+Input for Stop all: the Agent to stop along with every Agent it spawned.
+
+---
+
+### AppAgentStopHandle
+
+```ts
+type AppAgentStopHandle = object;
+```
+
+Capability handle for stopping an Agent and the Agents it spawned.
+
+#### Methods
+
+##### stopAll()
+
+```ts
+stopAll(input): Promise<{
+  rootAgentId: string;
+  agents: (
+     | {
+     agentId: string;
+     name: string;
+     outcome: "stopped" | "idle";
+   }
+     | {
+     agentId: string;
+     name: string;
+     outcome: "failed";
+     reason: string;
+  })[];
+  discoveryFailures: object[];
+  notPermitted: number;
+}>;
+```
+
+Stop the Agent and its helpers, helpers first, and report each one.
+
+###### Parameters
+
+| Parameter | Type                                      |
+| --------- | ----------------------------------------- |
+| `input`   | [`AppAgentStopInput`](#appagentstopinput) |
+
+###### Returns
+
+`Promise`\<\{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`;
+`name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`:
+`string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[];
+`discoveryFailures`: `object`[]; `notPermitted`: `number`; \}\>
 
 ---
 
@@ -2610,6 +2681,60 @@ Shiitake stores it opaquely; the host writes it and Apps read it.
 
 ---
 
+### agentStopAllResultSchema
+
+```ts
+const agentStopAllResultSchema: ZodObject<
+  {
+    rootAgentId: ZodString;
+    agents: ZodArray<
+      ZodDiscriminatedUnion<
+        [
+          ZodObject<
+            {
+              agentId: ZodString;
+              name: ZodString;
+              outcome: ZodEnum<{
+                stopped: "stopped";
+                idle: "idle";
+              }>;
+            },
+            $strict
+          >,
+          ZodObject<
+            {
+              agentId: ZodString;
+              name: ZodString;
+              outcome: ZodLiteral<"failed">;
+              reason: ZodString;
+            },
+            $strict
+          >,
+        ],
+        "outcome"
+      >
+    >;
+    discoveryFailures: ZodArray<
+      ZodObject<
+        {
+          agentId: ZodString;
+          reason: ZodString;
+        },
+        $strict
+      >
+    >;
+    notPermitted: ZodNumber;
+  },
+  $strict
+>;
+```
+
+Stop all: what stopping an Agent and the Agents it spawned confirmed, one entry
+per attempted Agent in the order it was stopped (helpers before the Agent that
+made them). Local and hosted hosts report the same shape.
+
+---
+
 ### appAgentAvatarSchema
 
 ```ts
@@ -2821,6 +2946,30 @@ const agentRename: CapabilityContract<AppAgentRenameHandle>;
 ```
 
 Owner-only capability to rename an existing Agent; not every host grants it.
+
+---
+
+### appAgentStopInputSchema
+
+```ts
+const appAgentStopInputSchema: Struct<{
+  agentId: String;
+}>;
+```
+
+Validates Stop all input: the Agent whose tree to stop.
+
+---
+
+### agentStop
+
+```ts
+const agentStop: CapabilityContract<AppAgentStopHandle>;
+```
+
+Stop all for an Agent this App may manage: its running turns and queued prompts
+are cancelled and its schedules paused, and the same for every Agent it spawned.
+Nothing is deleted. Not every host grants it.
 
 ---
 
@@ -3916,6 +4065,79 @@ Rename an Agent through the host-granted owner-only capability.
 `"plain"` \| `"pencil"` \| `"manga"` \| `"riso"` \| `"halftone"` \|
 `"blueprint"` \| `"crt"` \| `"watercolor"`; \}; `sessionOperations`: readonly
 (`"agent.manage"` \| `"agent.read"` \| `"agent.send"`)[]; \}\>
+
+---
+
+### stopAppAgentTree()
+
+```ts
+function stopAppAgentTree(
+  capabilities,
+  input,
+): Promise<{
+  rootAgentId: string;
+  agents: (
+    | {
+        agentId: string;
+        name: string;
+        outcome: "stopped" | "idle";
+      }
+    | {
+        agentId: string;
+        name: string;
+        outcome: "failed";
+        reason: string;
+      }
+  )[];
+  discoveryFailures: object[];
+  notPermitted: number;
+}>;
+```
+
+Stop an Agent and the Agents it spawned through the host-granted capability.
+
+#### Parameters
+
+| Parameter      | Type                                          |
+| -------------- | --------------------------------------------- |
+| `capabilities` | [`CapabilityDirectory`](#capabilitydirectory) |
+| `input`        | [`AppAgentStopInput`](#appagentstopinput)     |
+
+#### Returns
+
+`Promise`\<\{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`;
+`name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`:
+`string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[];
+`discoveryFailures`: `object`[]; `notPermitted`: `number`; \}\>
+
+---
+
+### agentStopAllSummary()
+
+```ts
+function agentStopAllSummary(result): Readonly<{
+  tone: "success" | "warning";
+  message: string;
+}>;
+```
+
+One notice for a Stop all, never one per helper. Counts name only confirmed
+stops; then one plain sentence for each Agent that may still be running,
+carrying its actual cause.
+
+#### Parameters
+
+| Parameter                  | Type                                                                                                                                                                                                                                                                                     | Description                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result`                   | \{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]; `discoveryFailures`: `object`[]; `notPermitted`: `number`; \} | -                                                                                                                                                                     |
+| `result.rootAgentId`       | `string`                                                                                                                                                                                                                                                                                 | -                                                                                                                                                                     |
+| `result.agents`            | ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]                                                                                                      | -                                                                                                                                                                     |
+| `result.discoveryFailures` | `object`[]                                                                                                                                                                                                                                                                               | Agents whose record could not be read, so whether they run is unknown.                                                                                                |
+| `result.notPermitted`      | `number`                                                                                                                                                                                                                                                                                 | Helpers in the tree this caller may not manage. They were not stopped, and are counted rather than named so a narrow caller learns no more of the tree than its size. |
+
+#### Returns
+
+`Readonly`\<\{ `tone`: `"success"` \| `"warning"`; `message`: `string`; \}\>
 
 ---
 

@@ -1,5 +1,20 @@
 # @fungi.computer/agar
 
+## 0.25.0
+
+### Minor Changes
+
+- Changes since 0.24.0:
+
+  - fix(agar): say which Agents may still be running and why
+  - fix(hub): stop four Agents at once and count helpers a key may not stop
+  - feat(agar): add the agent.stop capability for stop all
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.13.0
+
 ## 0.24.0
 
 ### Minor Changes

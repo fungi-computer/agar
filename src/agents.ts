@@ -49,6 +49,46 @@ export const agentNameSchema = z
     message: "An Agent name cannot contain control or invisible characters",
   });
 
+/**
+ * Stop all: what stopping an Agent and the Agents it spawned confirmed, one
+ * entry per attempted Agent in the order it was stopped (helpers before the
+ * Agent that made them). Local and hosted hosts report the same shape.
+ */
+export const agentStopAllResultSchema = z.strictObject({
+  rootAgentId: z.string(),
+  agents: z.array(
+    z.discriminatedUnion("outcome", [
+      z.strictObject({
+        agentId: z.string(),
+        name: z.string(),
+        outcome: z.enum(["stopped", "idle"]),
+      }),
+      z.strictObject({
+        agentId: z.string(),
+        name: z.string(),
+        outcome: z.literal("failed"),
+        reason: z.string(),
+      }),
+    ]),
+  ),
+  /** Agents whose record could not be read, so whether they run is unknown. */
+  discoveryFailures: z.array(
+    z.strictObject({
+      agentId: z.string(),
+      reason: z.string(),
+    }),
+  ),
+  /**
+   * Helpers in the tree this caller may not manage. They were not stopped,
+   * and are counted rather than named so a narrow caller learns no more of
+   * the tree than its size.
+   */
+  notPermitted: z.number().int().nonnegative(),
+});
+
+/** The confirmed outcome of one Stop all. */
+export type AgentStopAllResult = z.infer<typeof agentStopAllResultSchema>;
+
 const boundedIdentity = Schema.String.pipe(
   Schema.check(Schema.isMinLength(1)),
   Schema.check(Schema.isMaxLength(256)),
@@ -265,6 +305,93 @@ export async function renameAppAgent(
   const request = Schema.decodeUnknownSync(appAgentRenameInputSchema)(input);
   const agent = await capabilities.require(agentRename).rename(request);
   return Schema.decodeUnknownSync(appAgentSchema)(agent);
+}
+
+/** Validates Stop all input: the Agent whose tree to stop. */
+export const appAgentStopInputSchema = Schema.Struct({
+  agentId: boundedIdentity,
+});
+/** Input for Stop all: the Agent to stop along with every Agent it spawned. */
+export type AppAgentStopInput = Readonly<
+  Schema.Schema.Type<typeof appAgentStopInputSchema>
+>;
+/** Capability handle for stopping an Agent and the Agents it spawned. */
+export type AppAgentStopHandle = {
+  /** Stop the Agent and its helpers, helpers first, and report each one. */
+  stopAll(input: AppAgentStopInput): Promise<AgentStopAllResult>;
+};
+/**
+ * Stop all for an Agent this App may manage: its running turns and queued
+ * prompts are cancelled and its schedules paused, and the same for every
+ * Agent it spawned. Nothing is deleted. Not every host grants it.
+ */
+export const agentStop: CapabilityContract<AppAgentStopHandle> =
+  defineCapability(
+    "agent.stop",
+    1,
+    z.lazy(() =>
+      rpcHandleSchema({
+        stopAll: rpcMethod(rpcDataSchema(agentStopAllResultSchema)),
+      }),
+    ),
+  );
+/** Stop an Agent and the Agents it spawned through the host-granted capability. */
+export async function stopAppAgentTree(
+  capabilities: CapabilityDirectory,
+  input: AppAgentStopInput,
+): Promise<AgentStopAllResult> {
+  const request = Schema.decodeUnknownSync(appAgentStopInputSchema)(input);
+  return agentStopAllResultSchema.parse(
+    await capabilities.require(agentStop).stopAll(request),
+  );
+}
+
+/**
+ * One notice for a Stop all, never one per helper. Counts name only confirmed
+ * stops; then one plain sentence for each Agent that may still be running,
+ * carrying its actual cause.
+ */
+export function agentStopAllSummary(
+  result: AgentStopAllResult,
+): Readonly<{ tone: "success" | "warning"; message: string }> {
+  const root = result.agents.find(
+    ({ agentId }) => agentId === result.rootAgentId,
+  );
+  const helpers = result.agents.filter(
+    ({ agentId, outcome }) =>
+      agentId !== result.rootAgentId && outcome === "stopped",
+  ).length;
+  const helperText = `${String(helpers)} helper${helpers === 1 ? "" : "s"}`;
+  const stopped =
+    root?.outcome === "stopped"
+      ? `Stopped ${root.name}${helpers > 0 ? ` and ${helperText}` : ""}`
+      : helpers > 0
+        ? `Stopped ${helperText}${root?.outcome === "idle" ? `; ${root.name} already idle` : ""}`
+        : "No running turns to stop";
+  const unconfirmed = [
+    ...result.agents.flatMap((agent) =>
+      agent.outcome === "failed"
+        ? [`${agent.name} may still be running: ${agent.reason}.`]
+        : [],
+    ),
+    ...result.discoveryFailures.map(
+      ({ agentId, reason }) =>
+        `${agentId} could not be checked and may still be running: ${reason}.`,
+    ),
+    ...(result.notPermitted === 0
+      ? []
+      : [
+          result.notPermitted === 1
+            ? "1 helper you may not stop was left as it was."
+            : `${String(result.notPermitted)} helpers you may not stop were left as they were.`,
+        ]),
+  ];
+  return unconfirmed.length === 0
+    ? { tone: "success", message: stopped }
+    : {
+        tone: "warning",
+        message: `${stopped}. ${unconfirmed.join(" ")}`,
+      };
 }
 
 /** Validates avatar input: the target Agent and the avatar it now wears. */
