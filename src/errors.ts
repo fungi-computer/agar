@@ -280,8 +280,9 @@ const errorCopy = {
     action: "reconnect",
   },
   INSUFFICIENT_CREDIT: {
-    title: "Something went wrong",
-    message: "The App couldn't complete this request.",
+    title: "Out of credit",
+    message:
+      "Your Team doesn't have enough credit for this. Add credit to continue.",
     action: "billing",
   },
   INVALID_ARGUMENT: {
@@ -447,6 +448,58 @@ export function describeAppError(
   };
   if (action) return { ...description, action };
   return description;
+}
+
+const failureTextMax = 200;
+
+/** A request that never reached its server (a dropped connection or DNS failure). */
+export class NetworkRequestError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("The network request failed. Check your connection.", options);
+    this.name = "NetworkRequestError";
+  }
+}
+
+/**
+ * One phrase naming why a failed call failed, for a toast, without a final
+ * period so a caller can punctuate once. An App error states its cause through
+ * {@link describeAppError}; a {@link NetworkRequestError} says the connection
+ * failed; any other thrown Error states its own message (our own code wrote
+ * it), capped; anything else says no reason was given. Never the generic
+ * "something went wrong".
+ */
+export function failureCause(cause: unknown): string {
+  const decoded = Schema.decodeUnknownOption(describedAppErrorSchema)(cause);
+  const stated = Option.isSome(decoded)
+    ? describeAppError(cause).message
+    : cause instanceof z.ZodError
+      ? "The response was not in the expected shape"
+      : cause instanceof Error
+        ? cause.message.trim()
+        : "";
+  const phrase = stated.replace(/\.+$/u, "");
+  if (phrase.length === 0) return "No reason was given";
+  return phrase.length > failureTextMax
+    ? `${phrase.slice(0, failureTextMax)}…`
+    : phrase;
+}
+
+/** What failed, then why, as one sentence: "The conversation could not be started: <cause>." */
+export function failureMessage(what: string, cause: unknown): string {
+  return `${what}: ${failureCause(cause)}.`;
+}
+
+/**
+ * {@link failureMessage} for an App whose host may put private text in an
+ * untyped error. A typed App error states its cause; anything else says only
+ * that the host returned an error it did not describe.
+ */
+export function typedFailureMessage(what: string, cause: unknown): string {
+  return Option.isSome(
+    Schema.decodeUnknownOption(describedAppErrorSchema)(cause),
+  )
+    ? failureMessage(what, cause)
+    : `${what}: the host returned an error it did not describe.`;
 }
 
 /** The closed code each stated reason travels under; the reason words the copy. */

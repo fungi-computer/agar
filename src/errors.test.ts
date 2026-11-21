@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { appErrorData, appErrorFromData } from "./internal/app-error.js";
 import * as Schema from "effect/Schema";
+import * as z from "zod";
 import { MediaGenerationError, mediaGenerationFailureSchema } from "./media.js";
 import {
   AppError,
   describeAppError,
+  failureCause,
+  failureMessage,
+  typedFailureMessage,
+  NetworkRequestError,
   readAppFailure,
   type AppErrorCode,
   type ErrorDescription,
@@ -156,7 +161,7 @@ describe("describeAppError", () => {
     });
   });
 
-  it("offers Billing for typed credit exhaustion with the existing generic fallback copy", () => {
+  it("offers Billing for typed credit exhaustion and names the credit cause", () => {
     expect(
       describeAppError(
         new AppError("private balance", {
@@ -165,8 +170,9 @@ describe("describeAppError", () => {
         }),
       ),
     ).toEqual({
-      title: "Something went wrong",
-      message: "The App couldn't complete this request.",
+      title: "Out of credit",
+      message:
+        "Your Team doesn't have enough credit for this. Add credit to continue.",
       action: "billing",
       retryable: false,
     });
@@ -400,5 +406,95 @@ describe("a host's stated failure reason", () => {
       expect(error.reason).toBeUndefined();
       expect(error.message).not.toContain("private");
     }
+  });
+});
+
+describe("failureCause", () => {
+  it("words an App error's stated cause without a final period", () => {
+    expect(
+      failureCause(
+        new AppError("private", {
+          code: "TIMEOUT",
+          retryable: true,
+        }),
+      ),
+    ).toBe("The request didn't respond in time. Its outcome isn't known yet");
+    expect(
+      failureCause(
+        new AppError("private balance", {
+          code: "INSUFFICIENT_CREDIT",
+          retryable: false,
+        }),
+      ),
+    ).toBe(
+      "Your Team doesn't have enough credit for this. Add credit to continue",
+    );
+  });
+  it("says a request that never arrived failed on the network", () => {
+    expect(failureCause(new NetworkRequestError())).toBe(
+      "The network request failed. Check your connection",
+    );
+  });
+  it("does not blame the network for a programming TypeError", () => {
+    expect(failureCause(new TypeError("x is not a function"))).toBe(
+      "x is not a function",
+    );
+  });
+  it("never prints a schema failure's issue list", () => {
+    const failure = z.object({ state: z.literal("open") }).safeParse({});
+    expect(failure.success).toBe(false);
+    expect(failureCause(failure.error)).toBe(
+      "The response was not in the expected shape",
+    );
+  });
+  it("states a plain error's own message, bounded", () => {
+    expect(failureCause(new Error("Agent store is read-only."))).toBe(
+      "Agent store is read-only",
+    );
+    expect(failureCause(new Error("x".repeat(500)))).toHaveLength(201);
+  });
+  it("says so when no reason was given, never something went wrong", () => {
+    for (const cause of [undefined, "boom", new Error("  ")])
+      expect(failureCause(cause)).toBe("No reason was given");
+  });
+  it("punctuates once when a caller appends a sentence", () => {
+    for (const cause of [
+      new AppError("private", { code: "TIMEOUT", retryable: true }),
+      new NetworkRequestError(),
+    ])
+      expect(
+        `${failureMessage("Could not open this Session", cause)} Try again.`,
+      ).not.toContain("..");
+  });
+  it("puts what failed before why", () => {
+    expect(
+      failureMessage(
+        "The conversation could not be started",
+        new Error("No model is connected"),
+      ),
+    ).toBe("The conversation could not be started: No model is connected.");
+  });
+});
+
+describe("typedFailureMessage", () => {
+  it("states a typed App error's cause", () => {
+    expect(
+      typedFailureMessage(
+        "That action did not finish",
+        new AppError("private", { code: "TIMEOUT", retryable: true }),
+      ),
+    ).toBe(
+      "That action did not finish: The request didn't respond in time. Its outcome isn't known yet.",
+    );
+  });
+  it("never prints an untyped error's private text", () => {
+    const message = typedFailureMessage(
+      "That action did not finish",
+      new Error("EACCES /secret/path"),
+    );
+    expect(message).toBe(
+      "That action did not finish: the host returned an error it did not describe.",
+    );
+    expect(message).not.toContain("secret");
   });
 });

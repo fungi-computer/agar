@@ -130,6 +130,40 @@ readonly where:
 
 Which connection's reply was unreadable, when the host said.
 
+---
+
+### NetworkRequestError
+
+A request that never reached its server (a dropped connection or DNS failure).
+
+#### Extends
+
+- `Error`
+
+#### Constructors
+
+##### Constructor
+
+```ts
+new NetworkRequestError(options?): NetworkRequestError;
+```
+
+###### Parameters
+
+| Parameter  | Type           |
+| ---------- | -------------- |
+| `options?` | `ErrorOptions` |
+
+###### Returns
+
+[`NetworkRequestError`](#networkrequesterror)
+
+###### Overrides
+
+```ts
+Error.constructor;
+```
+
 ## Type Aliases
 
 ### MediaProviderReason
@@ -435,6 +469,77 @@ prerequisites, so they can accompany a non-retryable operation.
 #### Returns
 
 [`ErrorDescription`](#errordescription)
+
+---
+
+### failureCause()
+
+```ts
+function failureCause(cause): string;
+```
+
+One phrase naming why a failed call failed, for a toast, without a final period
+so a caller can punctuate once. An App error states its cause through
+[describeAppError](#describeapperror); a
+[NetworkRequestError](#networkrequesterror) says the connection failed; any
+other thrown Error states its own message (our own code wrote it), capped;
+anything else says no reason was given. Never the generic "something went
+wrong".
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `cause`   | `unknown` |
+
+#### Returns
+
+`string`
+
+---
+
+### failureMessage()
+
+```ts
+function failureMessage(what, cause): string;
+```
+
+What failed, then why, as one sentence: "The conversation could not be started:
+\<cause\>."
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `what`    | `string`  |
+| `cause`   | `unknown` |
+
+#### Returns
+
+`string`
+
+---
+
+### typedFailureMessage()
+
+```ts
+function typedFailureMessage(what, cause): string;
+```
+
+[failureMessage](#failuremessage) for an App whose host may put private text in
+an untyped error. A typed App error states its cause; anything else says only
+that the host returned an error it did not describe.
+
+#### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `what`    | `string`  |
+| `cause`   | `unknown` |
+
+#### Returns
+
+`string`
 
 ---
 

@@ -1,5 +1,21 @@
 # @fungi.computer/agar
 
+## 0.27.1
+
+### Patch Changes
+
+- Changes since 0.27.0:
+
+  - fix(shed): let the port change result carry its failure through the stories
+    and tests
+  - fix(hub): show sign-in and account failures as toasts that name their cause
+  - fix(agar): end a failure message with a period
+  - fix(hub): name the cause on the pages the first pass left, and never print a
+    schema's issue list
+  - fix(agar): one source of failure wording that punctuates once and names a
+    dropped request
+  - fix(grove): every launch App failure toast names its real cause
+
 ## 0.27.0
 
 ### Minor Changes
