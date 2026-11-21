@@ -1535,3 +1535,80 @@ describe("App Region events", () => {
     await expect(deliver(new Greedy(), '{"kind":"alarm"}')).rejects.toThrow();
   });
 });
+
+describe("a write's precheck", () => {
+  const read = defineAppMethod({
+    description: "Check",
+    effect: "read",
+    hidden: true,
+    requires: [],
+    input: z.object({}),
+    output: z.object({ ok: z.boolean() }),
+    handler: () => ({ ok: true }),
+  });
+  const write = (precheck: string) =>
+    defineAppMethod({
+      description: "Write",
+      effect: "write",
+      precheck,
+      requires: [],
+      input: z.object({}),
+      output: z.object({}),
+      handler: () => ({}),
+    });
+
+  test("is carried into the generated API", () => {
+    const backend = defineAppBackend({
+      methods: { check: read, place: write("check") },
+    });
+    expect(buildAppApi(backend).methods.place.precheck).toBe("check");
+  });
+
+  test("must name a hidden read method of the same App", () => {
+    expect(() =>
+      defineAppBackend({ methods: { place: write("missing") } }),
+    ).toThrow(/must be a hidden read method/u);
+    expect(() =>
+      defineAppBackend({
+        methods: { place: write("other"), other: write("other") },
+      }),
+    ).toThrow(/must be a hidden read method/u);
+  });
+});
+
+describe("a write's approval label", () => {
+  const write = (label: string) =>
+    defineAppMethod({
+      description:
+        "Write UTF-8 text. A long developer description for the Agent.",
+      effect: "write",
+      label,
+      requires: [],
+      input: z.object({}),
+      output: z.object({}),
+      handler: () => ({}),
+    });
+
+  test("is carried into the generated API", () => {
+    const backend = defineAppBackend({
+      methods: { save: write("Save a file on your Computer") },
+    });
+    expect(buildAppApi(backend).methods.save.label).toBe(
+      "Save a file on your Computer",
+    );
+  });
+
+  test("must be one short plain phrase a person reads in a question", () => {
+    for (const label of [
+      "",
+      "x".repeat(49),
+      "Save a file. Then more.",
+      "Save\na file",
+      "Save a file\u202E",
+      "Save a\u200Bfile",
+    ])
+      expect(() =>
+        defineAppBackend({ methods: { save: write(label) } }),
+      ).toThrow(/label/u);
+  });
+});

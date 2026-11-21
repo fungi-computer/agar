@@ -55,6 +55,10 @@ export const appSendBudgetRefusalSchema = z.lazy(() =>
 /** A declined Session send, with how long to wait before retrying. */
 export type AppSendBudgetRefusal = z.output<typeof appSendBudgetRefusalSchema>;
 
+/** The longest approval label; a card title "Allow <App> to <label>?" must fit a prompt. */
+export const approvalLabelLimit = 48;
+const approvalLabelPattern = /^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}.!?]{1,48}$/u;
+
 /** A method's schemas own both its TypeScript contract and JSON boundary. */
 export type MethodPolicy = Readonly<{
   description: string;
@@ -62,6 +66,14 @@ export type MethodPolicy = Readonly<{
   requires: readonly AppCapabilityId[];
   /** Omit this method from Workflow and tool discovery; direct calls keep their validators. */
   hidden?: true;
+  /**
+   * A write names a hidden read method of this App. The Hub calls it with the
+   * write's input before staging an approval, so a call that cannot succeed is
+   * refused in plain words instead of being put in front of a person.
+   */
+  precheck?: string;
+  /** What a person reads when this write needs their approval: one short phrase such as "Save a file on your Computer". `description` stays for the Agent. */
+  label?: string;
   /** Allow the shared Pending result while this method is still working. */
   pending?: true;
   /** Past tense for timelines ("made", "wrote"); the row itself comes from {@link MethodPresentation}. */
@@ -156,6 +168,15 @@ export function defineAppMethod<
   };
   if (method.pending === true) policy = { ...policy, pending: true };
   if (method.hidden === true) policy = { ...policy, hidden: true };
+  if (method.precheck !== undefined)
+    policy = { ...policy, precheck: method.precheck };
+  if (method.label !== undefined) {
+    if (!approvalLabelPattern.test(method.label))
+      throw new Error(
+        `App method label must be one short phrase of at most ${String(approvalLabelLimit)} characters with no sentence punctuation: ${method.label}`,
+      );
+    policy = { ...policy, label: method.label };
+  }
   const call: AppBackendMethod<Context>["call"] = async (
     rawInput,
     context,
@@ -320,6 +341,19 @@ export function defineAppBackend<Context = void>(
   for (const name of methods.keys())
     if (!isAppApiMethodName(name))
       throw new Error(`Invalid App backend method name: ${name}`);
+  for (const [name, method] of methods) {
+    const { precheck } = method.policy;
+    if (precheck === undefined) continue;
+    const target = methods.get(precheck);
+    if (method.policy.effect !== "write")
+      throw new Error(
+        `App method ${name} declares a precheck but is not a write`,
+      );
+    if (target?.policy.effect !== "read" || target.policy.hidden !== true)
+      throw new Error(
+        `App method ${name} precheck ${precheck} must be a hidden read method`,
+      );
+  }
   if (
     !backgroundSyncAllowed(
       {

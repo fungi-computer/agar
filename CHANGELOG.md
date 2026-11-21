@@ -1,5 +1,22 @@
 # @fungi.computer/agar
 
+## 0.27.0
+
+### Minor Changes
+
+- Changes since 0.26.0:
+
+  - fix(agar): reject invisible label characters and drop the unbacked undo
+    claim
+  - feat(agar): approval cards read a method's own short label
+  - fix(hub): refuse a widget placement that cannot work before asking anyone to
+    approve it
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.15.0
+
 ## 0.26.0
 
 ### Minor Changes
