@@ -17,6 +17,49 @@ import {
 import { appFailureReasons } from "./backend-refusal.js";
 
 describe("describeAppError", () => {
+  it.each([
+    {
+      code: "APP_CONFIGURATION_FAILED",
+      retryable: true,
+      description: {
+        title: "Couldn't load the App",
+        message:
+          "The App's configuration could not be loaded. Try opening it again.",
+        retryable: true,
+        action: "retry",
+      },
+    },
+    {
+      code: "SELECTION_CHANGED",
+      retryable: false,
+      description: {
+        title: "Selection changed",
+        message:
+          "The selection changed during this request. Reopen the App to continue.",
+        retryable: false,
+        action: "reconnect",
+      },
+    },
+    {
+      code: "DESKTOP_OBSERVATION_LIMIT_REACHED",
+      retryable: false,
+      description: {
+        title: "Desktop observation limit reached",
+        message:
+          "This desktop already has 24 active observations. Close one before adding another.",
+        retryable: false,
+      },
+    },
+  ] as const)(
+    "keeps $code causes across the host error boundary",
+    ({ code, retryable, description }) => {
+      const crossed = appErrorFromData(
+        appErrorData(new AppError("private diagnostic", { code, retryable })),
+      );
+      expect(describeAppError(crossed)).toEqual(description);
+      expect(failureCause(crossed)).not.toContain("host doesn't offer");
+    },
+  );
   it("describes unsupported host features without offering permission grants", () => {
     const fromHost = new AppError("Computer choice is unavailable", {
       code: "HOST_UNSUPPORTED",

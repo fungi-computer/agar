@@ -35,6 +35,7 @@ it("retains each existing admission and attachment budget outcome", () => {
   for (const error of [
     "revoked",
     "not_granted",
+    "command_list",
     "grantor_lost_authority",
     "unavailable",
   ]) {
@@ -65,6 +66,7 @@ it("closes exactly the current argument, dispatch and timeout branches", () => {
   }
   for (const error of [
     "not_granted",
+    "command_list",
     "too_large",
     "conflict",
     "capacity",

@@ -51,6 +51,7 @@ Error.constructor;
 
 ```ts
 readonly code:
+  | "APP_CONFIGURATION_FAILED"
   | "CANCELLED"
   | "CAPABILITY_DENIED"
   | "CAPABILITY_REVOKED"
@@ -58,6 +59,7 @@ readonly code:
   | "CONFLICT"
   | "DAILY_LIMIT_REACHED"
   | "DELIVERY_PENDING"
+  | "DESKTOP_OBSERVATION_LIMIT_REACHED"
   | "DISCONNECTED"
   | "FILE_TOO_LARGE"
   | "HOST_FAILURE"
@@ -364,6 +366,7 @@ without transforms, coercions or an unchecked type assertion.
 
 ```ts
 const appErrorCodes: readonly [
+  "APP_CONFIGURATION_FAILED",
   "CANCELLED",
   "CAPABILITY_DENIED",
   "CAPABILITY_REVOKED",
@@ -371,6 +374,7 @@ const appErrorCodes: readonly [
   "CONFLICT",
   "DAILY_LIMIT_REACHED",
   "DELIVERY_PENDING",
+  "DESKTOP_OBSERVATION_LIMIT_REACHED",
   "DISCONNECTED",
   "FILE_TOO_LARGE",
   "HOST_FAILURE",
@@ -464,10 +468,10 @@ prerequisites, so they can accompany a non-retryable operation.
 
 #### Parameters
 
-| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DAILY_LIMIT_REACHED"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"HOST_UNSUPPORTED"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
+| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `overrides?` | `Partial`\<`Record`\< \| `"APP_CONFIGURATION_FAILED"` \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DAILY_LIMIT_REACHED"` \| `"DELIVERY_PENDING"` \| `"DESKTOP_OBSERVATION_LIMIT_REACHED"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"HOST_UNSUPPORTED"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
 
 #### Returns
 

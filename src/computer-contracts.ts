@@ -35,6 +35,7 @@ export const appComputerAdmissionRefusalSchema = z.lazy(() =>
       error: z.enum([
         "revoked",
         "not_granted",
+        "command_list",
         "grantor_lost_authority",
         "unavailable",
       ]),
@@ -66,6 +67,7 @@ export const appComputerDispatchRefusalSchema = z.lazy(() =>
     z.strictObject({
       error: z.enum([
         "not_granted",
+        "command_list",
         "too_large",
         "conflict",
         "capacity",
@@ -110,6 +112,7 @@ export const appComputerExecTimeoutSchema = z.lazy(() =>
 export const appComputerRefusalCodeSchema = z.enum([
   "revoked",
   "not_granted",
+  "command_list",
   "grantor_lost_authority",
   "attachment_budget_exceeded",
   "too_large",
@@ -158,6 +161,8 @@ function refSuffix(ref: string | undefined): string {
 const computerRefusalCopy = {
   revoked: () => "This App's access to the Computer was removed.",
   not_granted: () => "This App doesn't have access to this Computer.",
+  command_list: () =>
+    "This Computer's command list doesn't allow these commands. Ask its creator or a Team owner/admin for access.",
   grantor_lost_authority: () =>
     "The person who gave this App Computer access no longer has it.",
   attachment_budget_exceeded: () =>

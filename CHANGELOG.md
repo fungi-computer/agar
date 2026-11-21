@@ -1,5 +1,14 @@
 # @fungi.computer/agar
 
+## 0.28.0
+
+### Minor Changes
+
+- Changes since 0.27.2:
+
+  - fix(oyster): preserve page refusal causes instead of missing support
+  - feat(hub): control commands per computer
+
 ## 0.27.2
 
 ### Patch Changes

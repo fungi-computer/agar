@@ -108,6 +108,7 @@ export function decodeMediaProviderErrorCategory(
 /** The closed set of reasons an AppError can state; every SDK and
  * host-reported failure is tagged with exactly one of these codes. */
 export const appErrorCodes = [
+  "APP_CONFIGURATION_FAILED",
   "CANCELLED",
   "CAPABILITY_DENIED",
   "CAPABILITY_REVOKED",
@@ -115,6 +116,7 @@ export const appErrorCodes = [
   "CONFLICT",
   "DAILY_LIMIT_REACHED",
   "DELIVERY_PENDING",
+  "DESKTOP_OBSERVATION_LIMIT_REACHED",
   "DISCONNECTED",
   "FILE_TOO_LARGE",
   "HOST_FAILURE",
@@ -230,6 +232,11 @@ function setupMessage(need: string | undefined): string {
 
 // User-facing wording approved by Levi; keep it in one reviewable table.
 const errorCopy = {
+  APP_CONFIGURATION_FAILED: {
+    title: "Couldn't load the App",
+    message:
+      "The App's configuration could not be loaded. Try opening it again.",
+  },
   CANCELLED: {
     title: "Request cancelled",
     message:
@@ -261,6 +268,11 @@ const errorCopy = {
   DELIVERY_PENDING: {
     title: "App delivery pending",
     message: "The App hasn't finished getting ready. Try opening it again.",
+  },
+  DESKTOP_OBSERVATION_LIMIT_REACHED: {
+    title: "Desktop observation limit reached",
+    message:
+      "This desktop already has 24 active observations. Close one before adding another.",
   },
   DISCONNECTED: {
     title: "Connection lost",
