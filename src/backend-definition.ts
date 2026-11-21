@@ -460,3 +460,30 @@ export function defineAppBackend<Context = void>(
     definition = { ...definition, region: options.region };
   return Object.freeze(definition);
 }
+
+/** App method names a hosted extension's backend serves. */
+export const agentExtensionMethodNames = Object.freeze({
+  prompt: "agentExtensionPrompt",
+  tools: "agentExtensionTools",
+  call: "agentExtensionCall",
+} as const);
+
+const wireMethods = new Set<string>(Object.values(agentExtensionMethodNames));
+
+/** The extension method family is a protocol, never a model-facing App tool. */
+export function isAgentExtensionWireMethod(name: string): boolean {
+  return wireMethods.has(name);
+}
+
+/** A Release whose API declares the whole family, with its effects, is an Agent extension. */
+export function isAgentExtensionApi(
+  api: Readonly<{
+    methods: Readonly<Record<string, Readonly<{ effect: string }> | undefined>>;
+  }>,
+): boolean {
+  return (
+    api.methods[agentExtensionMethodNames.prompt]?.effect === "read" &&
+    api.methods[agentExtensionMethodNames.tools]?.effect === "read" &&
+    api.methods[agentExtensionMethodNames.call]?.effect === "write"
+  );
+}

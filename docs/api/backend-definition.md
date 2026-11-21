@@ -257,6 +257,20 @@ const presentMethodName: "present" = "present";
 Name of the generated, hidden read method that projects a finished call into its
 row.
 
+---
+
+### agentExtensionMethodNames
+
+```ts
+const agentExtensionMethodNames: Readonly<{
+  prompt: "agentExtensionPrompt";
+  tools: "agentExtensionTools";
+  call: "agentExtensionCall";
+}>;
+```
+
+App method names a hosted extension's backend serves.
+
 ## Functions
 
 ### defineAppMethod()
@@ -311,6 +325,47 @@ catalog.
 #### Returns
 
 [`AppBackendDefinition`](#appbackenddefinition)\<`Context`\>
+
+---
+
+### isAgentExtensionWireMethod()
+
+```ts
+function isAgentExtensionWireMethod(name): boolean;
+```
+
+The extension method family is a protocol, never a model-facing App tool.
+
+#### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `name`    | `string` |
+
+#### Returns
+
+`boolean`
+
+---
+
+### isAgentExtensionApi()
+
+```ts
+function isAgentExtensionApi(api): boolean;
+```
+
+A Release whose API declares the whole family, with its effects, is an Agent
+extension.
+
+#### Parameters
+
+| Parameter | Type                                                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `api`     | `Readonly`\<\{ `methods`: `Readonly`\<`Record`\<`string`, \| `Readonly`\<\{ `effect`: `string`; \}\> \| `undefined`\>\>; \}\> |
+
+#### Returns
+
+`boolean`
 
 ## References
 
