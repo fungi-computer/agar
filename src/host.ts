@@ -312,7 +312,7 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     return this.#call(() => {
       if (this.#handlers.requestComputerChoice === undefined)
         throw new AppError("Computer choice is unavailable in this host", {
-          code: "CAPABILITY_DENIED",
+          code: "HOST_UNSUPPORTED",
           retryable: false,
         });
       return this.#handlers.requestComputerChoice();
@@ -342,7 +342,7 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     return this.#call(() => {
       if (this.#handlers.openTeamBilling === undefined)
         throw new AppError("Billing is unavailable in this host", {
-          code: "CAPABILITY_DENIED",
+          code: "HOST_UNSUPPORTED",
           retryable: false,
         });
       return this.#handlers.openTeamBilling();
@@ -353,7 +353,7 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     return this.#call(() => {
       if (this.#handlers.openDesktopSettings === undefined)
         throw new AppError("Desktop settings are unavailable in this host", {
-          code: "CAPABILITY_DENIED",
+          code: "HOST_UNSUPPORTED",
           retryable: false,
         });
       return this.#handlers.openDesktopSettings();
@@ -371,7 +371,7 @@ class MountedHost extends RpcTarget implements AppHostRpc {
     return this.#answer(() => {
       if (this.#handlers.requestAppPermissions === undefined)
         throw new AppError("App permissions are unavailable in this host", {
-          code: "CAPABILITY_DENIED",
+          code: "HOST_UNSUPPORTED",
           retryable: false,
         });
       return this.#handlers.requestAppPermissions(

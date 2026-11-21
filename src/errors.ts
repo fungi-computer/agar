@@ -24,6 +24,7 @@ export type MediaProviderReason =
   | "invalid_input"
   | "rate_limited"
   | "provider_unavailable"
+  | "remote_binding_disabled"
   | "timeout"
   | "spending_limit";
 
@@ -117,6 +118,7 @@ export const appErrorCodes = [
   "DISCONNECTED",
   "FILE_TOO_LARGE",
   "HOST_FAILURE",
+  "HOST_UNSUPPORTED",
   "IDENTITY",
   "INSUFFICIENT_CREDIT",
   "INVALID_ARGUMENT",
@@ -269,6 +271,10 @@ const errorCopy = {
     title: "Couldn't complete the request",
     message:
       "The host stopped answering. Reopen the App or reload the workspace.",
+  },
+  HOST_UNSUPPORTED: {
+    title: "Not available here",
+    message: "This host doesn't offer that.",
   },
   FILE_TOO_LARGE: {
     title: "File too large",

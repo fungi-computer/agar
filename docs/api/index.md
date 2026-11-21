@@ -3803,6 +3803,7 @@ const mediaGenerationFailureSchema: Struct<{
                 "invalid_input",
                 "rate_limited",
                 "provider_unavailable",
+                "remote_binding_disabled",
                 "timeout",
                 "spending_limit",
               ]

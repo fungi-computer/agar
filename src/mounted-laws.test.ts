@@ -1162,12 +1162,21 @@ it("asks the mounted host to choose a Computer without changing App context", as
   }
 });
 
-it("refuses a Computer chooser when the mounted host has none", async () => {
+it("refuses absent host UI features without asking for permission", async () => {
   const mounted = await prepareMount();
   try {
-    await expect(
-      mounted.mount.root.ui.requestComputerChoice(),
-    ).rejects.toMatchObject({ code: "CAPABILITY_DENIED" });
+    const { ui } = mounted.mount.root;
+    for (const request of [
+      () => ui.requestComputerChoice(),
+      () => ui.openTeamBilling(),
+      () => ui.openDesktopSettings(),
+      () => ui.requestAppPermissions({ computers: ["computer.readFile"] }),
+    ]) {
+      await expect(request()).rejects.toMatchObject({
+        code: "HOST_UNSUPPORTED",
+        retryable: false,
+      });
+    }
   } finally {
     mounted.mount.root.dispose();
     mounted.mount.host.dispose();

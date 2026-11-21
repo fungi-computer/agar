@@ -61,6 +61,7 @@ readonly code:
   | "DISCONNECTED"
   | "FILE_TOO_LARGE"
   | "HOST_FAILURE"
+  | "HOST_UNSUPPORTED"
   | "IDENTITY"
   | "INSUFFICIENT_CREDIT"
   | "INVALID_ARGUMENT"
@@ -175,6 +176,7 @@ type MediaProviderReason =
   | "invalid_input"
   | "rate_limited"
   | "provider_unavailable"
+  | "remote_binding_disabled"
   | "timeout"
   | "spending_limit";
 ```
@@ -372,6 +374,7 @@ const appErrorCodes: readonly [
   "DISCONNECTED",
   "FILE_TOO_LARGE",
   "HOST_FAILURE",
+  "HOST_UNSUPPORTED",
   "IDENTITY",
   "INSUFFICIENT_CREDIT",
   "INVALID_ARGUMENT",
@@ -461,10 +464,10 @@ prerequisites, so they can accompany a non-retryable operation.
 
 #### Parameters
 
-| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DAILY_LIMIT_REACHED"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
+| Parameter    | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cause`      | `unknown`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `overrides?` | `Partial`\<`Record`\< \| `"CANCELLED"` \| `"CAPABILITY_DENIED"` \| `"CAPABILITY_REVOKED"` \| `"COMMAND_NOT_DECLARED"` \| `"CONFLICT"` \| `"DAILY_LIMIT_REACHED"` \| `"DELIVERY_PENDING"` \| `"DISCONNECTED"` \| `"FILE_TOO_LARGE"` \| `"HOST_FAILURE"` \| `"HOST_UNSUPPORTED"` \| `"IDENTITY"` \| `"INSUFFICIENT_CREDIT"` \| `"INVALID_ARGUMENT"` \| `"MEDIA_PROVIDER_FAILURE"` \| `"MEDIA_PROVIDER_FAILURE_UNCHARGED"` \| `"PROTOCOL"` \| `"SAFETY_FILTER_REFUSED"` \| `"SELECTION_CHANGED"` \| `"SETUP_REQUIRED"` \| `"TIMEOUT"`, `Readonly`\<\{ `title`: `string`; `message`: `string`; \}\>\>\> |
 
 #### Returns
 

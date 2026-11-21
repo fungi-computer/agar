@@ -1710,13 +1710,6 @@ it("LAW: permission requests cross the host boundary decoded and bounded", async
       root.ui.openSetup("billing"),
     ).rejects.toMatchObject({ code: "INVALID_ARGUMENT" });
     expect(setups).toHaveLength(1);
-    await expect(root.ui.openDesktopSettings()).rejects.toMatchObject({
-      code: "CAPABILITY_DENIED",
-    });
-    // A host that owns no Billing page denies the handoff explicitly.
-    await expect(root.ui.openTeamBilling()).rejects.toMatchObject({
-      code: "CAPABILITY_DENIED",
-    });
     disposePair(root, mounted);
   } finally {
     restoreWindow(originalWindow);

@@ -1,5 +1,17 @@
 # @fungi.computer/agar
 
+## 0.27.2
+
+### Patch Changes
+
+- Changes since 0.27.1:
+
+  - fix(agar): distinguish unsupported host features from permission denials
+  - fix(prints): enable proof bindings and explain generation refusals
+
+- Updated dependencies
+  - @fungi.computer/approvals@0.2.6
+
 ## 0.27.1
 
 ### Patch Changes

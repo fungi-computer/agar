@@ -17,6 +17,19 @@ import {
 import { appFailureReasons } from "./backend-refusal.js";
 
 describe("describeAppError", () => {
+  it("describes unsupported host features without offering permission grants", () => {
+    const fromHost = new AppError("Computer choice is unavailable", {
+      code: "HOST_UNSUPPORTED",
+      retryable: false,
+    });
+    const crossed = appErrorFromData(appErrorData(fromHost));
+    expect(crossed).toMatchObject({ code: "HOST_UNSUPPORTED" });
+    expect(describeAppError(crossed)).toEqual({
+      title: "Not available here",
+      message: "This host doesn't offer that.",
+      retryable: false,
+    });
+  });
   it("round-trips pending delivery through the SDK's ordinary error decoder", () => {
     const original = new AppError("delivery pending", {
       code: "DELIVERY_PENDING",
