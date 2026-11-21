@@ -1,5 +1,19 @@
 # @fungi.computer/agar
 
+## 0.26.0
+
+### Minor Changes
+
+- Changes since 0.25.1:
+
+  - feat(agar): add the agent.extensions capability for attaching hosted
+    extensions
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.14.0
+
 ## 0.25.1
 
 ### Patch Changes

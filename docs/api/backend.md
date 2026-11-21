@@ -33,7 +33,7 @@ new AppMethodRefusal(code, message): AppMethodRefusal;
 
 | Parameter | Type                                                                             |
 | --------- | -------------------------------------------------------------------------------- |
-| `code`    | `"unavailable"` \| `"invalid"` \| `"conflict"` \| `"forbidden"` \| `"not_found"` |
+| `code`    | `"unavailable"` \| `"not_found"` \| `"invalid"` \| `"conflict"` \| `"forbidden"` |
 | `message` | `string`                                                                         |
 
 ###### Returns
@@ -51,7 +51,7 @@ Error.constructor;
 ##### code
 
 ```ts
-readonly code: "unavailable" | "invalid" | "conflict" | "forbidden" | "not_found";
+readonly code: "unavailable" | "not_found" | "invalid" | "conflict" | "forbidden";
 ```
 
 ## Type Aliases
@@ -309,10 +309,10 @@ const appMethodRefusedReplySchema: ZodLazy<
       kind: ZodLiteral<"refused">;
       code: ZodEnum<{
         unavailable: "unavailable";
+        not_found: "not_found";
         invalid: "invalid";
         conflict: "conflict";
         forbidden: "forbidden";
-        not_found: "not_found";
       }>;
       message: ZodString;
     },
@@ -344,10 +344,10 @@ const appMethodReplySchema: ZodLazy<
             kind: ZodLiteral<"refused">;
             code: ZodEnum<{
               unavailable: "unavailable";
+              not_found: "not_found";
               invalid: "invalid";
               conflict: "conflict";
               forbidden: "forbidden";
-              not_found: "not_found";
             }>;
             message: ZodString;
           },

@@ -583,6 +583,72 @@ export const agentToolPolicy: CapabilityContract<AppAgentToolPolicyHandle> =
     ),
   );
 
+/** One installed App that can add its prompt and tools to an Agent's runs. */
+export const appAgentExtensionSchema = z.lazy(() =>
+  z.object({ installationId: z.string(), name: z.string() }),
+);
+/** One hosted extension an Agent has attached, or could attach. */
+export type AppAgentExtension = z.infer<typeof appAgentExtensionSchema>;
+/** An Agent's hosted extensions: what is attached now and what the owner could attach. */
+export const appAgentExtensionsSchema = z.lazy(() =>
+  z.object({
+    agentId: z.string(),
+    attached: z.array(appAgentExtensionSchema),
+    available: z.array(appAgentExtensionSchema),
+  }),
+);
+/** An Agent's hosted extensions. */
+export type AppAgentExtensions = z.infer<typeof appAgentExtensionsSchema>;
+/**
+ * Why a host refused to attach or detach: the Agent is unknown, the caller is
+ * not the owner, or the installation is not an enabled App whose current
+ * Release declares the Agent extension methods.
+ */
+export const appAgentExtensionRefusalSchema = z.lazy(() =>
+  z.object({ error: z.enum(["not_found", "not_granted", "not_extension"]) }),
+);
+/** The outcome of attaching or detaching: the Agent's extensions after, or a refusal. */
+export const appAgentExtensionsResultSchema = z.lazy(() =>
+  z.union([appAgentExtensionsSchema, appAgentExtensionRefusalSchema]),
+);
+/** The outcome of attaching or detaching a hosted extension. */
+export type AppAgentExtensionsResult = z.infer<
+  typeof appAgentExtensionsResultSchema
+>;
+/** Capability handle for the owner's hosted-extension attachments on an Agent. */
+export type AppAgentExtensionsHandle = {
+  /** This Agent's extensions, or `null` for no such Agent. */
+  list(input: { agentId: string }): Promise<AppAgentExtensions | null>;
+  /** Attach an installed extension to this Agent. */
+  attach(input: {
+    agentId: string;
+    installationId: string;
+  }): Promise<AppAgentExtensionsResult>;
+  /** Detach it. Detaching only ever removes authority. */
+  detach(input: {
+    agentId: string;
+    installationId: string;
+  }): Promise<AppAgentExtensionsResult>;
+};
+/**
+ * Owner-only capability to attach hosted extensions to an Agent, so an installed
+ * App can add its prompt and tools to that Agent's runs. Not every host grants it.
+ */
+export const agentExtensions: CapabilityContract<AppAgentExtensionsHandle> =
+  defineCapability(
+    "agent.extensions",
+    1,
+    z.lazy(() =>
+      rpcHandleSchema({
+        list: rpcMethod(
+          rpcDataSchema(z.union([appAgentExtensionsSchema, z.null()])),
+        ),
+        attach: rpcMethod(rpcDataSchema(appAgentExtensionsResultSchema)),
+        detach: rpcMethod(rpcDataSchema(appAgentExtensionsResultSchema)),
+      }),
+    ),
+  );
+
 /**
  * Capability for read-only Agent sessions: open a transport to an
  * existing Agent, or read the member's inbox feed.

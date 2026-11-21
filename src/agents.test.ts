@@ -16,6 +16,8 @@ import {
   agentSessionRead,
   agentSessionWrite,
   agentToolPolicy,
+  agentExtensions,
+  appAgentExtensionsResultSchema,
   type AppAgentDirectoryHandle,
   listAppAgents,
   createAppAgent,
@@ -563,5 +565,54 @@ describe("Agent App-tool policy capability", () => {
     expect(
       await registry.require(agentToolPolicy).status({ agentId: "agent-9" }),
     ).toBeNull();
+  });
+});
+
+describe("Agent hosted-extension capability", () => {
+  it("lists what is attached and what could be, and changes either under the owner's grant", async () => {
+    const registry = createCapabilityRegistry();
+    const after = {
+      agentId: "agent-one",
+      attached: [{ installationId: "notes", name: "Notes" }],
+      available: [],
+    };
+    const attach = vi.fn(() => Promise.resolve(after));
+    registry.provide(agentExtensions, {
+      list: () =>
+        Promise.resolve({
+          agentId: "agent-one",
+          attached: [],
+          available: [{ installationId: "notes", name: "Notes" }],
+        }),
+      attach,
+      detach: () => Promise.resolve({ error: "not_found" as const }),
+    });
+    const handle = registry.require(agentExtensions);
+    expect((await handle.list({ agentId: "agent-one" }))?.available).toEqual([
+      { installationId: "notes", name: "Notes" },
+    ]);
+    expect(
+      await handle.attach({
+        agentId: "agent-one",
+        installationId: "notes",
+      }),
+    ).toEqual(after);
+    expect(attach).toHaveBeenCalledOnce();
+    expect(
+      await handle.detach({
+        agentId: "agent-one",
+        installationId: "notes",
+      }),
+    ).toEqual({ error: "not_found" });
+  });
+
+  it("names a refusal from a closed set and rejects any other cause", () => {
+    for (const error of ["not_found", "not_granted", "not_extension"])
+      expect(appAgentExtensionsResultSchema.parse({ error })).toEqual({
+        error,
+      });
+    expect(() =>
+      appAgentExtensionsResultSchema.parse({ error: "something_else" }),
+    ).toThrow();
   });
 });

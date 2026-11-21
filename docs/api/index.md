@@ -678,6 +678,134 @@ Approve (or re-request) this Agent's App tools under a CAS revision.
 
 ---
 
+### AppAgentExtension
+
+```ts
+type AppAgentExtension = z.infer<typeof appAgentExtensionSchema>;
+```
+
+One hosted extension an Agent has attached, or could attach.
+
+---
+
+### AppAgentExtensions
+
+```ts
+type AppAgentExtensions = z.infer<typeof appAgentExtensionsSchema>;
+```
+
+An Agent's hosted extensions.
+
+---
+
+### AppAgentExtensionsResult
+
+```ts
+type AppAgentExtensionsResult = z.infer<typeof appAgentExtensionsResultSchema>;
+```
+
+The outcome of attaching or detaching a hosted extension.
+
+---
+
+### AppAgentExtensionsHandle
+
+```ts
+type AppAgentExtensionsHandle = object;
+```
+
+Capability handle for the owner's hosted-extension attachments on an Agent.
+
+#### Methods
+
+##### list()
+
+```ts
+list(input): Promise<
+  | {
+  agentId: string;
+  attached: object[];
+  available: object[];
+}
+| null>;
+```
+
+This Agent's extensions, or `null` for no such Agent.
+
+###### Parameters
+
+| Parameter       | Type                       |
+| --------------- | -------------------------- |
+| `input`         | \{ `agentId`: `string`; \} |
+| `input.agentId` | `string`                   |
+
+###### Returns
+
+`Promise`\< \| \{ `agentId`: `string`; `attached`: `object`[]; `available`:
+`object`[]; \} \| `null`\>
+
+##### attach()
+
+```ts
+attach(input): Promise<
+  | {
+  agentId: string;
+  attached: object[];
+  available: object[];
+}
+  | {
+  error: "not_found" | "not_granted" | "not_extension";
+}>;
+```
+
+Attach an installed extension to this Agent.
+
+###### Parameters
+
+| Parameter              | Type                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| `input`                | \{ `agentId`: `string`; `installationId`: `string`; \} |
+| `input.agentId`        | `string`                                               |
+| `input.installationId` | `string`                                               |
+
+###### Returns
+
+`Promise`\< \| \{ `agentId`: `string`; `attached`: `object`[]; `available`:
+`object`[]; \} \| \{ `error`: `"not_found"` \| `"not_granted"` \|
+`"not_extension"`; \}\>
+
+##### detach()
+
+```ts
+detach(input): Promise<
+  | {
+  agentId: string;
+  attached: object[];
+  available: object[];
+}
+  | {
+  error: "not_found" | "not_granted" | "not_extension";
+}>;
+```
+
+Detach it. Detaching only ever removes authority.
+
+###### Parameters
+
+| Parameter              | Type                                                   |
+| ---------------------- | ------------------------------------------------------ |
+| `input`                | \{ `agentId`: `string`; `installationId`: `string`; \} |
+| `input.agentId`        | `string`                                               |
+| `input.installationId` | `string`                                               |
+
+###### Returns
+
+`Promise`\< \| \{ `agentId`: `string`; `attached`: `object`[]; `available`:
+`object`[]; \} \| \{ `error`: `"not_found"` \| `"not_granted"` \|
+`"not_extension"`; \}\>
+
+---
+
 ### AppAgentTransport
 
 ```ts
@@ -3173,6 +3301,133 @@ const agentToolPolicy: CapabilityContract<AppAgentToolPolicyHandle>;
 ```
 
 Owner-only capability to read and approve an Agent's App-tool policy.
+
+---
+
+### appAgentExtensionSchema
+
+```ts
+const appAgentExtensionSchema: ZodLazy<
+  ZodObject<
+    {
+      installationId: ZodString;
+      name: ZodString;
+    },
+    $strip
+  >
+>;
+```
+
+One installed App that can add its prompt and tools to an Agent's runs.
+
+---
+
+### appAgentExtensionsSchema
+
+```ts
+const appAgentExtensionsSchema: ZodLazy<
+  ZodObject<
+    {
+      agentId: ZodString;
+      attached: ZodArray<
+        ZodLazy<
+          ZodObject<
+            {
+              installationId: ZodString;
+              name: ZodString;
+            },
+            $strip
+          >
+        >
+      >;
+      available: ZodArray<
+        ZodLazy<
+          ZodObject<
+            {
+              installationId: ZodString;
+              name: ZodString;
+            },
+            $strip
+          >
+        >
+      >;
+    },
+    $strip
+  >
+>;
+```
+
+An Agent's hosted extensions: what is attached now and what the owner could
+attach.
+
+---
+
+### appAgentExtensionsResultSchema
+
+```ts
+const appAgentExtensionsResultSchema: ZodLazy<
+  ZodUnion<
+    readonly [
+      ZodLazy<
+        ZodObject<
+          {
+            agentId: ZodString;
+            attached: ZodArray<
+              ZodLazy<
+                ZodObject<
+                  {
+                    installationId: ZodString;
+                    name: ZodString;
+                  },
+                  $strip
+                >
+              >
+            >;
+            available: ZodArray<
+              ZodLazy<
+                ZodObject<
+                  {
+                    installationId: ZodString;
+                    name: ZodString;
+                  },
+                  $strip
+                >
+              >
+            >;
+          },
+          $strip
+        >
+      >,
+      ZodLazy<
+        ZodObject<
+          {
+            error: ZodEnum<{
+              not_found: "not_found";
+              not_granted: "not_granted";
+              not_extension: "not_extension";
+            }>;
+          },
+          $strip
+        >
+      >,
+    ]
+  >
+>;
+```
+
+The outcome of attaching or detaching: the Agent's extensions after, or a
+refusal.
+
+---
+
+### agentExtensions
+
+```ts
+const agentExtensions: CapabilityContract<AppAgentExtensionsHandle>;
+```
+
+Owner-only capability to attach hosted extensions to an Agent, so an installed
+App can add its prompt and tools to that Agent's runs. Not every host grants it.
 
 ---
 
