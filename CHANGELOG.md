@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.28.3
+
+### Patch Changes
+
+- Changes since 0.28.2:
+
+  - fix(prints): say a Team's Apps are being restored
+
 ## 0.28.2
 
 ### Patch Changes

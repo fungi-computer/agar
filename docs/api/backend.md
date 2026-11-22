@@ -144,6 +144,7 @@ const appFailureReasons: readonly [
   "binding_reply_invalid",
   "backend_error",
   "cancelled",
+  "restoring",
   "request_too_large",
   "not_offered",
   "internal",
@@ -190,6 +191,7 @@ const appBackendRefusalSchema: ZodObject<
       permission_changed: "permission_changed";
       binding_reply_invalid: "binding_reply_invalid";
       backend_error: "backend_error";
+      restoring: "restoring";
       request_too_large: "request_too_large";
       not_offered: "not_offered";
       internal: "internal";

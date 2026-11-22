@@ -103,6 +103,7 @@ readonly reason:
   | "permission_changed"
   | "binding_reply_invalid"
   | "backend_error"
+  | "restoring"
   | "request_too_large"
   | "not_offered"
   | "internal"

@@ -20,6 +20,8 @@ export const appFailureReasons = [
   "backend_error",
   /** The request was cancelled before it finished. */
   "cancelled",
+  /** The Team's Apps are being restored from storage; retrying shortly works. */
+  "restoring",
   /** The request was larger than the App accepts. */
   "request_too_large",
   /** The App does not offer what was asked for. */

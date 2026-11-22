@@ -401,6 +401,11 @@ const reasonCopy = {
     message:
       "This request is too large for the App to accept. Try something smaller.",
   }),
+  restoring: () => ({
+    title: "Restoring from storage",
+    message:
+      "This Team's Apps are being restored from storage. Try again in a minute.",
+  }),
   not_offered: () => ({
     title: "App can't do that",
     message: "This App doesn't offer that.",
@@ -532,6 +537,7 @@ const reasonCode = {
   backend_error: "HOST_FAILURE",
   cancelled: "CANCELLED",
   request_too_large: "HOST_FAILURE",
+  restoring: "HOST_FAILURE",
   not_offered: "HOST_FAILURE",
   internal: "HOST_FAILURE",
 } as const satisfies Readonly<Record<AppFailureReason, AppErrorCode>>;

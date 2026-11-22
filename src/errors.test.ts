@@ -360,6 +360,20 @@ describe("a host's stated failure reason", () => {
     expect(seen.size).toBe(appFailureReasons.length);
   });
 
+  it("says a Team being restored is coming back and offers a retry", () => {
+    const described = describeAppError(
+      new AppError("x", {
+        code: "HOST_FAILURE",
+        retryable: true,
+        reason: "restoring",
+      }),
+    );
+    expect(described.message).toBe(
+      "This Team's Apps are being restored from storage. Try again in a minute.",
+    );
+    expect(described.action).toBe("retry");
+  });
+
   it("shows the ref only for causes that are ours, once", () => {
     const worded = (reason: (typeof appFailureReasons)[number]) =>
       describeAppError(
