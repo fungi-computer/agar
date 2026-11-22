@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.28.1
+
+### Patch Changes
+
+- Changes since 0.28.0:
+
+  - fix(agar): keep storage watches and the inbox alive across a reconnect
+
 ## 0.28.0
 
 ### Minor Changes

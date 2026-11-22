@@ -330,3 +330,61 @@ it("invalidates Working on disconnect and rereads the owner before reconnecting"
   });
   feed.close();
 });
+
+describe("transient stream disconnects", () => {
+  it("is status, not a console error, when the stream reconnects", async () => {
+    vi.useFakeTimers();
+    const failureLog = vi
+      .spyOn(globalThis.console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      const { feed, sources, snapshots } = harness([
+        { items: [row("a", "running", 1)], next: null, cursor: 1 },
+        { items: [row("a", "done", 2)], next: null, cursor: 2 },
+      ]);
+      await vi.advanceTimersByTimeAsync(0);
+      sources[0]?.listeners.get("error")?.(new MessageEvent("error"));
+      expect(snapshots.at(-1)?.status).toBe("error");
+      await vi.advanceTimersByTimeAsync(5_000);
+      sources[0]?.listeners.get("open")?.(new MessageEvent("open"));
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(snapshots.at(-1)?.status).toBe("live");
+      expect(failureLog).not.toHaveBeenCalled();
+      feed.close();
+    } finally {
+      failureLog.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports one failure when the stream never comes back", async () => {
+    vi.useFakeTimers();
+    const failureLog = vi
+      .spyOn(globalThis.console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      const { feed, sources } = harness([
+        { items: [row("a", "running", 1)], next: null, cursor: 1 },
+      ]);
+      await vi.advanceTimersByTimeAsync(0);
+      const error = () =>
+        sources[0]?.listeners.get("error")?.(new MessageEvent("error"));
+      error();
+      error();
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(failureLog).toHaveBeenCalledOnce();
+      expect(failureLog).toHaveBeenCalledWith(
+        JSON.stringify({
+          source: "agar",
+          operation: "inbox.observe",
+          failureKind: "Error",
+        }),
+        expect.anything(),
+      );
+      feed.close();
+    } finally {
+      failureLog.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+});

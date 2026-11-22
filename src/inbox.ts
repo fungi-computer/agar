@@ -65,6 +65,8 @@ const decodeRows = Schema.decodeUnknownSync(
 
 /** Pages the first read loads; later rows arrive as deltas. */
 export const memberInboxInitialPages = 5;
+/** How long a stream may stay down before the outage is reported once. */
+const memberInboxOutageReportMs = 30_000;
 
 /** Minimal EventSource surface, so a capability fetch can carry the stream. */
 export type InboxEventSource = {
@@ -107,6 +109,11 @@ export function watchMemberInbox(
   let closed = false;
   let events: InboxEventSource | undefined;
   let generation = 0;
+  let outage: ReturnType<typeof setTimeout> | undefined;
+  const clearOutage = () => {
+    clearTimeout(outage);
+    outage = undefined;
+  };
 
   const emit = (status: MemberInboxSnapshot["status"]) => {
     if (!closed) options.onChange({ items: [...items.values()], status });
@@ -121,6 +128,7 @@ export function watchMemberInbox(
 
   const follow = () => {
     events?.close();
+    clearOutage();
     const current = ++generation;
     const source = options.openEvents(
       `${options.baseUrl}/inbox/events?after=${String(cursor)}`,
@@ -130,14 +138,21 @@ export function watchMemberInbox(
     source.addEventListener("error", () => {
       if (closed || current !== generation) return;
       disconnected = true;
-      reportCatchFailure(
-        "inbox.observe",
-        new Error("Member inbox stream disconnected"),
-      );
+      // The transport reconnects by itself: that is status. Only a stream
+      // that stays down is a failure, reported once.
+      outage ??= setTimeout(() => {
+        outage = undefined;
+        if (closed || current !== generation) return;
+        reportCatchFailure(
+          "inbox.observe",
+          new Error("Member inbox stream disconnected"),
+        );
+      }, memberInboxOutageReportMs);
       emit("error");
     });
     source.addEventListener("open", () => {
       if (closed || current !== generation || !disconnected) return;
+      clearOutage();
       // A transport reconnect is not an owner refresh. Read before claiming live.
       void load();
     });
@@ -220,6 +235,7 @@ export function watchMemberInbox(
     close: () => {
       closed = true;
       generation += 1;
+      clearOutage();
       events?.close();
     },
   });

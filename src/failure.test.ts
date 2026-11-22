@@ -38,3 +38,22 @@ it.each([failure, marker])(
     ).not.toContain(marker);
   },
 );
+
+it("names an owned failure code and never a free-form message", () => {
+  const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const refusal = Object.assign(new Error(`secret ${marker}`), {
+    code: "unavailable",
+  });
+  reportCatchFailure("fixture.read", refusal);
+  reportCatchFailure(
+    "fixture.read",
+    Object.assign(new Error("x"), { code: `leaks ${marker}` }),
+  );
+  expect(JSON.parse(String(report.mock.calls[0]?.[0]))).toEqual({
+    source: "agar",
+    operation: "fixture.read",
+    failureKind: "Error",
+    code: "unavailable",
+  });
+  expect(JSON.stringify(report.mock.calls)).not.toContain(marker);
+});

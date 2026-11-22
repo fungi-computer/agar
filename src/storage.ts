@@ -132,6 +132,9 @@ const parseInput = <A>(schema: Schema.Codec<A, unknown>, value: A): A => {
     throw new AppStorageError("invalid", { cause: parsed.failure });
   return parsed.success;
 };
+/** A read that fails `unavailable` is a transient host failure: retry it. */
+const initialReadAttempts = 8;
+const retryDelay = (attempt: number) => Math.min(250 * 2 ** attempt, 5_000);
 const parseKey = (key: string) => parseInput(appStorageKeyNameSchema, key);
 function client(raw: AppStorageWire): AppStorage {
   const read = async (key: string) => unwrap(await raw.read(parseKey(key)));
@@ -204,14 +207,36 @@ function client(raw: AppStorageWire): AppStorage {
           reportCatchFailure("storage.watch", cause);
         close();
       };
+      // Wait out a transient `unavailable` read with bounded backoff. Only a
+      // permanent refusal, or an initial read that never succeeds, escapes.
+      const readSettled = async (): Promise<ResolvedAppStorage | undefined> => {
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            return await read(key);
+          } catch (cause) {
+            const transient =
+              cause instanceof AppStorageError && cause.code === "unavailable";
+            if (
+              !transient ||
+              isClosed() ||
+              (store === undefined && attempt + 1 >= initialReadAttempts)
+            )
+              throw cause;
+            await new Promise<void>((resolve) =>
+              setTimeout(resolve, retryDelay(attempt)),
+            );
+            if (isClosed()) return undefined;
+          }
+        }
+      };
       const refresh = () => {
         dirty = true;
         if (loading !== undefined || closed) return;
         loading = (async () => {
           while (shouldRead()) {
             dirty = false;
-            const next = await read(key);
-            if (isClosed()) return;
+            const next = await readSettled();
+            if (next === undefined || isClosed()) return;
             if (store === undefined) {
               const first = createReadonlyStore(next);
               store = first;
