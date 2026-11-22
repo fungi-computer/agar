@@ -1,5 +1,13 @@
 # @fungi.computer/agar
 
+## 0.28.2
+
+### Patch Changes
+
+- Changes since 0.28.1:
+
+  - fix(grove): keep a failed draft save from covering send
+
 ## 0.28.1
 
 ### Patch Changes

@@ -314,3 +314,68 @@ it("closes a watch once on a permanent refusal and names its code", async () => 
   });
   expect(watch.get().value).toBe("first");
 });
+
+function failingOpenFixture(failures: number) {
+  let opens = 0;
+  const raw = {
+    read: () =>
+      Promise.resolve({
+        kind: "accepted" as const,
+        value: resolved("first"),
+      }),
+    write: () => Promise.reject(new Error("unused")),
+    reset: () => Promise.reject(new Error("unused")),
+    claim: () => Promise.reject(new Error("unused")),
+    openEvents: () =>
+      Promise.resolve({
+        fetch: () => {
+          opens += 1;
+          if (opens <= failures) return Promise.reject(new Error("offline"));
+          return Promise.resolve(
+            new Response("event: ready\ndata: {}\n\n", {
+              headers: { "content-type": "text/event-stream" },
+            }),
+          );
+        },
+        close: () => Promise.resolve(),
+        [Symbol.dispose]: () => undefined,
+      }),
+  };
+  return { storage: appStorage.schema.parse(raw), opens: () => opens };
+}
+
+it("reconnects when the event stream errors before the first read", async () => {
+  vi.useFakeTimers();
+  const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    const { storage, opens } = failingOpenFixture(1);
+    const pending = storage.watch("desktop");
+    await vi.advanceTimersByTimeAsync(10_000);
+    const watch = await pending;
+    expect(watch.get().value).toBe("first");
+    expect(opens()).toBeGreaterThan(1);
+    expect(report).not.toHaveBeenCalled();
+    watch.close();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("names its code once when the event stream never comes back", async () => {
+  vi.useFakeTimers();
+  const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    const { storage } = failingOpenFixture(Number.POSITIVE_INFINITY);
+    const pending = storage.watch("desktop");
+    const settled = pending.catch((cause: unknown) => cause);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(await settled).toMatchObject({ code: "unavailable" });
+    expect(report).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(report.mock.calls[0]?.[0]))).toMatchObject({
+      operation: "storage.watch",
+      code: "unavailable",
+    });
+  } finally {
+    vi.useRealTimers();
+  }
+});

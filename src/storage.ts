@@ -198,13 +198,12 @@ function client(raw: AppStorageWire): AppStorage {
           });
       };
       const fail = (cause: unknown) => {
-        rejectInitial(
+        const failure =
           cause instanceof AppStorageError
             ? cause
-            : new AppStorageError("unavailable", { cause }),
-        );
-        if (!closed && store !== undefined)
-          reportCatchFailure("storage.watch", cause);
+            : new AppStorageError("unavailable", { cause });
+        rejectInitial(failure);
+        if (!closed) reportCatchFailure("storage.watch", failure);
         close();
       };
       // Wait out a transient `unavailable` read with bounded backoff. Only a
@@ -268,8 +267,15 @@ function client(raw: AppStorageWire): AppStorage {
           fail(new AppStorageError("invalid"));
         else refresh();
       });
+      // A stream error before the first read is transient while the stream
+      // can still reconnect, within the same bound as the initial read.
+      let openErrors = 0;
       events.onerror = (cause) => {
-        if (store === undefined || events.readyState === EventSource.CLOSED)
+        if (events.readyState === EventSource.CLOSED) fail(cause);
+        else if (
+          store === undefined &&
+          (openErrors += 1) >= initialReadAttempts
+        )
           fail(cause);
       };
       return initial;
