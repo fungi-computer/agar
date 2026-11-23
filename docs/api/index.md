@@ -393,6 +393,18 @@ stopAll(input): Promise<{
      outcome: "failed";
      reason: string;
   })[];
+  schedules: (
+     | {
+     agentId: string;
+     kind: "almanac" | "loop";
+     scheduleId: string;
+     outcome: "paused";
+   }
+     | {
+     agentId: string;
+     outcome: "failed";
+     reason: string;
+  })[];
   discoveryFailures: object[];
   notPermitted: number;
 }>;
@@ -411,7 +423,10 @@ Stop the Agent and its helpers, helpers first, and report each one.
 `Promise`\<\{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`;
 `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`:
 `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[];
-`discoveryFailures`: `object`[]; `notPermitted`: `number`; \}\>
+`schedules`: ( \| \{ `agentId`: `string`; `kind`: `"almanac"` \| `"loop"`;
+`scheduleId`: `string`; `outcome`: `"paused"`; \} \| \{ `agentId`: `string`;
+`outcome`: `"failed"`; `reason`: `string`; \})[]; `discoveryFailures`:
+`object`[]; `notPermitted`: `number`; \}\>
 
 ---
 
@@ -2842,6 +2857,33 @@ const agentStopAllResultSchema: ZodObject<
         "outcome"
       >
     >;
+    schedules: ZodArray<
+      ZodDiscriminatedUnion<
+        [
+          ZodObject<
+            {
+              agentId: ZodString;
+              kind: ZodEnum<{
+                almanac: "almanac";
+                loop: "loop";
+              }>;
+              scheduleId: ZodString;
+              outcome: ZodLiteral<"paused">;
+            },
+            $strict
+          >,
+          ZodObject<
+            {
+              agentId: ZodString;
+              outcome: ZodLiteral<"failed">;
+              reason: ZodString;
+            },
+            $strict
+          >,
+        ],
+        "outcome"
+      >
+    >;
     discoveryFailures: ZodArray<
       ZodObject<
         {
@@ -4345,6 +4387,19 @@ function stopAppAgentTree(
         reason: string;
       }
   )[];
+  schedules: (
+    | {
+        agentId: string;
+        kind: "almanac" | "loop";
+        scheduleId: string;
+        outcome: "paused";
+      }
+    | {
+        agentId: string;
+        outcome: "failed";
+        reason: string;
+      }
+  )[];
   discoveryFailures: object[];
   notPermitted: number;
 }>;
@@ -4364,7 +4419,10 @@ Stop an Agent and the Agents it spawned through the host-granted capability.
 `Promise`\<\{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`;
 `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`:
 `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[];
-`discoveryFailures`: `object`[]; `notPermitted`: `number`; \}\>
+`schedules`: ( \| \{ `agentId`: `string`; `kind`: `"almanac"` \| `"loop"`;
+`scheduleId`: `string`; `outcome`: `"paused"`; \} \| \{ `agentId`: `string`;
+`outcome`: `"failed"`; `reason`: `string`; \})[]; `discoveryFailures`:
+`object`[]; `notPermitted`: `number`; \}\>
 
 ---
 
@@ -4383,13 +4441,14 @@ carrying its actual cause.
 
 #### Parameters
 
-| Parameter                  | Type                                                                                                                                                                                                                                                                                     | Description                                                                                                                                                           |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `result`                   | \{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]; `discoveryFailures`: `object`[]; `notPermitted`: `number`; \} | -                                                                                                                                                                     |
-| `result.rootAgentId`       | `string`                                                                                                                                                                                                                                                                                 | -                                                                                                                                                                     |
-| `result.agents`            | ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]                                                                                                      | -                                                                                                                                                                     |
-| `result.discoveryFailures` | `object`[]                                                                                                                                                                                                                                                                               | Agents whose record could not be read, so whether they run is unknown.                                                                                                |
-| `result.notPermitted`      | `number`                                                                                                                                                                                                                                                                                 | Helpers in the tree this caller may not manage. They were not stopped, and are counted rather than named so a narrow caller learns no more of the tree than its size. |
+| Parameter                  | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Description                                                                                                                                                                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result`                   | \{ `rootAgentId`: `string`; `agents`: ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]; `schedules`: ( \| \{ `agentId`: `string`; `kind`: `"almanac"` \| `"loop"`; `scheduleId`: `string`; `outcome`: `"paused"`; \} \| \{ `agentId`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]; `discoveryFailures`: `object`[]; `notPermitted`: `number`; \} | -                                                                                                                                                                                                                                                  |
+| `result.rootAgentId`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | -                                                                                                                                                                                                                                                  |
+| `result.agents`            | ( \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"stopped"` \| `"idle"`; \} \| \{ `agentId`: `string`; `name`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]                                                                                                                                                                                                                                                                                                                | -                                                                                                                                                                                                                                                  |
+| `result.schedules`         | ( \| \{ `agentId`: `string`; `kind`: `"almanac"` \| `"loop"`; `scheduleId`: `string`; `outcome`: `"paused"`; \} \| \{ `agentId`: `string`; `outcome`: `"failed"`; `reason`: `string`; \})[]                                                                                                                                                                                                                                                                                                        | The schedules the stopped Agents owned, paused (never deleted) so none starts a turn after its Agent stopped. A failed pause is named, never hidden. Local pauses the whole tree's schedules together, under one budget, before it stops any turn. |
+| `result.discoveryFailures` | `object`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Agents whose record could not be read, so whether they run is unknown.                                                                                                                                                                             |
+| `result.notPermitted`      | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Helpers in the tree this caller may not manage. They were not stopped, and are counted rather than named so a narrow caller learns no more of the tree than its size.                                                                              |
 
 #### Returns
 

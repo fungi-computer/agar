@@ -31,7 +31,7 @@ const text = (maximum: number) =>
 export const marketplacePriceSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("free") }),
   Schema.Struct({
-    kind: Schema.Literal("one-time"),
+    kind: Schema.Literals(["one-time", "monthly"]),
     currency: Schema.Literal("usd"),
     amountMinor: Schema.Number.pipe(
       Schema.check(Schema.isInt()),
@@ -117,6 +117,18 @@ export type MarketplaceAcquisition = Schema.Schema.Type<
   typeof marketplaceAcquisitionSchema
 >;
 
+/** Where an owner manages the Team's App subscriptions: a hosted https page. */
+export const marketplaceSubscriptionPortalSchema = Schema.Struct({
+  url: Schema.String.pipe(
+    Schema.check(
+      Schema.makeFilter((value: string) => value.startsWith("https://")),
+    ),
+  ),
+});
+export type MarketplaceSubscriptionPortal = Schema.Schema.Type<
+  typeof marketplaceSubscriptionPortalSchema
+>;
+
 export type MarketplaceBrowseInput = Readonly<{
   query?: string;
   category?: MarketplaceCategory | null;
@@ -150,6 +162,11 @@ export const marketplacePurchase: CapabilityContract<{
   acquire(
     input: Readonly<{ listingId: string; requestId: string }>,
   ): Promise<MarketplaceAcquisition>;
+  /**
+   * Open the hosted page where the Team's owner changes or cancels its App
+   * subscriptions. The host takes its page there itself and returns the URL.
+   */
+  manageSubscription(): Promise<MarketplaceSubscriptionPortal>;
 }> = defineCapability(
   "marketplace.purchase",
   1,
@@ -161,6 +178,17 @@ export const marketplacePurchase: CapabilityContract<{
             .unknown()
             .transform((value) =>
               Schema.decodeUnknownSync(marketplaceAcquisitionSchema)(value),
+            ),
+        ),
+      ),
+      manageSubscription: rpcMethod(
+        rpcDataSchema(
+          z
+            .unknown()
+            .transform((value) =>
+              Schema.decodeUnknownSync(marketplaceSubscriptionPortalSchema)(
+                value,
+              ),
             ),
         ),
       ),

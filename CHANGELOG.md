@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.29.0
+
+### Minor Changes
+
+- Changes since 0.28.5:
+
+  - feat(marketplace): let a Team owner manage and cancel a subscription
+  - feat(agar): report the schedules Stop all paused, in parallel under one
+    budget
+  - feat(marketplace): add monthly subscription access
+
 ## 0.28.5
 
 ### Patch Changes

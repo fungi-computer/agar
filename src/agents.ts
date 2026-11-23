@@ -71,6 +71,28 @@ export const agentStopAllResultSchema = z.strictObject({
       }),
     ]),
   ),
+  /**
+   * The schedules the stopped Agents owned, paused (never deleted) so none
+   * starts a turn after its Agent stopped. A failed pause is named, never
+   * hidden. Local pauses the whole tree's schedules together, under one budget,
+   * before it stops any turn.
+   */
+  schedules: z.array(
+    z.discriminatedUnion("outcome", [
+      z.strictObject({
+        agentId: z.string(),
+        kind: z.enum(["almanac", "loop"]),
+        /** The Almanac schedule id, or the Loop id. */
+        scheduleId: z.string(),
+        outcome: z.literal("paused"),
+      }),
+      z.strictObject({
+        agentId: z.string(),
+        outcome: z.literal("failed"),
+        reason: z.string(),
+      }),
+    ]),
+  ),
   /** Agents whose record could not be read, so whether they run is unknown. */
   discoveryFailures: z.array(
     z.strictObject({
@@ -368,10 +390,24 @@ export function agentStopAllSummary(
       : helpers > 0
         ? `Stopped ${helperText}${root?.outcome === "idle" ? `; ${root.name} already idle` : ""}`
         : "No running turns to stop";
+  const pausedSchedules = result.schedules.filter(
+    ({ outcome }) => outcome === "paused",
+  ).length;
+  const pausedText =
+    pausedSchedules === 0
+      ? ""
+      : `; paused ${String(pausedSchedules)} schedule${pausedSchedules === 1 ? "" : "s"}`;
   const unconfirmed = [
     ...result.agents.flatMap((agent) =>
       agent.outcome === "failed"
         ? [`${agent.name} may still be running: ${agent.reason}.`]
+        : [],
+    ),
+    ...result.schedules.flatMap((schedule) =>
+      schedule.outcome === "failed"
+        ? [
+            `${schedule.agentId} has schedules that may still be active: ${schedule.reason}.`,
+          ]
         : [],
     ),
     ...result.discoveryFailures.map(
@@ -387,10 +423,10 @@ export function agentStopAllSummary(
         ]),
   ];
   return unconfirmed.length === 0
-    ? { tone: "success", message: stopped }
+    ? { tone: "success", message: `${stopped}${pausedText}` }
     : {
         tone: "warning",
-        message: `${stopped}. ${unconfirmed.join(" ")}`,
+        message: `${stopped}${pausedText}. ${unconfirmed.join(" ")}`,
       };
 }
 
