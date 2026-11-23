@@ -1,6 +1,6 @@
 {
   "name": "@fungi.computer/agar",
-  "version": "0.28.4",
+  "version": "0.28.5",
   "author": "Levi <levi@technomancy.dev>",
   "description": "App contract for fungi.computer: typed backend methods, host capabilities and the App frontend connection",
   "type": "module",
@@ -196,7 +196,7 @@
     "@fungi.computer/gills": "0.4.0",
     "@fungi.computer/cairn": "0.1.0",
     "@fungi.computer/sprite": "0.2.2",
-    "@fungi.computer/approvals": "0.2.7"
+    "@fungi.computer/approvals": "0.2.8"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.2.0",
