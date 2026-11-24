@@ -1,5 +1,16 @@
 # @fungi.computer/agar
 
+## 0.29.1
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @fungi.computer/cairn@0.1.1
+  - @fungi.computer/puffball@0.15.2
+  - @fungi.computer/sprite@0.2.3
+  - @fungi.computer/approvals@0.2.9
+
 ## 0.29.0
 
 ### Minor Changes
