@@ -1,5 +1,12 @@
 # @fungi.computer/agar
 
+## 0.29.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.16.0
+
 ## 0.29.1
 
 ### Patch Changes
