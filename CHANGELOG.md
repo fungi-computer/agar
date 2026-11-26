@@ -1,5 +1,12 @@
 # @fungi.computer/agar
 
+## 0.29.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/approvals@0.4.0
+
 ## 0.29.3
 
 ### Patch Changes
