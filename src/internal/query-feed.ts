@@ -102,6 +102,7 @@ export async function watchInbox(
   app: Pick<AppRoot, "capabilities"> | null,
   onChange: (snapshot: FeedSnapshot<readonly MemberInboxItem[]>) => void,
   signal: AbortSignal,
+  refreshAgents?: () => void,
 ): Promise<Disposer> {
   if (!app)
     throw new AppError("No App connection", {
@@ -149,6 +150,13 @@ export async function watchInbox(
           ? { status: "live", data: snapshot.items }
           : { status: snapshot.status },
       );
+    },
+    onAgentChanged: () => {
+      refreshAgents?.();
+    },
+    // A reconnect skips what changed meanwhile, renames included.
+    onReloaded: () => {
+      refreshAgents?.();
     },
   });
   return () => {

@@ -1,5 +1,20 @@
 # @fungi.computer/agar
 
+## 0.30.0
+
+### Minor Changes
+
+- Changes since 0.29.4:
+
+  - fix(hub): send identity signals only to readers that ask, and catch up after
+    a reconnect
+  - feat(hub): push an Agent's name and avatar changes on the Inbox feed
+
+### Patch Changes
+
+- Updated dependencies
+  - @fungi.computer/puffball@0.17.0
+
 ## 0.29.4
 
 ### Patch Changes

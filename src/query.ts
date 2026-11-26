@@ -198,9 +198,15 @@ export function useMemberInbox(app: QueryApp | null) {
           code: "SELECTION_CHANGED",
           retryable: false,
         });
-      return watchInbox(app, onChange, signal);
+      // An Agent's name or avatar changed: the directory reads it again, so the
+      // header, lists and pickers follow without a reload.
+      return watchInbox(app, onChange, signal, () => {
+        void client.invalidateQueries({
+          queryKey: queryKeys.of(app, "agents"),
+        });
+      });
     },
-    [app, computerId],
+    [app, computerId, client],
   );
   const query = useFeedQuery(queryKey, watch, {
     enabled: app !== null,

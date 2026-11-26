@@ -75,7 +75,11 @@ async function flush() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function harness(pages: unknown[]) {
+function harness(
+  pages: unknown[],
+  onAgentChanged?: (agentId: string) => void,
+  onReloaded?: () => void,
+) {
   const sources: FakeEvents[] = [];
   const snapshots: MemberInboxSnapshot[] = [];
   const requests: string[] = [];
@@ -94,6 +98,12 @@ function harness(pages: unknown[]) {
       return source;
     },
     onChange: (snapshot) => snapshots.push(snapshot),
+    onAgentChanged: (agentId) => {
+      onAgentChanged?.(agentId);
+    },
+    onReloaded: () => {
+      onReloaded?.();
+    },
   });
   return { feed, sources, snapshots, requests };
 }
@@ -162,7 +172,7 @@ describe("member inbox feed", () => {
     await flush();
     expect(snapshots.at(-1)).toMatchObject({ status: "live" });
     expect(sources[0]?.url).toBe(
-      "https://hub.test/api/teams/t/inbox/events?after=3",
+      "https://hub.test/api/teams/t/inbox/events?after=3&signals=agent-identity",
     );
     sources[0]?.emit("rows", {
       kind: "rows",
@@ -183,7 +193,7 @@ describe("member inbox feed", () => {
     });
     expect(sources[0]?.closed).toBe(true);
     expect(sources[1]?.url).toBe(
-      "https://hub.test/api/teams/t/inbox/events?after=4",
+      "https://hub.test/api/teams/t/inbox/events?after=4&signals=agent-identity",
     );
     expect(snapshots.at(-1)?.items).toHaveLength(1);
     sources[1]?.emit("rows", {
@@ -387,4 +397,92 @@ describe("transient stream disconnects", () => {
       vi.useRealTimers();
     }
   });
+
+  it("tells the host an Agent's identity changed without adding a row", async () => {
+    const changed: string[] = [];
+    const { feed, snapshots, sources } = harness(
+      [{ items: [row("conversation", "running", 2)], next: null, cursor: 3 }],
+      (agentId) => {
+        changed.push(agentId);
+      },
+    );
+    await flush();
+    sources[0]?.emit("rows", {
+      kind: "rows",
+      from: 3,
+      to: 4,
+      items: [{ kind: "agent-identity", agentId: "agent-a" }],
+      more: false,
+    });
+    expect(changed).toEqual(["agent-a"]);
+    // The signal is not a row: the snapshot keeps exactly its Session.
+    expect(snapshots.at(-1)?.items.map((item) => item)).toHaveLength(1);
+    // The cursor moved, so the next delta continues from it.
+    sources[0]?.emit("rows", {
+      kind: "rows",
+      from: 4,
+      to: 5,
+      items: [row("conversation", "done", 9)],
+      more: false,
+    });
+    expect(snapshots.at(-1)?.items[0]).toMatchObject({ state: "done" });
+    feed.close();
+  });
+});
+
+it("refreshes the Agent directory once after a reconnect that skipped changes", async () => {
+  let reloaded = 0;
+  const { feed, sources, snapshots } = harness(
+    [
+      { items: [row("a", "running", 1)], next: null, cursor: 1 },
+      { items: [row("a", "running", 1)], next: null, cursor: 5 },
+    ],
+    undefined,
+    () => {
+      reloaded += 1;
+    },
+  );
+  await flush();
+  // The first load is not a reload: nothing was skipped.
+  expect(reloaded).toBe(0);
+  // The stream drops; an Agent is renamed meanwhile; the stream comes back and
+  // rereads the owner, jumping the cursor past the rename.
+  sources[0]?.listeners.get("error")?.(new MessageEvent("error"));
+  sources[0]?.listeners.get("open")?.(new MessageEvent("open"));
+  await flush();
+  expect(snapshots.at(-1)?.status).toBe("live");
+  expect(reloaded).toBe(1);
+  expect(sources.at(-1)?.url).toContain("after=5");
+  feed.close();
+});
+
+it("backs off instead of reconnecting in a loop when a delta cannot be decoded", async () => {
+  vi.useFakeTimers();
+  const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    const { feed, sources } = harness([
+      { items: [row("a", "running", 1)], next: null, cursor: 1 },
+    ]);
+    await vi.advanceTimersByTimeAsync(0);
+    const bad = () =>
+      sources.at(-1)?.listeners.get("rows")?.(
+        new MessageEvent("rows", { data: '{"kind":"rows","items":[{"x":1}]}' }),
+      );
+    bad();
+    // Not an immediate reopen: the retry waits, and the wait grows.
+    expect(sources).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(sources).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sources).toHaveLength(2);
+    bad();
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(sources).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sources).toHaveLength(3);
+    feed.close();
+  } finally {
+    log.mockRestore();
+    vi.useRealTimers();
+  }
 });

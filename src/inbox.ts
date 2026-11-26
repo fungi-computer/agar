@@ -102,6 +102,17 @@ export function watchMemberInbox(
     fetch: typeof globalThis.fetch;
     openEvents: (url: string) => InboxEventSource;
     onChange: (snapshot: MemberInboxSnapshot) => void;
+    /**
+     * An Agent's name or avatar changed somewhere (another tab, the Members
+     * page, the Agent itself). The signal carries no identity: re-read it.
+     */
+    onAgentChanged?: (agentId: string) => void;
+    /**
+     * The feed was reloaded over an earlier cursor (a reconnect, a reset or a
+     * refresh), so changes made meanwhile, such as Agent renames, were skipped:
+     * read anything cached from the owner again.
+     */
+    onReloaded?: () => void;
   }>,
 ): MemberInboxFeed {
   const items = new Map<string, MemberInboxItem>();
@@ -109,6 +120,11 @@ export function watchMemberInbox(
   let closed = false;
   let events: InboxEventSource | undefined;
   let generation = 0;
+  let loadedOnce = false;
+  // A delta this client cannot decode is retried after a growing pause, so a
+  // newer Hub never drives an older client into a tight reconnect loop.
+  let decodeRetryMs = 1_000;
+  let decodeRetry: ReturnType<typeof setTimeout> | undefined;
   let outage: ReturnType<typeof setTimeout> | undefined;
   const clearOutage = () => {
     clearTimeout(outage);
@@ -120,6 +136,11 @@ export function watchMemberInbox(
   };
   const upsert = (list: readonly MemberInboxDeltaItem[]) => {
     for (const item of list) {
+      if ("kind" in item && item.kind === "agent-identity") {
+        // A change signal, not a row: it never enters the snapshot.
+        options.onAgentChanged?.(item.agentId);
+        continue;
+      }
       const key = memberInboxItemKey(item);
       if ("deleted" in item) items.delete(key);
       else items.set(key, item);
@@ -131,7 +152,9 @@ export function watchMemberInbox(
     clearOutage();
     const current = ++generation;
     const source = options.openEvents(
-      `${options.baseUrl}/inbox/events?after=${String(cursor)}`,
+      // `signals` opts in to Agent identity changes; a reader without it never
+      // receives them.
+      `${options.baseUrl}/inbox/events?after=${String(cursor)}&signals=agent-identity`,
     );
     events = source;
     let disconnected = false;
@@ -164,9 +187,17 @@ export function watchMemberInbox(
       } catch (cause) {
         reportCatchFailure("inbox.decode-event", cause);
         emit("loading");
-        follow();
+        clearTimeout(decodeRetry);
+        const wait = decodeRetryMs;
+        decodeRetryMs = Math.min(decodeRetryMs * 2, 60_000);
+        events?.close();
+        decodeRetry = setTimeout(() => {
+          decodeRetry = undefined;
+          if (!closed && current === generation) follow();
+        }, wait);
         return;
       }
+      decodeRetryMs = 1_000;
       if (delta.from !== cursor) {
         // A missed delta: resume from what this client actually holds.
         emit("loading");
@@ -213,6 +244,8 @@ export function watchMemberInbox(
       }
       emit("live");
       follow();
+      if (loadedOnce) options.onReloaded?.();
+      loadedOnce = true;
     } catch (cause) {
       if (closed || current !== generation) return;
       reportCatchFailure("inbox.refresh", cause);
@@ -236,6 +269,7 @@ export function watchMemberInbox(
       closed = true;
       generation += 1;
       clearOutage();
+      clearTimeout(decodeRetry);
       events?.close();
     },
   });
